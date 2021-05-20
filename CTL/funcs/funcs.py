@@ -319,3 +319,7 @@ class LinearRegressionModel:
 
 	def predict(self, x):
 		return self.k * x + self.b
+
+def tupleSwap(tp):
+	a, b = tp
+	return (b, a)

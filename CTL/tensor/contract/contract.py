@@ -9,8 +9,8 @@ def shareBonds(ta, tb):
 		anotherLeg = leg.anotherSide()
 		if (anotherLeg is not None) and (anotherLeg in tb.legs):
 			bonds.append(leg.bond)
-			if (leg == leg.bond.leg2):
-				leg.bond.leg1, leg.bond.leg2 = leg.bond.leg2, leg.bond.leg1
+			if (leg == leg.bond.legs[1]):
+				leg.bond.legs = funcs.tupleSwap(leg.bond.legs)
 	return bonds
 
 def contractTensors(ta, tb, bonds = None, outProductWarning = True):
@@ -34,8 +34,8 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 		legs = ta.legs + tb.legs
 		return Tensor(labels = labels, data = data, legs = legs)
 
-	contractALegs = [bond.leg1 for bond in bonds]
-	contractBLegs = [bond.leg2 for bond in bonds]
+	contractALegs = [bond.legs[0] for bond in bonds]
+	contractBLegs = [bond.legs[1] for bond in bonds]
 
 	dataA = ta.toMatrix(rows = None, cols = contractALegs)
 	dataB = tb.toMatrix(rows = contractBLegs, cols = None)

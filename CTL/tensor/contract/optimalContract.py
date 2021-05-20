@@ -6,7 +6,7 @@ import numpy as np
 
 def contractCost(ta, tb):
     bonds = shareBonds(ta, tb)
-    intersectionShape = tuple([bond.leg1.dim for bond in bonds])
+    intersectionShape = tuple([bond.legs[0].dim for bond in bonds])
     cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
     costLevel = len(ta.shape) + len(tb.shape) - len(intersectionShape)
     return cost, costLevel
