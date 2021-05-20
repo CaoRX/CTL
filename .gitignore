@@ -147,3 +147,9 @@ README.local.md
 *.npy
 *.npz
 TLTdata/
+
+# test python features
+pythontest.py
+
+# local tests
+localTest/
