@@ -1,21 +1,37 @@
 from CTL.funcs.graph import UndirectedGraph
+import CTL.funcs.funcs as funcs
 import numpy as np
 
 class TensorGraph(UndirectedGraph):
     def __init__(self, n):
         super().__init__(n)
+        self.indexed = False
 
     def addFreeEdge(self, idx, weight = None):
         self.v[idx].addEdge(None, weight = weight)
 
-    def optimalContractSequence(self, bf = False, typical_dim = 10):
+    def addEdgeIndex(self):
+        if (self.indexed):
+            return
+        edges = self.getEdges()
+        m = len(edges)
+        for i in range(m):
+            edges[i].index = i 
+        self.indexed = True
 
-        def lowbit_i(x):
+    def optimalCostResult(self):
+        if (self.optimalCost is None):
+            self.optimalContractSequence()
+        return self.optimalCost[(1 << self.n) - 1]
+    
+    def optimalContractSequence(self, bf = False, typicalDim = 10):
+
+        def lowbitI(x):
             return (x & (-x)).bit_length() - 1
         def lowbit(x):
             return (x & (-x))
 
-        def subset_iterator(x):
+        def subsetIterator(x):
             lb = lowbit(x)
             while (lb * 2 < x):
                 yield lb 
@@ -23,107 +39,111 @@ class TensorGraph(UndirectedGraph):
                 lb = (lb & (~(nlb - 1))) + nlb
             return 
 
-        labels = [t.labels for t in tensor_list]
-        shapes = [list(t.shape) for t in tensor_list]
-        n = len(labels)
+        self.addEdgeIndex()
 
-        opt_cost = [None] * (1 << n)
-        opt_seq = [None] * (1 << n)
-        con_res = [None] * (1 << n)
+        edges = [[edge.index for edge in v.edges] for v in self.v]
+        shapes = [[edge.weight for edge in v.edges] for v in self.v]
+
+        n = len(self.v)
+
+        self.optimalCost = [None] * (1 << n)
+        self.optimalSeq = [None] * (1 << n)
+        self.contractRes = [None] * (1 << n)
 
         for i in range(n):
-            opt_cost[(1 << i)] = 0
-            opt_seq[(1 << i)] = []
-            con_res[(1 << i)] = (labels[i], shapes[i])
+            self.optimalCost[(1 << i)] = 0
+            self.optimalSeq[(1 << i)] = []
+            self.contractRes[(1 << i)] = (edges[i], shapes[i])
 
-        def get_cost(ss, tt):
-            label_ss, shape_ss = con_res[ss]
-            label_tt, shape_tt = con_res[tt]
+        def getCost(tsA, tsB):
+            edgesA, shapeA = self.contractRes[tsA]
+            edgesB, shapeB = self.contractRes[tsB]
 
-            clb = set(funcs.commonElements(label_ss, label_tt))
+            clb = set(funcs.commonElements(edgesA, edgesB))
             res = 1
-            for l, s in zip(label_ss + label_tt, shape_ss + shape_tt):
+            for l, s in zip(edgesA + edgesB, shapeA + shapeB):
                 if (l in clb):
                     res *= np.sqrt(s)
                 else:
                     res *= s 
 
-            return np.int(res + 1e-10)
+            return int(res + 0.5)
 
-        def get_cost_typical(ss, tt):
-            label_ss, shape_ss = con_res[ss]
-            label_tt, shape_tt = con_res[tt]
-            clb = funcs.commonElements(label_ss, label_tt)
+        def getCostTypical(tsA, tsB):
+            edgesA, _ = self.contractRes[tsA]
+            edgesB, _ = self.contractRes[tsB]
+            clb = set(funcs.commonElements(edgesA, edgesB))
 
-            cost_order = len(label_ss) + len(label_tt) - len(clb)
-            return typical_dim ** cost_order
+            costOrder = len(edgesA) + len(edgesB) - len(clb)
+            return typicalDim ** costOrder
 
-        def calc_con_res(ss, tt):
-            label_ss, shape_ss = con_res[ss]
-            label_tt, shape_tt = con_res[tt]
+        def calculateContractRes(tsA, tsB):
+            edgesA, shapeA = self.contractRes[tsA]
+            edgesB, shapeB = self.contractRes[tsB]
 
-            label_res = funcs.listSymmetricDifference(label_ss, label_tt)
-            label_dict = dict()
-            for i in range(len(label_res)):
-                label_dict[label_res[i]] = i 
+            edges = funcs.listSymmetricDifference(edgesA, edgesB)
+            shape = [None] * len(edges)
 
-            shape_res = [None] * len(label_res)
-            for l, s in zip(label_ss + label_tt, shape_ss + shape_tt):
-                if (l in label_dict):
-                    shape_res[label_dict[l]] = s 
-            return (label_res, shape_res)
+            edgeIndex = dict()
+            for i in range(len(edges)):
+                edgeIndex[edges[i]] = i
 
-        cost_func = None
-        if (typical_dim is None):
-            cost_func = get_cost
+            for l, s in zip(edgesA + edgesB, shapeA + shapeB):
+                if (l in edgeIndex):
+                    shape[edgeIndex[l]] = s
+            return (edges, shape)
+
+        costFunc = None
+        if (typicalDim is None):
+            costFunc = getCost
         else:
-            cost_func = get_cost_typical
+            costFunc = getCostTypical
 
-        def solve_set(x):
+        def solveSet(x):
             #print('solve_set({})'.format(x))
-            if (x in opt_cost):
+            if (self.optimalCost[x] is not None):
                 return 
-            min_cost = None
-            min_ss = None
-            min_tt = None
-            local_cost = -1
-            for ss in subset_iterator(x):
-                tt = x - ss
+            minCost = None
+            minTSA = None
+            minTSB = None
+            localCost = -1
+            for tsA in subsetIterator(x):
+                tsB = x - tsA
                 #print('ss = {}, tt = {}'.format(ss, tt))
-                if (opt_cost[ss] is None):
-                    solve_set(ss)
-                if (opt_cost[tt] is None):
-                    solve_set(tt)
-                if (con_res[x] is None):
-                    con_res[x] = calc_con_res(ss, tt)
+                if (self.optimalCost[tsA] is None):
+                    solveSet(tsA)
+                if (self.optimalCost[tsB] is None):
+                    solveSet(tsB)
+                if (self.contractRes[x] is None):
+                    self.contractRes[x] = calculateContractRes(tsA, tsB)
                 
-                local_cost = cost_func(ss, tt)
-                curr_cost = opt_cost[ss] + opt_cost[tt] + local_cost
-                if (min_cost is None) or (curr_cost < min_cost):
-                    min_cost = curr_cost
-                    min_ss = ss 
-                    min_tt = tt
+                localCost = costFunc(tsA, tsB)
+                currCost = self.optimalCost[tsA] + self.optimalCost[tsB] + localCost
+                if (minCost is None) or (currCost < minCost):
+                    minCost = currCost
+                    minTSA = tsA
+                    minTSB = tsB
 
-            opt_cost[x] = min_cost 
-            opt_seq[x] = opt_seq[min_ss] + opt_seq[min_tt] + [(lowbit_i(min_ss), lowbit_i(min_tt))]
+            self.optimalCost[x] = minCost
+            self.optimalSeq[x] = self.optimalSeq[minTSA] + self.optimalSeq[minTSB] + [(lowbitI(minTSA), lowbitI(minTSB))]
 
-        def brute_force():
+        def bruteForce():
 
-            full_s = (1 << n) - 1
+            fullSet = (1 << n) - 1
 
-            solve_set(full_s)
-            #print('minimum cost = {}'.format(opt_cost[full_s]))
-            #print('result = {}'.format(con_res[full_s]))
-            return opt_seq[full_s]
+            solveSet(fullSet)
+            #print('minimum cost = {}'.format(self.optimalCost[full_s]))
+            #print('result = {}'.format(self.contractRes[full_s]))
+            return self.optimalSeq[fullSet]
 
         def capping():
             obj_n = (1 << n)
             new_flag = [True] * obj_n 
-            if (typical_dim is None):
+            if (typicalDim is None):
                 chi_min = min([min(x) for x in shapes])
             else:
-                chi_min = typical_dim
-            mu_cap = 1
+                chi_min = typicalDim
+            # mu_cap = 1
             mu_old = 0
             mu_new = 1
 
@@ -167,27 +187,27 @@ class TensorGraph(UndirectedGraph):
                             if ((t1 & t2) != 0):
                                 continue 
                             tt = t1 | t2
-                            if (con_res[tt] is None):
-                                con_res[tt] = calc_con_res(t1, t2)
+                            if (self.contractRes[tt] is None):
+                                self.contractRes[tt] = calculateContractRes(t1, t2)
 
                             if (new_flag[t1] or new_flag[t2]):
                                 mu_0 = 0
                             else:
                                 mu_0 = mu_old
 
-                            mu_curr = opt_cost[t1] + opt_cost[t2] + cost_func(t1, t2)
+                            mu_curr = self.optimalCost[t1] + self.optimalCost[t2] + costFunc(t1, t2)
                             if (mu_curr > mu_new):
                                 if (mu_next is None) or (mu_next > mu_curr):
                                     mu_next = mu_curr
                                 continue
 
                             if (mu_curr > mu_0) and (mu_curr <= mu_new):
-                                if (opt_cost[tt] is None):
+                                if (self.optimalCost[tt] is None):
                                     obj_list[c].append(tt)
                                     #print('append {} to {}'.format(tt, c))
-                                if (opt_cost[tt] is None) or (opt_cost[tt] > mu_curr):
-                                    opt_cost[tt] = mu_curr
-                                    opt_seq[tt] = opt_seq[t1] + opt_seq[t2] + [(lowbit_i(t1), lowbit_i(t2))]
+                                if (self.optimalCost[tt] is None) or (self.optimalCost[tt] > mu_curr):
+                                    self.optimalCost[tt] = mu_curr
+                                    self.optimalSeq[tt] = self.optimalSeq[t1] + self.optimalSeq[t2] + [(lowbitI(t1), lowbitI(t2))]
                                     new_flag[tt] = True
 
                 mu_old = mu_new
@@ -196,13 +216,13 @@ class TensorGraph(UndirectedGraph):
                     for tt in obj_list[c]:
                         new_flag[tt] = False
 
-                #print('cost of {} = {}'.format(full_s, opt_cost[full_s]))
+                #print('cost of {} = {}'.format(full_s, self.optimalCost[full_s]))
                 #print('length of obj_list = {}'.format([len(x) for x in obj_list]))
-            print('minimum cost = {}'.format(opt_cost[full_s]))
-            #print('result = {}'.format(con_res[full_s]))
-            return opt_seq[full_s]
+            print('minimum cost = {}'.format(self.optimalCost[full_s]))
+            #print('result = {}'.format(self.contractRes[full_s]))
+            return self.optimalSeq[full_s]
 
         if (bf):
-            return brute_force()
+            return bruteForce()
         else:
             return capping()

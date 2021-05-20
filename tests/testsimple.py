@@ -22,5 +22,5 @@ class TestStringSet(PackedTest):
     def __init__(self, methodName = 'runTest'):
         super().__init__(methodName = methodName, name = 'StringSet')
 
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == '__main__':
+#     unittest.main()

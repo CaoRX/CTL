@@ -22,7 +22,7 @@ def makeTensorGraph(tensorList):
     for i in range(n):
         idxDict[tensorList[i]] = i
     for i in range(n):
-        for leg in len(tensorList[i].legs):
+        for leg in tensorList[i].legs:
             if (leg.bond is None):
                 g.addFreeEdge(i, leg.dim)
             else:
@@ -30,14 +30,18 @@ def makeTensorGraph(tensorList):
                 if (bond in bondSet):
                     continue 
                 bondSet.add(bond) 
-                g.addEdge(i, idxDict[leg.anotherSide.tensor], leg.dim)
+                g.addEdge(i, idxDict[leg.anotherSide().tensor], leg.dim)
     
+    g.addEdgeIndex()
     return g
 
-def contractWithSequence(tensorList, seq = None, bf = True):
+def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
+    tensorGraph = makeTensorGraph(tensorList)
+    return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
+
+def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10):
     if (seq is None):
-        tensorGraph = makeTensorGraph(tensorList)
-        seq = tensorGraph.optimalContractSequence(bf = bf)
+        seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
     totalCost = 0.0
     totalLevel = 0
 

@@ -41,16 +41,18 @@ class Graph:
         self.assertIndex(idx2)
         self.v[idx1].addEdge(self.v[idx2], weight = weight)
 
-    @property 
-    def edges(self):
-        res = []
-        for v in self.v:
-            res += v.edges 
-        return res
+    # @property 
+    # def edges(self):
+    #     res = []
+    #     for v in self.v:
+    #         res += v.edges 
+    #     return res
     
 class UndirectedGraph(Graph):
     def __init__(self, n):
         super().__init__(n)
+        self.edges = None
+        self.updated = False
     
     def addEdge(self, idx1, idx2, weight = None):
         self.assertIndex(idx1)
@@ -58,15 +60,24 @@ class UndirectedGraph(Graph):
         newEdge = self.v[idx1].addEdge(self.v[idx2], weight = weight)
         self.v[idx2].edges.append(newEdge)
 
+        self.updated = True
+
     # def addFreeEdge(self, idx, weight = None):
     #     self.v[idx].addEdge(None, weight = weight)
 
-    @property 
-    def edges(self):
+    # @property 
+    def getEdges(self):
+        if (self.edges is not None) and (not self.updated):
+            return self.edges
         res = []
         for v in self.v:
-            res += v.edges 
-        return list(set(res))
+            for edge in v.edges:
+                if (edge not in res):
+                    res.append(edge) 
+        # return list(set(res))
+        self.edges = res 
+        self.updated = False
+        return res
     
     
 

@@ -25,7 +25,7 @@ class Tensor(TensorBase):
         self.totalSize = funcs.tupleProduct(shape)
         if (data is None):
             #self.a = self.xp.zeros(self.shape, dtype = self.xp.float64)
-            self.a = self.xp.random.random_sample(self.shape)
+            self.a = self.xp.random.random_sample(shape)
         else:
             self.a = self.xp.copy(data)
         assert (self.totalSize == funcs.tupleProduct(self.a.shape)), 'Error: expect {} elements but {} gotten.'.format(self.totalSize, funcs.tupleProduct(self.a.shape))

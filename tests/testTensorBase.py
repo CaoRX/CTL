@@ -44,5 +44,5 @@ class TestTensor(PackedTest):
     #     self.assertTrue(tensor.dim is None)
     #     self.assertTrue(tensor.shape is None)
 
-if __name__ == '__main__':
-    unittest.main()
+# if __name__ == '__main__':
+#     unittest.main()
