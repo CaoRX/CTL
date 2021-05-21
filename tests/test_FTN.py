@@ -2,6 +2,7 @@ from tests.packedTest import PackedTest
 from CTL.tensornetwork.tensordict import TensorDict 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 from CTL.tensor.tensor import Tensor
+import CTL.funcs.funcs as funcs
 
 import numpy as np 
 
@@ -54,6 +55,52 @@ class TestFTN(PackedTest):
         self.assertEqual(FTN.bondDims['a-a300'], 3)
         self.assertEqual(FTN.tensorCount, 3)
 
-        # problem: now the tensor network can only be contracted once
-        # this can be solved by create another (copyable) FiniteTensorNetwork object
-        # which traces all the bonds and legs, and can be easily copied
+    def test_FreeBondFTN(self):
+        shapeA = (300, 4, 5)
+        shapeB = (300, 6)
+        shapeC = (4, 6, 5)
+        a = Tensor(shape = shapeA, labels = ['a300', 'b4', 'c5'], data = np.ones(shapeA))
+        b = Tensor(shape = shapeB, labels = ['a300', 'd6'], data = np.ones(shapeB))
+        c = Tensor(shape = shapeC, labels = ['e4', 'd6', 'c5'], data = np.ones(shapeC))
+
+        tensorDict = TensorDict()
+        tensorDict.setTensor('a', a) 
+        tensorDict.setTensor('b', b)
+        tensorDict.setTensor('c', c)
+
+        FTN = FiniteTensorNetwork(['a', 'b'], realCost = True)
+        FTN.addTensor('c')
+
+        FTN.addLink('a', 'a300', 'b', 'a300')
+        FTN.addLink('a', 'c5', 'c', 'c5')
+        FTN.addLink('b', 'd6', 'c', 'd6')
+
+        result = FTN.contract(tensorDict, removeTensorTag = False)
+        self.assertTrue(funcs.compareLists(result.labels, ['a-b4', 'c-e4']))
+        self.assertEqual(int(result.a[0][1]), 9000)
+
+        result = FTN.contract(tensorDict, removeTensorTag = True)
+        self.assertTrue(funcs.compareLists(result.labels, ['b4', 'e4']))
+        self.assertEqual(int(result.a[0][1]), 9000)
+
+        FTN.unlock()
+        FTN.addPostNameChange('c', 'e4', 'e4FromC')
+        FTN.addPreNameChange('a', 'b4', 'b4FromA')
+        FTN.addPreNameChange('a', 'a300', 'a3')
+        FTN.removePreNameChange('a', 'a300', 'a3')
+        FTN.addPostNameChange('a', 'd6', 'foo')
+        FTN.removePostNameChange('a', 'd6', 'foo')
+
+        result = FTN.contract(tensorDict, removeTensorTag = True)
+        # print(result.labels)
+        self.assertTrue(funcs.compareLists(result.labels, ['b4FromA', 'e4FromC']))
+        self.assertEqual(int(result.a[0][1]), 9000)
+
+        FTN.unlock()
+        FTN.removePostNameChange('c', 'e4', 'e4FromC')
+        FTN.addPreNameChange('c', 'e4', 'e4FromC')
+        FTN.addPostOutProduct([('a', 'b4FromA'), ('c', 'e4FromC')], 'out')
+        result = FTN.contract(tensorDict, removeTensorTag = True)
+
+        self.assertListEqual(result.labels, ['out'])
+        self.assertEqual(result.shape[0], 16)
