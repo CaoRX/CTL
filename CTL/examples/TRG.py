@@ -1,7 +1,7 @@
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.contract import contractTensors
-from CTL.tensor.tensor import makeTriangleTensor
+from CTL.tensor.tensorFactory import makeTriangleTensor
 from CTL.tensor.contract.contractExp import triangleContractFTN, makeTriangleTensorDict
 from CTL.funcs.decompose import SVDDecomposition
 import numpy as np
@@ -84,6 +84,10 @@ class TriangleTRG:
         
         self.normalizeTensors()
         self.appendToArchive()
+
+    def logZDensity(self):
+        # logZ / degreeOfFreedom
+        pass 
 
 
 

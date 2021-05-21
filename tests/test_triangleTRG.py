@@ -1,9 +1,10 @@
 from tests.packedTest import PackedTest
 from CTL.tensornetwork.tensordict import TensorDict 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
-from CTL.tensor.tensor import Tensor, makeSquareTensor, makeTriangleTensor
+from CTL.tensor.tensor import Tensor
+from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor
 import CTL.funcs.funcs as funcs
-from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN
+from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN, triangleTensorTrace
 from CTL.examples.TRG import TriangleTRG
 
 import numpy as np 
@@ -28,7 +29,6 @@ class TestTriangleTRG(PackedTest):
         for _ in range(20):
             trg2.iterate()
 
-
         self.assertTrue(funcs.floatEqual(trg2.aArchive[-1].a[(0, 0, 0)], -0.96118630, eps = 1e-7))
 
         # print(trg.aNorms, trg.bNorms)
@@ -47,8 +47,14 @@ class TestTriangleTRG(PackedTest):
         self.assertTrue(trg2.errors[-1] < errorUpBound)
         self.assertTrue(trg3.errors[-1] < errorUpBound)
 
+        print('trace = {}'.format(triangleTensorTrace(trg3.a, trg3.b).a))
+
         # print(trg.aNorms, trg.bNorms)
         # print('error = {}'.format(trg3.errors))
         # print(trg3.aArchive)
         # for tensor in trg3.aArchive:
         #     print(tensor.a[(0, 0, 0)])
+
+    def test_triangleTRGResults(self):
+        # check the results of TRG to compare with PRL 99, 120601 (2007)
+        pass

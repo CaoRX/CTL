@@ -65,7 +65,7 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'TensorBase({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
+        return 'Tensor({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
 
     def __repr__(self):
         if not (self.degreeOfFreedom is None):
@@ -76,7 +76,7 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'TensorBase({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
+        return 'Tensor({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
         return self.shape[0]
@@ -235,14 +235,6 @@ class Tensor(TensorBase):
         mat = self.toMatrix(rows = rows, cols = cols)
         assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
         return self.xp.trace(mat)
-
-def makeTriangleTensor(data, labels = ['1', '2', '3']):
-    assert (len(data.shape) == 3), "Error: makeTriangleTensor can only accept tensor with 3 dimensions, but shape {} obtained.".format(data.shape)
-    return Tensor(data = data, labels = labels)
-
-def makeSquareTensor(data, labels = ['u', 'l', 'd', 'r']):
-    assert (len(data.shape) == 4), "Error: makeSquareTensor can only accept tensor with 4 dimensions, but shape {} obtained.".format(data.shape)
-    return Tensor(data = data, labels = labels)
 
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)

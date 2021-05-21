@@ -113,7 +113,7 @@ class FiniteTensorNetwork:
         if (self.optimalSeq is None) or (self.realCost and self.changed):
             self.optimalSeq = generateOptimalSequence(tensorList, bf = False, typicalDim = self.typicalDim)
 
-        res = contractWithSequence(tensorList, self.optimalSeq)
+        res = contractWithSequence(tensorList, seq = self.optimalSeq, inplace = True)
 
         for labelList, newLabel in self.outProductAfter:
             labelList = [self._dealOutProductLabel(label) for label in labelList]

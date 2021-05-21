@@ -1,9 +1,10 @@
 from tests.packedTest import PackedTest
 from CTL.tensornetwork.tensordict import TensorDict 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
-from CTL.tensor.tensor import Tensor, makeSquareTensor, makeTriangleTensor
+from CTL.tensor.tensor import Tensor
+from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor, makeSquareOutTensor
 import CTL.funcs.funcs as funcs
-from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN
+from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN, squareContractOutFTN
 
 import numpy as np 
 
@@ -35,3 +36,21 @@ class TestContractExamples(PackedTest):
 
         res.reArrange(['u', 'l', 'd', 'r'])
         self.assertTupleEqual(res.shape, (9, 16, 9, 16))
+
+    def test_squareContractOutFTN(self):
+        FTN = squareContractOutFTN()
+
+        tensorNames = ['ul', 'ur', 'dl', 'dr']
+        tensorDict = TensorDict()
+        # print('keys = {}'.format(tensorDict.tensors.keys()))
+        for tensorName in tensorNames:
+            tensorDict.setTensor(tensorName, makeSquareOutTensor(np.ones((3, 4, 6)), loc = tensorName))
+        # print('keys = {}'.format(tensorDict.tensors.keys()))
+
+        res = FTN.contract(tensorDict)
+        self.assertTrue(funcs.compareLists(res.labels, ['u', 'd', 'l', 'r']))
+        self.assertTupleEqual(res.shape, (6, 6, 6, 6))
+        self.assertEqual(int(res.a[(0, 0, 0, 0)]), 144)
+        # print(res.a)
+        # print(res)
+

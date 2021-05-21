@@ -2,6 +2,9 @@ from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 from CTL.tensornetwork.tensordict import TensorDict
 from CTL.tensor.tensor import Tensor
 
+from CTL.tensor.contract.link import makeLink
+from CTL.tensor.contract.contract import contractTensors
+
 def makeTriangleTensorDict(a):
     return TensorDict({'u': a, 'l': a, 'r': a})
 
@@ -35,4 +38,29 @@ def squareContractFTN():
     FTN.addPostOutProduct(['ur-r', 'dr-r'], 'r')
     
     return FTN
+
+def squareContractOutFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
+    
+    FTN.addLink('ul', 'd', 'dl', 'u')
+    FTN.addLink('ul', 'r', 'ur', 'l')
+    FTN.addLink('ur', 'd', 'dr', 'u')
+    FTN.addLink('dl', 'r', 'dr', 'l')
+
+    FTN.addPostNameChange('ul', 'o', 'u')
+    FTN.addPostNameChange('ur', 'o', 'r')
+    FTN.addPostNameChange('dl', 'o', 'l')
+    FTN.addPostNameChange('dr', 'o', 'd')
+
+    return FTN
+
+def triangleTensorTrace(a, b):
+    tensorA = a.copy()
+    tensorB = b.copy()
+    
+    for label in ['1', '2', '3']:
+        makeLink(label, label, tensorA = tensorA, tensorB = tensorB)
+    
+    res = contractTensors(tensorA, tensorB)
+    return res
 
