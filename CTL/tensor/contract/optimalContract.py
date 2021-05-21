@@ -2,7 +2,32 @@ import CTL.funcs.funcs as funcs
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.contract import shareBonds, contractTensors
 from CTL.tensor.contract.tensorGraph import TensorGraph
+from CTL.tensor.contract.link import makeLink
 import numpy as np
+
+def copyTensorList(tensorList):
+    resTensorList = []
+    tensorMap = dict()
+    for tensor in tensorList:
+        resTensorList.append(tensor.copy())
+        tensorMap[tensor] = resTensorList[-1]
+    # use the objects themselves as key, so no worry about double name
+    
+    addedBonds = set()
+    for tensor in tensorList:
+        for leg, newLeg1 in zip(tensor.legs, tensorMap[tensor].legs):
+            if (leg.bond is not None) and (leg.bond not in addedBonds):
+                addedBonds.add(leg.bond)
+                leg2 = leg.anotherSide()
+
+                newTensorB = tensorMap[leg2.tensor]
+
+                newLeg2 = newTensorB.legs[leg2.tensor.legs.index(leg2)]
+                makeLink(newLeg1, newLeg2)
+
+                # no consideration about leg name, only from their relative positions
+    
+    return resTensorList 
 
 def contractCost(ta, tb):
     bonds = shareBonds(ta, tb)
@@ -39,11 +64,14 @@ def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
 
-def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10):
+def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False):
     if (seq is None):
         seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
     totalCost = 0.0
     totalLevel = 0
+
+    if (not inplace):
+        tensorList = copyTensorList(tensorList)
 
     for s, t in seq:
         cost, costLevel = contractCost(tensorList[s], tensorList[t])
@@ -52,6 +80,9 @@ def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10):
         tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t])
 
     return tensorList[0]
+
+def contractTensorList(tensorList):
+    return contractWithSequence(tensorList)
 
 
 

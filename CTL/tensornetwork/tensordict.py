@@ -1,7 +1,12 @@
 class TensorDict:
 
-    def __init__(self, tensorDict = dict([])):
-        self.tensors = tensorDict
+    def __init__(self, tensorDict = None):
+        # print(tensorDict)
+        if (tensorDict is None):
+            self.tensors = dict()
+        else:
+            self.tensors = tensorDict
+        # print(self.tensors.keys())
 
     @property 
     def tensorCount(self):

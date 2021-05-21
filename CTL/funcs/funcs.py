@@ -323,3 +323,6 @@ class LinearRegressionModel:
 def tupleSwap(tp):
 	a, b = tp
 	return (b, a)
+
+def floatEqual(a, b, eps = 1e-7):
+	return np.abs(a - b) < eps

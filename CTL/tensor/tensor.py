@@ -65,7 +65,7 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'TensorBase({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
+        return 'Tensor({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
 
     def __repr__(self):
         if not (self.degreeOfFreedom is None):
@@ -76,7 +76,7 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'TensorBase({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
+        return 'Tensor({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
         return self.shape[0]
@@ -115,6 +115,10 @@ class Tensor(TensorBase):
     def toMatrix(self, rows, cols):
         # input two set of legs
         assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
+        if (rows is not None) and (isinstance(rows[0], str)):
+            rows = [self.getLeg(label) for label in rows]
+        if (cols is not None) and (isinstance(cols[0], str)):
+            cols = [self.getLeg(label) for label in cols]
         if (cols is None):
             cols = funcs.listDifference(self.legs, rows)
         if (rows is None):
@@ -132,7 +136,7 @@ class Tensor(TensorBase):
         moveFrom = rowIndices + colIndices
         moveTo = list(range(len(moveFrom)))
 
-        data = self.xp.moveaxis(self.xp.copy(self.a),  moveFrom, moveTo)
+        data = self.xp.moveaxis(self.xp.copy(self.a), moveFrom, moveTo)
         data = self.xp.reshape(data, (rowTotalSize, colTotalSize))
         return data
 
@@ -175,6 +179,62 @@ class Tensor(TensorBase):
 
     def shapeOfIndices(self, indices):
         return tuple([self.shape[x] for x in indices])
+
+    def addTensorTag(self, name):
+        for leg in self.legs:
+            assert (leg.name.find('-') == -1), "Error: leg name {} already has a tensor tag.".format(leg.name)
+            leg.name = name + '-' + leg.name 
+    
+    def removeTensorTag(self):
+        for leg in self.legs:
+            divLoc = leg.name.find('-')
+            assert (divLoc != -1), "Error: leg name {} does not contain a tensor tag.".format(leg.name)
+            leg.name = leg.name[(divLoc + 1):]
+
+    def moveLabelsToFront(self, labelList):
+        moveFrom = []
+        moveTo = []
+        currIdx = 0
+        movedLegs = []
+        for label in labelList:
+            for i, leg in enumerate(self.legs):
+                if (leg.name == label):
+                    moveFrom.append(i)
+                    moveTo.append(currIdx)
+                    currIdx += 1
+                    movedLegs.append(leg)
+                    break
+
+        for leg in movedLegs:
+            self.legs.remove(leg)
+        
+        # print(moveFrom, moveTo)
+        # print(labelList)
+        # print(self.labels)
+        self.legs = movedLegs + self.legs 
+        self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+
+    def outProduct(self, labelList, newLabel):
+        self.moveLabelsToFront(labelList)
+        n = len(labelList)
+        newShape = (-1, ) + self.shape[n:]
+        self.a = np.reshape(self.a, newShape)
+        # self.shape = self.a.shape
+
+        newDim = self.a.shape[0]
+        self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
+
+    def reArrange(self, labels):
+        assert (funcs.compareLists(self.labels, labels)), "Error: tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
+        self.moveLabelsToFront(labels)
+
+    def norm(self):
+        return self.xp.linalg.norm(self.a)
+
+    def trace(self, rows = None, cols = None):
+        mat = self.toMatrix(rows = rows, cols = cols)
+        assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
+        return self.xp.trace(mat)
 
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)
@@ -326,11 +386,11 @@ class Tensor(TensorBase):
 
     #     newDim = self.shape[0]
     #     self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
-    #     # for label in self.labels[:n]:
-    #     #     del self.legs[label]
-    #     # self.legs[newLabel] = Leg(self, newDim, newLabel)
-    #     # self.labels = [newLabel] + self.labels[n:]
-    #     # self.contractLabels = [''] + self.contractLabels[n:]
+        # for label in self.labels[:n]:
+        #     del self.legs[label]
+        # self.legs[newLabel] = Leg(self, newDim, newLabel)
+        # self.labels = [newLabel] + self.labels[n:]
+        # self.contractLabels = [''] + self.contractLabels[n:]
 
     # def swapLabel(self, lab1, lab2):
     #     idx = self.getLabelIndices([lab1, lab2])
@@ -412,3 +472,4 @@ class Tensor(TensorBase):
     #     return [self.labels[self.contractLabels.index(cLabel)] for cLabel in cLabels]
     # def addLink(self, linkTensor):
     #     self.linkedTensor.append(linkTensor)
+
