@@ -1,5 +1,14 @@
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
+from CTL.tensornetwork.tensordict import TensorDict
 from CTL.tensor.tensor import Tensor
+
+def makeTriangleTensorDict(a):
+    return TensorDict({'u': a, 'l': a, 'r': a})
+
+def makeSquareTensorDict(a, b = None):
+    if (b is None):
+        b = a 
+    return TensorDict({'ul': a, 'ur': b, 'dr': a, 'dl': b})
 
 def triangleContractFTN():
     FTN = FiniteTensorNetwork(tensorNames = ['u', 'l', 'r'])

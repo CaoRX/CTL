@@ -115,6 +115,10 @@ class Tensor(TensorBase):
     def toMatrix(self, rows, cols):
         # input two set of legs
         assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
+        if (rows is not None) and (isinstance(rows[0], str)):
+            rows = [self.getLeg(label) for label in rows]
+        if (cols is not None) and (isinstance(cols[0], str)):
+            cols = [self.getLeg(label) for label in cols]
         if (cols is None):
             cols = funcs.listDifference(self.legs, rows)
         if (rows is None):
@@ -223,6 +227,14 @@ class Tensor(TensorBase):
     def reArrange(self, labels):
         assert (funcs.compareLists(self.labels, labels)), "Error: tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
         self.moveLabelsToFront(labels)
+
+    def norm(self):
+        return self.xp.linalg.norm(self.a)
+
+    def trace(self, rows = None, cols = None):
+        mat = self.toMatrix(rows = rows, cols = cols)
+        assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
+        return self.xp.trace(mat)
 
 def makeTriangleTensor(data, labels = ['1', '2', '3']):
     assert (len(data.shape) == 3), "Error: makeTriangleTensor can only accept tensor with 3 dimensions, but shape {} obtained.".format(data.shape)
