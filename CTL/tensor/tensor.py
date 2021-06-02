@@ -116,6 +116,8 @@ class Tensor(TensorBase):
         return res
     
     def toMatrix(self, rows, cols):
+        # print(rows, cols)
+        # print(self.labels)
         # input two set of legs
         assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
         if (rows is not None) and (isinstance(rows[0], str)):
@@ -152,7 +154,6 @@ class Tensor(TensorBase):
     
     def copyN(self, n):
         return [self.copy() for _ in range(n)]
-
     
     def getLabelIndices(self, labs, backward = False):
         ret = []
@@ -177,9 +178,17 @@ class Tensor(TensorBase):
         for cf, ct in zip(changefrom, changeto):
             self.renameLabel(cf, ct)
 
+    def shapeOfLabel(self, label):
+        for leg in self.legs:
+            if leg.name == label:
+                return leg.dim 
+        
+        return -1
     def shapeOfLabels(self, labs):
         return self.shapeOfIndices(self.getLabelIndices(labs))
 
+    def shapeOfIndex(self, index):
+        return self.shape[index]
     def shapeOfIndices(self, indices):
         return tuple([self.shape[x] for x in indices])
 

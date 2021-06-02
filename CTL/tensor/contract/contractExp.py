@@ -64,3 +64,63 @@ def triangleTensorTrace(a, b):
     res = contractTensors(tensorA, tensorB)
     return res
 
+def squareHorizontalContractFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
+    
+    FTN.addLink('ul', 'd', 'dl', 'u')
+    FTN.addLink('ul', 'r', 'ur', 'l')
+    FTN.addLink('ur', 'd', 'dr', 'u')
+    FTN.addLink('dl', 'r', 'dr', 'l')
+
+    FTN.addLink('ul', 'u', 'ur', 'u')
+    FTN.addLink('dl', 'd', 'dr', 'd')
+
+    FTN.addPostOutProduct(['ul-l', 'dl-l'], 'l')
+    FTN.addPostOutProduct(['ur-r', 'dr-r'], 'r')
+    return FTN
+
+def squareVerticalContractFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
+    
+    FTN.addLink('ul', 'd', 'dl', 'u')
+    FTN.addLink('ul', 'r', 'ur', 'l')
+    FTN.addLink('ur', 'd', 'dr', 'u')
+    FTN.addLink('dl', 'r', 'dr', 'l')
+
+    FTN.addLink('ul', 'l', 'dl', 'l')
+    FTN.addLink('ur', 'r', 'dr', 'r')
+
+    FTN.addPostOutProduct(['ul-u', 'ur-u'], 'u')
+    FTN.addPostOutProduct(['dl-d', 'dr-d'], 'd')
+    return FTN
+
+def HOTRGHorizontalContractFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'l', 'r'])
+    FTN.addLink('u', 'l', 'l', 'u')
+    FTN.addLink('u', 'r', 'r', 'u')
+    FTN.addLink('d', 'l', 'l', 'd')
+    FTN.addLink('d', 'r', 'r', 'd')
+
+    FTN.addLink('u', 'd', 'd', 'u')
+
+    FTN.addPostNameChange('l', 'o', 'l')
+    FTN.addPostNameChange('r', 'o', 'r')
+
+    return FTN 
+
+def HOTRGVerticalContractFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'l', 'r'])
+    FTN.addLink('u', 'l', 'l', 'u')
+    FTN.addLink('u', 'r', 'r', 'u')
+    FTN.addLink('d', 'l', 'l', 'd')
+    FTN.addLink('d', 'r', 'r', 'd')
+
+    FTN.addLink('l', 'r', 'r', 'l')
+
+    FTN.addPostNameChange('u', 'o', 'u')
+    FTN.addPostNameChange('d', 'o', 'd')
+
+    return FTN 
+
+
+

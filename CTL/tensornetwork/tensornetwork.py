@@ -1,6 +1,7 @@
 from CTL.tensor.contract.link import makeLink
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.optimalContract import generateOptimalSequence, contractWithSequence
+from CTL.tensornetwork.tensordict import TensorDict
 class FiniteTensorNetwork:
     
     # instead of save the tensors: save a set of operations
@@ -88,6 +89,11 @@ class FiniteTensorNetwork:
 
     def contract(self, tensorDict, removeTensorTag = True):
         self.lock()
+
+        if (isinstance(tensorDict, dict)):
+            tensorDict = TensorDict(tensorDict)
+
+        # print(tensorDict.tensors)
 
         assert funcs.compareLists(self.tensorNames, list(tensorDict.tensors.keys())), "Error: input tensorDict {} does not compatible with FTN {}.".format(list(tensorDict.tensors.keys()), self.tensorNames)
 

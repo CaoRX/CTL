@@ -116,7 +116,8 @@ class SquareTRG:
         else:
             self.a = makeSquareTensor(a)
 
-        self.a.degreeOfFreedom = 1
+        if (self.a.degreeOfFreedom is None):
+            self.a.degreeOfFreedom = 1
         if (b is not None):
             if (isinstance(b, Tensor)):
                 self.b = b.copy()
@@ -132,7 +133,7 @@ class SquareTRG:
 
         self.aArchive = []
 
-        self.normalizeTensors()
+        self.appendToArchive()
 
     def appendToArchive(self):
         self.normalizeTensors()
@@ -195,9 +196,11 @@ class SquareTRG:
             accumulateLogZ += np.log(self.aNorms[i]) / dof
             # TNTrace = triangleTensorTrace(self.aArchive[i], self.bArchive[i])
             TNTrace = self.aArchive[i].trace(rows = ['u', 'l'], cols = ['d', 'r'])
+            # print(self.aNorms[i], TNTrace, dof)
             currLogZ = accumulateLogZ + np.log(TNTrace) / dof
             # contraction: 1A + 1B
             res.append(currLogZ)
+            # print(currLogZ)
 
         return np.array(res)
 
