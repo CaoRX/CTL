@@ -114,6 +114,8 @@ class FiniteTensorNetwork:
             self.optimalSeq = generateOptimalSequence(tensorList, bf = False, typicalDim = self.typicalDim)
 
         res = contractWithSequence(tensorList, seq = self.optimalSeq, inplace = True)
+        # print(res)
+        # print(tensorDict.tensors)
 
         for labelList, newLabel in self.outProductAfter:
             labelList = [self._dealOutProductLabel(label) for label in labelList]

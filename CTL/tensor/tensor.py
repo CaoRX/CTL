@@ -14,9 +14,11 @@ class Tensor(TensorBase):
 
     def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None):
         super().__init__(None)
+        # print('Tensor(shape = {}, labels = {}, data.shape = {})'.format(shape, labels, data.shape))
         assert (not ((data is None) and (shape is None))), "Error: TensorBase must be initialized with either data or shape."
         if (shape is None):
             shape = data.shape
+        # print(shape, data.shape)
 
         assert ((labels is None) or (len(shape) == len(labels))), "Error: the number of labels input is {}, while the dimension is {}.".format(len(labels), len(shape))
 
@@ -29,8 +31,9 @@ class Tensor(TensorBase):
         else:
             self.a = self.xp.copy(data)
         assert (self.totalSize == funcs.tupleProduct(self.a.shape)), 'Error: expect {} elements but {} gotten.'.format(self.totalSize, funcs.tupleProduct(self.a.shape))
-        if (self.a.shape != self.shape):
-            self.a = self.xp.reshape(self.a, self.shape)
+        if (self.a.shape != shape):
+            self.a = self.xp.reshape(self.a, shape)
+        # print('a shape = {}'.format(self.a.shape))
     
         if (labels is None):
             labels = self.generateLabels(len(shape))
@@ -235,6 +238,12 @@ class Tensor(TensorBase):
         mat = self.toMatrix(rows = rows, cols = cols)
         assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
         return self.xp.trace(mat)
+
+    def single(self):
+        # return the single value of this tensor
+        # only works if shape == (,)
+        assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        return self.a
 
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)

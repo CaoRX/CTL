@@ -47,7 +47,7 @@ class TestTriangleTRG(PackedTest):
         self.assertTrue(trg2.errors[-1] < errorUpBound)
         self.assertTrue(trg3.errors[-1] < errorUpBound)
 
-        print('trace = {}'.format(triangleTensorTrace(trg3.a, trg3.b).a))
+        # print('trace = {}'.format(triangleTensorTrace(trg3.a, trg3.b).single()))
 
         # print(trg.aNorms, trg.bNorms)
         # print('error = {}'.format(trg3.errors))
@@ -57,4 +57,16 @@ class TestTriangleTRG(PackedTest):
 
     def test_triangleTRGResults(self):
         # check the results of TRG to compare with PRL 99, 120601 (2007)
+        trg = TriangleTRG(alpha = 0.5, chi = 16)
+        for _ in range(20):
+            trg.iterate()
+
+        # print('logZ = {}'.format(trg.logZDensity()))
+
+        trg2 = TriangleTRG(alpha = 1.5, chi = 16)
+        for _ in range(20):
+            trg2.iterate()
+
+        # print('logZ = {}'.format(trg2.logZDensity()))
+
         pass
