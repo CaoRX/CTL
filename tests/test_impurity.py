@@ -28,21 +28,67 @@ class TestImpurity(PackedTest):
 
         beta = 1.0
 
-        print("checking HOTRG energy with impurity tensor")
+        print("checking Ising energy with impurity tensor, HOTRG")
         a = squareIsingTensor(beta = beta)
         hotrg = HOTRG(a, chiH = 16)
         for _ in range(20):
             hotrg.iterate()
 
-        mTensor = squareIsingTensor(beta = beta, obs = "E", symmetryBroken = 0)
-        impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
+        eTensor = squareIsingTensor(beta = beta, obs = "E", symmetryBroken = 0)
+        impurityTN = ImpurityTensorNetwork([a, eTensor], 2)
         impurityTN.setRG(hotrg) 
 
         for _ in range(20):
             impurityTN.iterate()
         E = impurityTN.measureObservables()
         E = [x[1] for x in E]
-        self.assertTrue(np.abs(4.0 - E[-1]) < 1e-2)
+        # print(E)
+        self.assertTrue(np.abs(-4.0 - E[-1]) < 1e-2)
+
+    def test_ImpurityMagnetMoment(self):
+
+        print("checking Ising magnet with impurity tensor, HOTRG, beta = 1.0")
+
+        beta = 1.0
+
+        symmetryBroken = 1e-5
+        a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
+        hotrg = HOTRG(a, chiH = 16)
+        for _ in range(20):
+            hotrg.iterate()
+        
+        mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
+        impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
+        impurityTN.setRG(hotrg) 
+
+        for _ in range(20):
+            impurityTN.iterate()
+        M = impurityTN.measureObservables()
+        M = [x[1] for x in M]
+        print('magnet = {}'.format(M[-1] * 0.5))
+        self.assertTrue(np.abs(2.0 - M[-1]) < 1e-2)
+
+        print("checking Ising magnet with impurity tensor, HOTRG, beta = 0.3")
+
+        beta = 0.3
+        symmetryBroken = 1e-5
+        a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
+        hotrg = HOTRG(a, chiH = 16)
+        for _ in range(20):
+            hotrg.iterate()
+        
+        mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
+        impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
+        impurityTN.setRG(hotrg) 
+
+        for _ in range(20):
+            impurityTN.iterate()
+        M = impurityTN.measureObservables()
+        M = [x[1] for x in M]
+        print('magnet = {}'.format(M[-1] * 0.5))
+        self.assertTrue(np.abs(M[-1]) < 1e-2)
+        # print(M)
+        # self.assertTrue(np.abs(4.0 - E[-1]) < 1e-2)
         
         # E = impurityTN.measureObservables()
         # print(E)

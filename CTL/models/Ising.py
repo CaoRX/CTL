@@ -48,9 +48,10 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
                 localE += 1.0
         
         # if (idxSum % 2 == 0):
-        data[idx] = squareTensorMeasure(idx, obs) * np.exp(beta * localE)
+        data[idx] = squareTensorMeasure(idx, obs) * np.exp(-beta * localE)
         data[idx] *= np.exp(symmetryBroken * squareTensorMeasure(idx, 'M'))
         # else:
         #     data[idx] = 0.0
+    # print(data)
 
     return Tensor(labels = ['u', 'l', 'd', 'r'], data = data, degreeOfFreedom = 2)
