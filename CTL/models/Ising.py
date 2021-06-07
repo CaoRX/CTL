@@ -55,3 +55,10 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
     # print(data)
 
     return Tensor(labels = ['u', 'l', 'd', 'r'], data = data, degreeOfFreedom = 2)
+
+def infiniteIsingExactM(T, V = 1.0):
+    criticalT = 2.0 / np.log(1.0 + np.sqrt(2))
+    if (T > criticalT):
+        return 0.0
+    else:
+        return (1.0 - np.sinh(2 * V / T) ** (-4)) ** (0.125)

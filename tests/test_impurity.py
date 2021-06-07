@@ -12,7 +12,7 @@ import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN, triangleTensorTrace
 from CTL.examples.HOTRG import HOTRG
 from CTL.examples.TRG import SquareTRG
-from CTL.models.Ising import squareIsingTensor
+from CTL.models.Ising import squareIsingTensor, infiniteIsingExactM
 from CTL.examples.impurity import ImpurityTensorNetwork
 
 import numpy as np 
@@ -49,7 +49,7 @@ class TestImpurity(PackedTest):
 
         print("checking Ising magnet with impurity tensor, HOTRG, beta = 1.0")
 
-        beta = 1.0
+        beta = 0.5
 
         symmetryBroken = 1e-5
         a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
@@ -65,8 +65,11 @@ class TestImpurity(PackedTest):
             impurityTN.iterate()
         M = impurityTN.measureObservables()
         M = [x[1] for x in M]
+        exactM = infiniteIsingExactM(1.0 / beta)
         print('magnet = {}'.format(M[-1] * 0.5))
-        self.assertTrue(np.abs(2.0 - M[-1]) < 1e-2)
+        print('exact magnet = {}'.format(exactM))
+
+        self.assertTrue(np.abs(exactM * 2.0 - M[-1]) < 1e-5)
 
         print("checking Ising magnet with impurity tensor, HOTRG, beta = 0.3")
 
@@ -85,7 +88,9 @@ class TestImpurity(PackedTest):
             impurityTN.iterate()
         M = impurityTN.measureObservables()
         M = [x[1] for x in M]
+        exactM = infiniteIsingExactM(1.0 / beta)
         print('magnet = {}'.format(M[-1] * 0.5))
+        print('exact magnet = {}'.format(exactM))
         self.assertTrue(np.abs(M[-1]) < 1e-2)
         # print(M)
         # self.assertTrue(np.abs(4.0 - E[-1]) < 1e-2)
