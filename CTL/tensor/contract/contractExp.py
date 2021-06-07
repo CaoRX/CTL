@@ -4,6 +4,7 @@ from CTL.tensor.tensor import Tensor
 
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.contract import contractTensors
+import CTL.funcs.funcs as funcs
 
 def makeTriangleTensorDict(a):
     return TensorDict({'u': a, 'l': a, 'r': a})
@@ -64,34 +65,38 @@ def triangleTensorTrace(a, b):
     res = contractTensors(tensorA, tensorB)
     return res
 
-def squareHorizontalContractFTN():
+def squareHorizontalContractFTN(d):
+    funcs.assertInSet(d, ['l', 'r'], 'horizontal direction')
+    opd = funcs.oppositeSingleDirection(d)
     FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
     
     FTN.addLink('ul', 'd', 'dl', 'u')
-    FTN.addLink('ul', 'r', 'ur', 'l')
+    FTN.addLink('ul', opd, 'ur', opd)
     FTN.addLink('ur', 'd', 'dr', 'u')
-    FTN.addLink('dl', 'r', 'dr', 'l')
+    FTN.addLink('dl', opd, 'dr', opd)
 
     FTN.addLink('ul', 'u', 'ur', 'u')
     FTN.addLink('dl', 'd', 'dr', 'd')
 
-    FTN.addPostOutProduct(['ul-l', 'dl-l'], 'l')
-    FTN.addPostOutProduct(['ur-r', 'dr-r'], 'r')
+    FTN.addPostOutProduct(['u' + d + '-' + d, 'd' + d + '-' + d], d)
+    FTN.addPostOutProduct(['u' + opd + '-' + d, 'd' + opd + '-' + d], opd)
     return FTN
 
-def squareVerticalContractFTN():
+def squareVerticalContractFTN(d):
+    funcs.assertInSet(d, ['u', 'd'], 'vertical direction')
+    opd = funcs.oppositeSingleDirection(d)
     FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
     
-    FTN.addLink('ul', 'd', 'dl', 'u')
+    FTN.addLink('ul', opd, 'dl', opd)
     FTN.addLink('ul', 'r', 'ur', 'l')
-    FTN.addLink('ur', 'd', 'dr', 'u')
+    FTN.addLink('ur', opd, 'dr', opd)
     FTN.addLink('dl', 'r', 'dr', 'l')
 
     FTN.addLink('ul', 'l', 'dl', 'l')
     FTN.addLink('ur', 'r', 'dr', 'r')
 
-    FTN.addPostOutProduct(['ul-u', 'ur-u'], 'u')
-    FTN.addPostOutProduct(['dl-d', 'dr-d'], 'd')
+    FTN.addPostOutProduct([d + 'l-' + d, d + 'r-' + d], d)
+    FTN.addPostOutProduct([opd + 'l-' + d, opd + 'r-' + d], opd)
     return FTN
 
 def HOTRGHorizontalContractFTN():
@@ -121,6 +126,9 @@ def HOTRGVerticalContractFTN():
     FTN.addPostNameChange('d', 'o', 'd')
 
     return FTN 
+
+def squareTrace(a):
+    return a.trace(rows = ['u', 'l'], cols = ['d', 'r'])
 
 
 

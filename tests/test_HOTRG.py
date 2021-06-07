@@ -27,6 +27,7 @@ class TestHOTRG(PackedTest):
 
         beta = 0.4
 
+        print("checking compatibility between TRG and HOTRG")
         a = squareIsingTensor(beta = beta)
         hotrg = HOTRG(a, chiH = 16)
         for _ in range(20):
@@ -40,9 +41,12 @@ class TestHOTRG(PackedTest):
 
         TRGLogZDensity = trg.logZDensity()
 
-        errorBound = 1e-4
+        errorBound = 1e-5
         self.assertTrue(np.abs(HOTRGLogZDensity[-1] - TRGLogZDensity[-1]) < errorBound)
-        # print(hotrg.logZDensity())
+
+        # print(hotrg.directChoices)
+
+        # print(TRGLogZDensity, HOTRGLogZDensity)
         # print(hotrg.errors)
         # print(trg.aArchive)
 
