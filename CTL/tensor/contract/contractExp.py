@@ -155,4 +155,10 @@ def EvenblyTNRQEnvFTN():
 
     return FTN
 
+def selfTrace(tensor):
+    a, b = tensor.copyN(2)
+    for leg1, leg2 in zip(a.legs, b.legs):
+        makeLink(leg1, leg2)
 
+    return contractTensors(a, b)
+    
