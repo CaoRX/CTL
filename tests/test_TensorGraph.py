@@ -2,7 +2,7 @@ from tests.packedTest import PackedTest
 from CTL.tensor.contract.tensorGraph import TensorGraph
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.optimalContract import generateOptimalSequence, makeTensorGraph, contractWithSequence
+from CTL.tensor.contract.optimalContract import makeTensorGraph, contractWithSequence
 import CTL.funcs.funcs as funcs
 import numpy as np
 

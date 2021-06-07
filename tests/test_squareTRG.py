@@ -4,12 +4,12 @@
 # sys.path.append(parentdir)
 
 from tests.packedTest import PackedTest
-from CTL.tensornetwork.tensordict import TensorDict 
-from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
-from CTL.tensor.tensor import Tensor
-from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor
+# from CTL.tensornetwork.tensordict import TensorDict 
+# from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
+# from CTL.tensor.tensor import Tensor
+# from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor
 import CTL.funcs.funcs as funcs
-from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN, triangleTensorTrace
+# from CTL.tensor.contract.contractExp import squareContractFTN, triangleContractFTN, triangleTensorTrace
 from CTL.examples.TRG import SquareTRG
 from CTL.models.Ising import squareIsingTensor
 
