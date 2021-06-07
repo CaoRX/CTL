@@ -220,11 +220,19 @@ def divideIntoKParts(n, k):
 			yield [i] + partAfter
 	return
 
+def myComb(n, p):
+	res = 1
+	for i in range(p):
+		res *= (n - i)
+	for i in range(p):
+		res = res // (i + 1)
+	return res
+
 def calculateDivisionTimes(division):
 	res = 1
 	n = sum(division)
 	for p in division:
-		res *= math.comb(n, p)
+		res *= myComb(n, p)
 		n -= p
 	return res
 
