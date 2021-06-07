@@ -63,6 +63,7 @@ class TestContractExamples(PackedTest):
             from ncon import ncon
         except:
             print("ncon is not installed. Skip the qEnv test.")
+            return 
         print('checking finite tensor network with qEnv network from Evenbly TNR')
         chiHI = 5
         chiVI = 6
