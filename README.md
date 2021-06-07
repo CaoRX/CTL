@@ -24,3 +24,5 @@ Run the example/example.py for a simple example
 python example/example.py
 ```
 
+simplestExample: A simple example about how to use FiniteTensorNetwork to create and contract own networks
+HOTRGImpurityExample: An example that calculates the magnet moment of square lattice Ising model, with impurity tensor techniques, in no more than 20 lines.

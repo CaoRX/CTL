@@ -14,6 +14,10 @@ from CTL.tensornetwork.tensordict import TensorDict
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractTensorList, generateOptimalSequence, contractWithSequence
 
+from CTL.models.Ising import squareIsingTensor, infiniteIsingExactM
+from CTL.examples.impurity import ImpurityTensorNetwork
+from CTL.examples.HOTRG import HOTRG
+
 import numpy as np  
 
 def simplestExample():
@@ -48,8 +52,32 @@ def simplestExample():
     # if you want to save time / space by contract in place(note that after this you cannot contract them again, since their bonds between have been broken):
     res = contractWithSequence([a, b, c], seq = optimalSeq, inplace = True)
     print(res)
+    print('')
 
     # for reusable inplace contraction(which is our goal), refer to the use of CTL.tensornetwork.tensornetwork.FiniteTensorNetwork
 
+def HOTRGImpurityExample(beta = 0.5):
+    print('test magnet for Ising model, beta = 0.5')
+    beta = 0.5
+
+    symmetryBroken = 1e-5
+    a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
+    hotrg = HOTRG(a, chiH = 16)
+    for _ in range(20):
+        hotrg.iterate()
+    
+    mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
+    impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
+    impurityTN.setRG(hotrg) 
+
+    for _ in range(20):
+        impurityTN.iterate()
+    M = impurityTN.measureObservables()
+    M = [x[1] for x in M]
+    exactM = infiniteIsingExactM(1.0 / beta)
+    print('magnet = {}'.format(M[-1] * 0.5))
+    print('exact magnet = {}'.format(exactM))
+
 if __name__ == '__main__':
     simplestExample()
+    HOTRGImpurityExample()
