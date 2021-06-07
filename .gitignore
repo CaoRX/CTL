@@ -153,3 +153,6 @@ pythontest.py
 
 # local tests
 localTest/
+
+# code examples from Evenbly et. al.
+EvenblyCodeExamples/

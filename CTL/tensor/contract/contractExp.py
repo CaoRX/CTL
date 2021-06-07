@@ -130,5 +130,29 @@ def HOTRGVerticalContractFTN():
 def squareTrace(a):
     return a.trace(rows = ['u', 'l'], cols = ['d', 'r'])
 
+def EvenblyTNRQEnvFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['uul', 'uur', 'udl', 'udr', 'dul', 'dur', 'ddl', 'ddr'])
+
+    FTN.addLink('udl', 'r', 'dul', 'r')
+    FTN.addLink('udl', 'd', 'dul', 'd')
+    FTN.addLink('udr', 'r', 'dur', 'r')
+    FTN.addLink('udr', 'd', 'dur', 'd')
+
+    FTN.addLink('udl', 'l', 'udr', 'l')
+    FTN.addLink('dul', 'l', 'dur', 'l')
+    FTN.addLink('uur', 'l', 'ddr', 'l')
+    FTN.addLink('uur', 'u', 'ddr', 'u')
+
+    FTN.addLink('udr', 'u', 'uur', 'd')
+    FTN.addLink('dur', 'u', 'ddr', 'd')
+    FTN.addLink('uul', 'r', 'uur', 'r')
+    FTN.addLink('uul', 'd', 'udl', 'u')
+    FTN.addLink('ddl', 'r', 'ddr', 'r')
+    FTN.addLink('ddl', 'd', 'dul', 'u')
+
+    FTN.addPostOutProduct(['uul-l', 'uul-u'], '1')
+    FTN.addPostOutProduct(['ddl-l', 'ddl-u'], '2')
+
+    return FTN
 
 
