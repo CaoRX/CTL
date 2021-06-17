@@ -55,6 +55,26 @@ def createCCFTN():
     # Cdub = ncon([C,C],[[-1,-2,1,2],[-3,-4,1,2]])
     # C = CTensor.toTensor(labels = ['ul', 'ur', 'dl', 'dr'])
 
+def createSCEnvSFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['CC', 'ql', 'qr', 'u', 'yl', 'yr'])
+
+    FTN.addLink('CC', 'dl', 'ql', 'o')
+    FTN.addLink('CC', 'dr', 'qr', 'o')
+
+    FTN.addLink('ql', 'h', 'yl', 'h')
+    FTN.addLink('qr', 'h', 'yr', 'h')
+
+    FTN.addLink('ql', 'v', 'u', 'or')
+    FTN.addLink('qr', 'v', 'u', 'ol')
+    FTN.addLink('yl', 'v', 'u', 'ir')
+    FTN.addLink('yr', 'v', 'u', 'il')
+
+    FTN.addPostNameChange('yl', 'o', 'dl')
+    FTN.addPostNameChange('yr', 'o', 'dr')
+    return FTN
+
+    # sCenvS = ncon([Cdub,qM,qM,uM,yM,yM],[[-1,-3,7,8],[1,3,7],[4,6,8],[3,6,2,5],[1,2,-2],[4,5,-4]])
+
 def doTNR(A, allchi, dtol = 1e-10, disiter = 2000, miniter = 100, dispon = True, convtol = 0.01):
     """
 ------------------------
@@ -105,7 +125,7 @@ Optional arguments:
 
     ###### iteration to determine 'sM' matrix, 'yM' isometry, 'uM' disentangler
     uM = np.kron(np.eye(chiVI,chiU),np.eye(chiVI,chiU)).reshape(chiVI,chiVI,chiU,chiU)
-    uTensor = Tensor(data = uM, labels = ['ol', 'or', 'il', 'ir']) # assume i direction is upward
+    uTensor = Tensor(data = uM, labels = ['ol', 'or', 'il', 'ir']) # assume i direction is upward, smaller is in
     yM = qM[:, :uM.shape[2], :chiS]
     yTensor = Tensor(data = yM, labels = ['h', 'v', 'o'])
     sM = np.eye(qM.shape[2],chiS)
@@ -120,8 +140,13 @@ Optional arguments:
     SP2exact = selfTrace(CTensor).single()
     SP2err = 1
 
+    sCenvSFTN = createSCEnvSFTN()
+
     for k in range(disiter + 1):
-        sCenvS = ncon([Cdub,qM,qM,uM,yM,yM],[[-1,-3,7,8],[1,3,7],[4,6,8],[3,6,2,5],[1,2,-2],[4,5,-4]])
+        sCenvSTensor = sCenvSFTN.contract({'CC': CdubTensor, 'ql': qTensor, 'qr': qTensor, 'u': uTensor, 'yl': yTensor, 'yr': yTensor})
+        # print(sCenvSTensor)
+        sCenvS = sCenvSTensor.toTensor(labels = ['ul', 'dl', 'ur', 'dr'])
+        # sCenvS = ncon([Cdub,qM,qM,uM,yM,yM],[[-1,-3,7,8],[1,3,7],[4,6,8],[3,6,2,5],[1,2,-2],[4,5,-4]])
         senvS = ncon([sCenvS,sM],[[-1,-2,1,2],[1,2]])
         senvD = ncon([sCenvD,sM @ (sM.T)],[[-1,-2,1,2],[1,2]])
 
@@ -156,11 +181,13 @@ Optional arguments:
             yenv = ncon([C,qM,qM,uM,yM,sM,sM,C],[[10,6,3,4],[-1,11,10],[5,8,6],
                          [11,8,-2,9],[5,9,7],[1,-3],[2,7],[1,2,3,4]])
             yM = TensorUpdateSVD(yenv,2)
+            yTensor = Tensor(data = yM, labels = ['h', 'v', 'o'])
 
             uenv = ncon([C,qM,qM,yM,yM,sM,sM,C],[[6,9,3,4],[5,-1,6],[8,-2,9],
                          [5,-3,7],[8,-4,10],[1,7],[2,10],[1,2,3,4]])
             uenv = uenv + uenv.transpose(1,0,3,2)
             uM = TensorUpdateSVD(uenv,2)
+            uTensor = Tensor(data = uM, labels = ['ol', 'or', 'il', 'ir'])
     
     Cmod = ncon([C,sM,sM,sM,sM],[[1,2,3,4],[1,-1],[2,-2],[3,-3],[4,-4]])
     Cnorm = ncon([Cmod,Cmod],[[1,2,3,4],[1,2,3,4]]) / ncon([C,C],[[1,2,3,4],[1,2,3,4]])

@@ -340,3 +340,5 @@ def identicalTensorDict(tensor, names):
 	for name in names:
 		res[name] = tensor
 	return res
+
+
