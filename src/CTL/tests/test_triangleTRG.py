@@ -1,4 +1,4 @@
-from tests.packedTest import PackedTest
+from CTL.tests.packedTest import PackedTest
 # from CTL.tensornetwork.tensordict import TensorDict 
 # from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 # from CTL.tensor.tensor import Tensor

@@ -3,6 +3,13 @@
 
 A tensor library for tensor network research
 
+## Installation
+
+```console
+git clone https://github.com/CaoRX/CTL && cd CTL
+pip install .
+```
+
 ## Simple usage
 ```python
 >>> from CTL.tensor.tensor import Tensor 
