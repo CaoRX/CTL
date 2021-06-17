@@ -117,7 +117,9 @@ class FiniteTensorNetwork:
 
         tensorList = [localTensors[name] for name in self.tensorNames]
         if (self.optimalSeq is None) or (self.realCost and self.changed):
+            print('getting optimal seq')
             self.optimalSeq = generateOptimalSequence(tensorList, bf = False, typicalDim = self.typicalDim)
+            print('optimal seq = {}'.format(self.optimalSeq))
 
         res = contractWithSequence(tensorList, seq = self.optimalSeq, inplace = True)
         # print(res)

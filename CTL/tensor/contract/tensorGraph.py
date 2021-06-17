@@ -179,6 +179,7 @@ class TensorGraph(UndirectedGraph):
             while (len(obj_list[-1]) == 0):
                 #print('mu = {}'.format(mu_new))
                 mu_next = mu_new
+                # print('mu = {}'.format(mu_new))
                 for c in range(2, n + 1):
                     for c1 in range(1, c // 2 + 1):
                         c2 = c - c1
@@ -220,9 +221,11 @@ class TensorGraph(UndirectedGraph):
                 #print('length of obj_list = {}'.format([len(x) for x in obj_list]))
             # print('minimum cost = {}'.format(self.optimalCost[full_s]))
             #print('result = {}'.format(self.contractRes[full_s]))
+            print('optimal cost = {}'.format(self.optimalCost[full_s]))
             return self.optimalSeq[full_s]
 
         if (bf):
             return bruteForce()
         else:
             return capping()
+            

@@ -72,7 +72,7 @@ class TestContractExamples(PackedTest):
             tensorArray.append(np.random.rand(chiHI, chiVI, chiHI, chiVI))
         qEnv = ncon(tensorArray,[[-1,-2,11,12],[7,8,11,9],[5,12,1,2],[5,9,3,4],
         [-3,-4,13,14],[7,8,13,10],[6,14,1,2],[6,10,3,4]]).reshape(chiHI*chiVI,chiHI*chiVI)
-        # print(qEnv)
+        # by Glen Evenbly (c) for www.tensors.net, (v1.1) - last modified 29/1/2019
 
         FTN = EvenblyTNRQEnvFTN()
         tensorDict = TensorDict()

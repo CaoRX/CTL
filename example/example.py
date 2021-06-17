@@ -57,8 +57,8 @@ def simplestExample():
     # for reusable inplace contraction(which is our goal), refer to the use of CTL.tensornetwork.tensornetwork.FiniteTensorNetwork
 
 def HOTRGImpurityExample(beta = 0.5):
-    print('test magnet for Ising model, beta = 0.5')
-    beta = 0.5
+    print('test magnet for Ising model, beta = {}'.format(beta))
+    # beta = 0.6
 
     symmetryBroken = 1e-5
     a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
@@ -80,4 +80,4 @@ def HOTRGImpurityExample(beta = 0.5):
 
 if __name__ == '__main__':
     simplestExample()
-    HOTRGImpurityExample()
+    HOTRGImpurityExample(beta = 0.6)
