@@ -2,7 +2,7 @@ import unittest
 from CTL.tensorbase.tensorbase import TensorBase
 from CTL.tensor.tensor import Tensor
 import numpy as np
-from tests.packedTest import PackedTest
+from CTL.tests.packedTest import PackedTest
 
 class TestTensorBase(PackedTest):
 

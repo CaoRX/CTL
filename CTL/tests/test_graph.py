@@ -1,5 +1,5 @@
 import unittest 
-from tests.packedTest import PackedTest
+from CTL.tests.packedTest import PackedTest
 
 from CTL.funcs.graph import Graph, UndirectedGraph
 

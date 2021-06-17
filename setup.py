@@ -7,6 +7,7 @@ setup(
     author_email='akks.crx@gmail.com',
     packages=['CTL', 'CTL.tests'],
     scripts=['bin/example.py','bin/hotrg-gilt-example.py'],
+    url='http://pypi.python.org/pypi/CTL/',
     license='LICENSE.txt',
     description='Tensor Network Library.',
     long_description=open('README.md').read(),

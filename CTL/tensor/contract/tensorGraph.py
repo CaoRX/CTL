@@ -221,7 +221,7 @@ class TensorGraph(UndirectedGraph):
                 #print('length of obj_list = {}'.format([len(x) for x in obj_list]))
             # print('minimum cost = {}'.format(self.optimalCost[full_s]))
             #print('result = {}'.format(self.contractRes[full_s]))
-            print('optimal cost = {}'.format(self.optimalCost[full_s]))
+            # print('optimal cost = {}'.format(self.optimalCost[full_s]))
             return self.optimalSeq[full_s]
 
         if (bf):

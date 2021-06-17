@@ -2,7 +2,7 @@ import unittest
 
 import CTL.funcs.funcs as funcs 
 from CTL.funcs.stringSet import StringSet
-from tests.packedTest import PackedTest
+from CTL.tests.packedTest import PackedTest
 
 class TestTupleProduct(PackedTest):
 
