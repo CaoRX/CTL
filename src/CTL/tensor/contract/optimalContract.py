@@ -64,7 +64,7 @@ def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
 
-def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False):
+def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
     if (seq is None):
         seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
     totalCost = 0.0
@@ -77,12 +77,12 @@ def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, in
         cost, costLevel = contractCost(tensorList[s], tensorList[t])
         totalCost += cost 
         totalLevel = max(totalLevel, costLevel)
-        tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t])
+        tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
 
     return tensorList[0]
 
-def contractTensorList(tensorList):
-    return contractWithSequence(tensorList)
+def contractTensorList(tensorList, outProductWarning = True):
+    return contractWithSequence(tensorList, outProductWarning = outProductWarning)
 
 
 

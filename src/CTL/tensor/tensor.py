@@ -114,6 +114,9 @@ class Tensor(TensorBase):
         assert (res is not None), "Error: {} not in tensor labels {}.".format(label, self.labels)
         
         return res
+
+    def toVector(self):
+        return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
         # print(rows, cols)
