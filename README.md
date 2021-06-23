@@ -28,7 +28,7 @@ Tensor(shape = (3, 3), labels = ['up', 'down'])
 
 Run the example/example.py for a simple example
 ```console
-python example/example.py
+python bin/example.py
 ```
 
 For the functions in this example file:
