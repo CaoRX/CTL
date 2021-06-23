@@ -24,10 +24,14 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 		if (outProductWarning):
 			warnings.warn('{} and {} do not share same label, do out product'.format(ta, tb), RuntimeWarning)
 
-		aMatrix = ta.toMatrix(rows = ta.legs, cols = [])
-		bMatrix = tb.toMatrix(rows = [], cols = tb.legs)
+		# aMatrix = ta.toMatrix(rows = ta.legs, cols = [])
+		# bMatrix = tb.toMatrix(rows = [], cols = tb.legs)
+		# data = np.matmul(aMatrix, bMatrix)
 
-		data = np.matmul(aMatrix, bMatrix)
+		aVector = ta.toVector()
+		bVector = tb.toVector()
+		data = np.outer(aVector, bVector)
+
 		labels = ta.labels + tb.labels 
 		shape = ta.shape + tb.shape
 		data = np.reshape(data, shape)
