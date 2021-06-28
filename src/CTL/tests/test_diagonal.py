@@ -37,19 +37,20 @@ class TestDiagonalTensor(PackedTest):
         self.assertEqual(diagonalTensor.trace(), 3.0)
 
     def test_contraction(self):
-        a = DiagonalTensor(shape = (2, 2, 2), labels = ['a', 'b', 'c'])
+        a = DiagonalTensor(shape = (2, 2), labels = ['a', 'b'])
         b = Tensor(shape = (2, ), labels = ['x'])
         c = Tensor(shape = (2, ), labels = ['y'])
 
         makeLink('a', 'x', a, b)
         makeLink('b', 'y', a, c)
-        seq = generateOptimalSequence([a, b, c], typicalDim = None)
+        seq = generateOptimalSequence([a, b, c], typicalDim = 10)
         # print('optimal sequence = {}'.format(seq))
         prod, cost = contractAndCostWithSequence([a, b, c], seq = seq)
+        # print('cost = {}'.format(cost))
         # prod = contractTensorList([a, b, c], outProductWarning = False)
-        self.assertTrue(funcs.compareLists(prod.labels, ['c']))
+        self.assertTrue(funcs.compareLists(prod.labels, []))
         self.assertListEqual(seq, [(0, 2), (1, 0)])
-        self.assertEqual(cost, 6.0)
+        self.assertEqual(cost, 4.0)
 
         # if we use Tensor instead of DiagonalTensor for a
         # then the cost should be 12.0, and the order should be (1, 2), (0, 1)

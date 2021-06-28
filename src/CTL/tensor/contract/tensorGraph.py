@@ -71,16 +71,15 @@ class TensorGraph(UndirectedGraph):
                 # both diagonal, only need to product
                 return shapeA[0]
             
-            if (diagonalA):
-                return funcs.tupleProduct(shapeB)
-            elif (diagonalB):
-                return funcs.tupleProduct(shapeA)
+            diagonal = diagonalA or diagonalB
 
             clb = set(funcs.commonElements(edgesA, edgesB))
             res = 1
             for l, s in zip(edgesA + edgesB, shapeA + shapeB):
                 if (l in clb):
-                    res *= np.sqrt(s)
+                    if (not diagonal):
+                        res *= np.sqrt(s)
+                    # if single diagonal: then the cost should be output shape
                 else:
                     res *= s 
 
@@ -92,13 +91,12 @@ class TensorGraph(UndirectedGraph):
 
             if (diagonalA and diagonalB):
                 costOrder = 1
-            elif (diagonalA):
-                costOrder = len(edgesB)
-            elif (diagonalB):
-                costOrder = len(edgesA)
             else:
                 clb = set(funcs.commonElements(edgesA, edgesB))
-                costOrder = len(edgesA) + len(edgesB) - len(clb)
+                if (diagonalA or diagonalB):
+                    costOrder = len(edgesA) + len(edgesB) - 2 * len(clb)
+                else:
+                    costOrder = len(edgesA) + len(edgesB) - len(clb)
             return typicalDim ** costOrder
 
         def calculateContractRes(tsA, tsB):

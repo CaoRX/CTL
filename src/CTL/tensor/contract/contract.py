@@ -14,6 +14,8 @@ def shareBonds(ta, tb):
 	return bonds
 
 # how to contract diagonal tensors?
+# 0. if both diagonal: then just do product over same index, and combine legs
+# 1. if one is diagonal: then we take all the bonds linked to it, and only take those 
 
 def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 	# contract between bonds(if not, then find the shared legs)

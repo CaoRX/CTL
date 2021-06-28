@@ -33,15 +33,17 @@ def contractCost(ta, tb):
     diagonalA, diagonalB = ta.diagonalFlag, tb.diagonalFlag 
     if (diagonalA and diagonalB):
         return ta.bondDimension, 1
-    elif (diagonalA):
-        return tb.totalSize, tb.dim
-    elif (diagonalB):
-        return ta.totalSize, ta.dim 
+
+    diagonal = diagonalA or diagonalB
     
     bonds = shareBonds(ta, tb)
     intersectionShape = tuple([bond.legs[0].dim for bond in bonds])
-    cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
-    costLevel = len(ta.shape) + len(tb.shape) - len(intersectionShape)
+    if (not diagonal):
+        cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
+        costLevel = len(ta.shape) + len(tb.shape) - len(intersectionShape)
+    else:
+        cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // (funcs.tupleProduct(intersectionShape) ** 2)
+        costLevel = len(ta.shape) + len(tb.shape) - 2 * len(intersectionShape)
     return cost, costLevel
 
 def makeTensorGraph(tensorList):
