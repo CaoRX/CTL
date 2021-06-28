@@ -76,7 +76,7 @@ class DiagonalTensor(Tensor):
                 dim = len(data.shape)
                 l = data.shape[0]
 
-        print('l = {}, dim = {}'.format(l, dim))
+        # print('l = {}, dim = {}'.format(l, dim))
             
         shape = tuple([l] * dim) 
         if (data is None):
@@ -160,6 +160,28 @@ class DiagonalTensor(Tensor):
 
     def bondDimension(self):
         return self._length
+
+    def moveLegsToFront(self, legs):
+        moveFrom = []
+        moveTo = []
+        currIdx = 0
+        movedLegs = legs
+        for currLeg in legs:
+            for i, leg in enumerate(self.legs):
+                if (leg == currLeg):
+                    moveFrom.append(i)
+                    moveTo.append(currIdx)
+                    currIdx += 1
+                    break
+
+        for leg in movedLegs:
+            self.legs.remove(leg)
+        
+        # print(moveFrom, moveTo)
+        # print(labelList)
+        # print(self.labels)
+        self.legs = movedLegs + self.legs 
+        # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
         funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector", deprecateMessage = "This will return a vector corresponding to the diagonal of tensor instead of the complete tensor.")

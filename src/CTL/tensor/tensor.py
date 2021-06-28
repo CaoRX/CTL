@@ -126,6 +126,28 @@ class Tensor(TensorBase):
         
         return res
 
+    def moveLegsToFront(self, legs):
+        moveFrom = []
+        moveTo = []
+        currIdx = 0
+        movedLegs = legs
+        for currLeg in legs:
+            for i, leg in enumerate(self.legs):
+                if (leg == currLeg):
+                    moveFrom.append(i)
+                    moveTo.append(currIdx)
+                    currIdx += 1
+                    break
+
+        for leg in movedLegs:
+            self.legs.remove(leg)
+        
+        # print(moveFrom, moveTo)
+        # print(labelList)
+        # print(self.labels)
+        self.legs = movedLegs + self.legs 
+        self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+
     def toVector(self):
         return self.xp.copy(self.xp.ravel(self.a))
     

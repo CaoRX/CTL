@@ -12,6 +12,7 @@ def copyTensorList(tensorList):
         resTensorList.append(tensor.copy())
         tensorMap[tensor] = resTensorList[-1]
     # use the objects themselves as key, so no worry about double name
+    # print(tensorMap)
     
     addedBonds = set()
     for tensor in tensorList:
@@ -32,7 +33,7 @@ def copyTensorList(tensorList):
 def contractCost(ta, tb):
     diagonalA, diagonalB = ta.diagonalFlag, tb.diagonalFlag 
     if (diagonalA and diagonalB):
-        return ta.bondDimension, 1
+        return ta.bondDimension(), 1
 
     diagonal = diagonalA or diagonalB
     

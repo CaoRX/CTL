@@ -55,3 +55,40 @@ class TestDiagonalTensor(PackedTest):
         # if we use Tensor instead of DiagonalTensor for a
         # then the cost should be 12.0, and the order should be (1, 2), (0, 1)
         # the optimal cost of diagonal tensors can be achieved if we use diagonal nature for contraction
+
+        a = DiagonalTensor(shape = (2, 2, 2), labels = ['a', 'b', 'c'])
+        b = DiagonalTensor(shape = (2, 2), labels = ['x', 'y'])
+        makeLink('a', 'x', a, b)
+        prod, cost = contractAndCostWithSequence([a, b])
+        self.assertEqual(cost, 2)
+        self.assertTrue(funcs.compareLists(prod.labels, ['b', 'c', 'y']))
+
+        aData = np.array([[[1, 0], [0, 0]], [[0, 0], [0, 3]]])
+        bData = np.random.random_sample(2)
+        cData = np.random.random_sample(2)
+
+        a = DiagonalTensor(data = aData, labels = ['a', 'b', 'c'])
+        b = Tensor(data = bData, labels = ['x'])
+        c = Tensor(data = cData, labels = ['y'])
+
+        makeLink('a', 'x', a, b)
+        makeLink('b', 'y', a, c)
+
+        res1, cost1 = contractAndCostWithSequence([a, b, c])
+
+        a = Tensor(data = aData, labels = ['a', 'b', 'c'])
+        b = Tensor(data = bData, labels = ['x'])
+        c = Tensor(data = cData, labels = ['y'])
+
+        makeLink('a', 'x', a, b)
+        makeLink('b', 'y', a, c)
+
+        res2, cost2 = contractAndCostWithSequence([a, b, c])
+        self.assertListEqual(list(res1.a), list(res2.a))
+
+        # print(cost1, cost2)
+
+        # print(res1.a, res2.a)
+        
+
+
