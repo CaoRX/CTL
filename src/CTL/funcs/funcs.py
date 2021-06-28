@@ -341,4 +341,23 @@ def identicalTensorDict(tensor, names):
 		res[name] = tensor
 	return res
 
+def checkAllEqual(tp):
+	if (len(tp) == 0):
+		return True
+	for x in list(tp):
+		if (x != tp[0]):
+			return False
+	return True
 
+def errorMessage(err, location = None):
+	if (location is None):
+		return "Error: {}".format(err)
+	else:
+		return "Error in {}: {}".format(location, err)
+
+def diagonalMatrix(a, dim):
+	l = a.shape[0]
+	res = np.zeros(tuple([l] * dim))
+	for i in range(l):
+		res[tuple([i] * dim)] = a[i]
+	return res

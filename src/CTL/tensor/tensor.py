@@ -12,8 +12,19 @@ class Tensor(TensorBase):
 
     # bondNameSet = set([])
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None):
+    # how to implement diagonal tensor?
+    # we want: 1. used just as the Tensor, and 
+    # 2. with lower cost in contraction
+    # solution 1. another DiagonalTensor class, implementing all existing functions (hard to append new functions)
+    # solution 2. a class inherit Tensor, and rewrite the methods if needed
+
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
         super().__init__(None)
+        if (diagonalFlag):
+            self.diagonalFlag = True 
+            return 
+        else:
+            self.diagonalFlag = False
         # print('Tensor(shape = {}, labels = {}, data.shape = {})'.format(shape, labels, data.shape))
         assert (not ((data is None) and (shape is None))), "Error: TensorBase must be initialized with either data or shape."
         if (shape is None):

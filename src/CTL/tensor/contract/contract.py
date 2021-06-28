@@ -13,6 +13,8 @@ def shareBonds(ta, tb):
 				leg.bond.legs = funcs.tupleSwap(leg.bond.legs)
 	return bonds
 
+# how to contract diagonal tensors?
+
 def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 	# contract between bonds(if not, then find the shared legs)
 	# this requires that: tensor contraction happens in-place
