@@ -99,6 +99,7 @@ class DiagonalTensor(Tensor):
         data, labels, shape = self.deduceData(data, labels, shape)
 
         self.a = self.xp.copy(data)
+        self.totalSize = funcs.tupleProduct(shape)
 
         # functions of Tensor from here
 
@@ -161,14 +162,14 @@ class DiagonalTensor(Tensor):
         return self._length
 
     def toVector(self):
-        funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector")
+        funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector", deprecateMessage = "This will return a vector corresponding to the diagonal of tensor instead of the complete tensor.")
         return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs
-        funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toMatrix")
+        funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toMatrix", deprecateMessage = "Diagonal tensors should be used in a better way for linear algebra calculation rather than be made into a matrix.")
         assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
         if (rows is not None) and (isinstance(rows[0], str)):
             rows = [self.getLeg(label) for label in rows]

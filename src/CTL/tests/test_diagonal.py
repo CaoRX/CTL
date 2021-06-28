@@ -3,8 +3,9 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.optimalContract import contractTensorList
+from CTL.tensor.contract.optimalContract import contractTensorList, generateOptimalSequence
 from CTL.tensor.contract.contract import contractTensors
+from CTL.tensor.contract.optimalContract import makeTensorGraph, contractAndCostWithSequence
 import CTL.funcs.funcs as funcs
 
 import numpy as np 
@@ -42,5 +43,14 @@ class TestDiagonalTensor(PackedTest):
 
         makeLink('a', 'x', a, b)
         makeLink('b', 'y', a, c)
-        prod = contractTensorList([a, b, c], outProductWarning = False)
+        seq = generateOptimalSequence([a, b, c], typicalDim = None)
+        # print('optimal sequence = {}'.format(seq))
+        prod, cost = contractAndCostWithSequence([a, b, c], seq = seq)
+        # prod = contractTensorList([a, b, c], outProductWarning = False)
         self.assertTrue(funcs.compareLists(prod.labels, ['c']))
+        self.assertListEqual(seq, [(0, 2), (1, 0)])
+        self.assertEqual(cost, 6.0)
+
+        # if we use Tensor instead of DiagonalTensor for a
+        # then the cost should be 12.0, and the order should be (1, 2), (0, 1)
+        # the optimal cost of diagonal tensors can be achieved if we use diagonal nature for contraction

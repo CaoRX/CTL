@@ -3,9 +3,13 @@ import CTL.funcs.funcs as funcs
 import numpy as np
 
 class TensorGraph(UndirectedGraph):
-    def __init__(self, n):
+    def __init__(self, n, diagonalFlags = None):
         super().__init__(n)
         self.indexed = False
+        if (diagonalFlags is None):
+            self.diagonalFlags = [False] * n
+        else:
+            self.diagonalFlags = diagonalFlags
 
     def addFreeEdge(self, idx, weight = None):
         self.v[idx].addEdge(None, weight = weight)
@@ -53,11 +57,24 @@ class TensorGraph(UndirectedGraph):
         for i in range(n):
             self.optimalCost[(1 << i)] = 0
             self.optimalSeq[(1 << i)] = []
-            self.contractRes[(1 << i)] = (edges[i], shapes[i])
+            self.contractRes[(1 << i)] = (edges[i], shapes[i], self.diagonalFlags[i])
 
         def getCost(tsA, tsB):
-            edgesA, shapeA = self.contractRes[tsA]
-            edgesB, shapeB = self.contractRes[tsB]
+            # to deal with diagonal tensors:
+            # what if we contract two diagonal tensors?
+            # then it will be a new diagonal tensor with new index set
+            # this means, we need to add a "diagonalFlag" to contractRes
+            edgesA, shapeA, diagonalA = self.contractRes[tsA]
+            edgesB, shapeB, diagonalB = self.contractRes[tsB]
+
+            if (diagonalA and diagonalB):
+                # both diagonal, only need to product
+                return shapeA[0]
+            
+            if (diagonalA):
+                return funcs.tupleProduct(shapeB)
+            elif (diagonalB):
+                return funcs.tupleProduct(shapeA)
 
             clb = set(funcs.commonElements(edgesA, edgesB))
             res = 1
@@ -70,16 +87,23 @@ class TensorGraph(UndirectedGraph):
             return int(res + 0.5)
 
         def getCostTypical(tsA, tsB):
-            edgesA, _ = self.contractRes[tsA]
-            edgesB, _ = self.contractRes[tsB]
-            clb = set(funcs.commonElements(edgesA, edgesB))
+            edgesA, _, diagonalA = self.contractRes[tsA]
+            edgesB, _, diagonalB = self.contractRes[tsB]
 
-            costOrder = len(edgesA) + len(edgesB) - len(clb)
+            if (diagonalA and diagonalB):
+                costOrder = 1
+            elif (diagonalA):
+                costOrder = len(edgesB)
+            elif (diagonalB):
+                costOrder = len(edgesA)
+            else:
+                clb = set(funcs.commonElements(edgesA, edgesB))
+                costOrder = len(edgesA) + len(edgesB) - len(clb)
             return typicalDim ** costOrder
 
         def calculateContractRes(tsA, tsB):
-            edgesA, shapeA = self.contractRes[tsA]
-            edgesB, shapeB = self.contractRes[tsB]
+            edgesA, shapeA, diagonalA = self.contractRes[tsA]
+            edgesB, shapeB, diagonalB = self.contractRes[tsB]
 
             edges = funcs.listSymmetricDifference(edgesA, edgesB)
             shape = [None] * len(edges)
@@ -91,7 +115,7 @@ class TensorGraph(UndirectedGraph):
             for l, s in zip(edgesA + edgesB, shapeA + shapeB):
                 if (l in edgeIndex):
                     shape[edgeIndex[l]] = s
-            return (edges, shape)
+            return (edges, shape, diagonalA and diagonalB)
 
         costFunc = None
         if (typicalDim is None):

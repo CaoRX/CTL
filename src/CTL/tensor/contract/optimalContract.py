@@ -30,6 +30,14 @@ def copyTensorList(tensorList):
     return resTensorList 
 
 def contractCost(ta, tb):
+    diagonalA, diagonalB = ta.diagonalFlag, tb.diagonalFlag 
+    if (diagonalA and diagonalB):
+        return ta.bondDimension, 1
+    elif (diagonalA):
+        return tb.totalSize, tb.dim
+    elif (diagonalB):
+        return ta.totalSize, ta.dim 
+    
     bonds = shareBonds(ta, tb)
     intersectionShape = tuple([bond.legs[0].dim for bond in bonds])
     cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
@@ -41,7 +49,9 @@ def makeTensorGraph(tensorList):
     # UndirectedGraph is used
     # addFreeEdge for empty legs
     n = len(tensorList)
-    g = TensorGraph(n)
+    
+    diagonalFlags = [tensor.diagonalFlag for tensor in tensorList]
+    g = TensorGraph(n = n, diagonalFlags = diagonalFlags)
     bondSet = set()
     idxDict = dict()
     for i in range(n):
@@ -64,7 +74,7 @@ def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
 
-def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
+def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
     if (seq is None):
         seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
     totalCost = 0.0
@@ -79,7 +89,11 @@ def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, in
         totalLevel = max(totalLevel, costLevel)
         tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
 
-    return tensorList[0]
+    return tensorList[0], totalCost
+
+def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
+    res, _ = contractAndCostWithSequence(tensorList = tensorList, seq = seq, bf = bf, typicalDim = typicalDim, inplace = inplace, outProductWarning = outProductWarning)
+    return res
 
 def contractTensorList(tensorList, outProductWarning = True):
     return contractWithSequence(tensorList, outProductWarning = outProductWarning)

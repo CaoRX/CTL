@@ -3,17 +3,20 @@ import numpy as np
 import string
 import random
 import math
+import warnings
 from copy import deepcopy
 
-def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None):
+def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None, deprecateMessage = None):
 	if (fileName is None):
 		fileNameInfo = ''
 	else:
 		fileNameInfo = 'in {} '.format(fileName)
 	if (newFuncName is None):
-		print('Warning: {} {}has been deprecated. This function should not be used anywhere.'.format(funcName, fileNameInfo))
+		if (deprecateMessage is None):
+			deprecateMessage = "This function should not be used anywhere."
+		warnings.warn('Warning: {} {}has been deprecated. {}'.format(funcName, fileNameInfo, deprecateMessage))
 	else:
-		print('Warning: {} {}has been deprecated. Please use {} instead.'.format(funcName, fileNameInfo, newFuncName))
+		warnings.warn('Warning: {} {}has been deprecated. Please use {} instead.'.format(funcName, fileNameInfo, newFuncName))
 
 def listDifference(total, used):
 	ret = list(total)
