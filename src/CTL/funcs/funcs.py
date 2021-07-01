@@ -375,4 +375,12 @@ def indexTupleToStr(idx):
 			raise ValueError(errorMessage('indexTupleToStr cannot transfer index >= 26 for index {}.'.format(idx)))
 	
 	return ''.join([labelList[x] for x in idx])
+
+def ndEye(n, l):
+	res = np.zeros(tuple([l] * n))
+	if (n == 1):
+		res[0] = 1.0
+	else:
+		res[np.diag_indices(l, n)] = 1
+	return res
 	

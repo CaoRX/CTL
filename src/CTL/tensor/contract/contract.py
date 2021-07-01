@@ -45,7 +45,7 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		if (ta.diagonalFlag and tb.diagonalFlag):
 			return DiagonalTensor(labels = labels, data = ta.a * tb.a, shape = shape, legs = legs)
 		else:
-			return Tensor(labels = labels, data = np.outer(ta.a, tb.a), shape = shape, legs = legs)
+			return Tensor(labels = labels, data = np.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
 
 		# aVector = ta.toVector()
 		# bVector = tb.toVector()
@@ -84,14 +84,30 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		remADim = len(taRemainLegs)
 
 		einsumStr = '...' + ('j' * dim) + '->...j'
+		# print('ta.a = {}, tb.a = {}'.format(ta.a, tb.a))
 		data = np.einsum(einsumStr, tb.a) * ta.a
+		# print('einsum str = {}'.format(einsumStr))
+		# print('einsum b = {}'.format(np.einsum(einsumStr, tb.a)))
+		# print('data = {}'.format(data))
+
 		if (remADim == 0):
 			newData = np.sum(data, axis = -1)
 		else:
-			newData = np.outer(np.ones(tuple([l] * (remADim - 1))), data)
+			# print('remADim = {}, data.shape = {}'.format(remADim, data.shape))
+			newData = np.zeros(data.shape + (data.shape[-1],) * (remADim - 1), dtype = data.dtype)
+			# print('newData.shape = {}'.format(newData.shape))
+			
+			einsumDiagStr = '...' + ('j' * (remADim)) + '->...j'
+			np.einsum(einsumDiagStr, newData)[...] = data
+			# newData = np.einsum(eimsumDiagStr, data)
+			# print(funcs.ndEye(remADim - 1, l))
+			# newData = np.multiply.outer(data, funcs.ndEye(remADim - 1, l))
+			# print('newData = {}'.format(newData))
 		# print('newData = {}'.format(newData))
 		# print('shape = {}, data = {}, legs = {}'.format(newShape, newData, newLegs))
 
+		newLegs = tbRemainLegs + taRemainLegs 
+		newShape = tuple([leg.dim for leg in newLegs])
 		return Tensor(shape = newShape, data = newData, legs = newLegs)
 
 	dataA = ta.toMatrix(rows = None, cols = contractALegs)
