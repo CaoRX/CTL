@@ -20,13 +20,13 @@ def shareBonds(ta, tb):
 # for each output element: we can decide it in O(1) time
 # so the complexity is just the shape of output tensor
 
-def contractTensors(ta, tb, bonds = None, outProductWarning = True):
+def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 	# contract between bonds(if not, then find the shared legs)
 	# this requires that: tensor contraction happens in-place
 	# after we prepare some tensor, we must create tensors to make links
 
 	if (not ta.diagonalFlag) and (tb.diagonalFlag):
-		return contractTensors(tb, ta, bonds = bonds, outProductWarning = outProductWarning)
+		return contractTwoTensors(tb, ta, bonds = bonds, outProductWarning = outProductWarning)
 	if (bonds is None):
 		bonds = shareBonds(ta, tb)
 	
@@ -71,19 +71,25 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 		# 1. calculate the core with broadcast
 		# 2. calculate the real tensor with np.outer
 		# how to broadcast?
-		tb.moveLegsToFront(contractBLegs)
+
+		# we need to broadcast from the end(instead of the first dimension)
+		# so we need to make the contract legs to the end
+		# then we need to take diagonal from these dimensions
+
+		tb.moveLegsToFront(tbRemainLegs)
 		dim = len(contractBLegs)
 		l = contractBLegs[0].dim
-
-		# print('shape a = {}, shape b = {}'.format(ta.shape, tb.shape))
+		# print('contract A legs: {}'.format(len(contractALegs)))
+		# print('contract B legs: {}'.format(len(contractBLegs)))
 		remADim = len(taRemainLegs)
-		# print('remADim = {}'.format(remADim))
-		data = tb.a[np.diag_indices(l, dim)] * ta.a 
-		# print('data = {}'.format(data))
+
+		einsumStr = '...' + ('j' * dim) + '->...j'
+		data = np.einsum(einsumStr, tb.a) * ta.a
 		if (remADim == 0):
-			newData = np.sum(data, axis = 0)
+			newData = np.sum(data, axis = -1)
 		else:
 			newData = np.outer(np.ones(tuple([l] * (remADim - 1))), data)
+		# print('newData = {}'.format(newData))
 		# print('shape = {}, data = {}, legs = {}'.format(newShape, newData, newLegs))
 
 		return Tensor(shape = newShape, data = newData, legs = newLegs)
@@ -96,7 +102,7 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 
 	return Tensor(shape = newShape, data = newData, legs = newLegs)
 
-# def contractTensorsByLabel(ta, tb, labels): # not in-place
+# def contractTwoTensorsByLabel(ta, tb, labels): # not in-place
 # 	labelA, labelB = labels
 # 	if (isinstance(labelA, str)):
 # 		label_a = [labelA]
@@ -109,7 +115,7 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 # 	bCopy = tb.copy()
 
 # 	bond_names = makeLink(aCopy, bCopy, (label_a, label_b))
-# 	res = contractTensors(ta_cp, tb_cp, cr = bond_names)
+# 	res = contractTwoTensors(ta_cp, tb_cp, cr = bond_names)
 # 	return res.copy()
 
 # def self_trace_square(tensor_tuple):
@@ -128,9 +134,9 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 # 	ld.renameLabel('d', 'd2')
 # 	ld.renameLabel('l', 'l1')
 
-# 	l = contractTensors(lu, ld)
-# 	r = contractTensors(ru, rd)
-# 	t = contractTensors(l, r)
+# 	l = contractTwoTensors(lu, ld)
+# 	r = contractTwoTensors(ru, rd)
+# 	t = contractTwoTensors(l, r)
 # 	t.outerProduct(['u1', 'u2'], 'u')
 # 	t.outerProduct(['d2', 'd1'], 'd')
 # 	t.outerProduct(['l1', 'l2'], 'l')
@@ -175,9 +181,9 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 # 	ald.renameLabel('d', 'd2')
 # 	ald.renameLabel('l', 'l1')
 
-# 	l = contractTensors(alu, ald)
-# 	r = contractTensors(aru, ard)
-# 	t = contractTensors(l, r)
+# 	l = contractTwoTensors(alu, ald)
+# 	r = contractTwoTensors(aru, ard)
+# 	t = contractTwoTensors(l, r)
 # 	t.outerProduct(['u1', 'u2'], 'u')
 # 	t.outerProduct(['d1', 'd2'], 'd')
 # 	t.outerProduct(['l1', 'l2'], 'l')
@@ -201,7 +207,7 @@ def contractTensors(ta, tb, bonds = None, outProductWarning = True):
 # 	makeLink(alu, aru, ('l', 'r'))
 # 	makeLink(ald, ard, ('l', 'r'))
 
-# 	l = contractTensors(alu, ald)
-# 	r = contractTensors(aru, ard)
-# 	t = contractTensors(l, r)
+# 	l = contractTwoTensors(alu, ald)
+# 	r = contractTwoTensors(aru, ard)
+# 	t = contractTwoTensors(l, r)
 # 	return t.a

@@ -3,8 +3,8 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.optimalContract import contractTensorList, generateOptimalSequence
-from CTL.tensor.contract.contract import contractTensors
+from CTL.tensor.contract.optimalContract import contractTensorList, generateOptimalSequence, contractCost
+from CTL.tensor.contract.contract import contractTwoTensors
 from CTL.tensor.contract.optimalContract import makeTensorGraph, contractAndCostWithSequence
 import CTL.funcs.funcs as funcs
 
@@ -37,6 +37,7 @@ class TestDiagonalTensor(PackedTest):
         self.assertEqual(diagonalTensor.trace(), 3.0)
 
     def test_contraction(self):
+        print('Begin test diagonalTensor contraction.')
         a = DiagonalTensor(shape = (2, 2), labels = ['a', 'b'])
         b = Tensor(shape = (2, ), labels = ['x'])
         c = Tensor(shape = (2, ), labels = ['y'])
@@ -75,6 +76,7 @@ class TestDiagonalTensor(PackedTest):
         makeLink('b', 'y', a, c)
 
         res1, cost1 = contractAndCostWithSequence([a, b, c])
+        print('seq = {}'.format(generateOptimalSequence([a, b, c])))
 
         a = Tensor(data = aData, labels = ['a', 'b', 'c'])
         b = Tensor(data = bData, labels = ['x'])
@@ -89,6 +91,46 @@ class TestDiagonalTensor(PackedTest):
         # print(cost1, cost2)
 
         # print(res1.a, res2.a)
+
+        # test diagonal tensor contraction
+        a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
+        b = DiagonalTensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'])
+        makeLink('a1', 'b1', a, b)
+        res = contractTwoTensors(a, b)
+        self.assertTupleEqual(res.shape, (2, 2, 2))
+        self.assertEqual(res.dim, 3)
+        self.assertTrue(res.diagonalFlag)
+        self.assertTrue((res.a == np.ones(2)).all())
+
+        # test for diagonal * diagonal contraction cost(just O(length))
+        a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
+        b = DiagonalTensor(shape = 2, labels = ['b1', 'b2']) # deduce dim
+        makeLink('a1', 'b2', a, b)
+
+        cost, _ = contractCost(a, b)
+        self.assertEqual(cost, 2.0)
+
+        res, cost = contractAndCostWithSequence([a, b])
+        self.assertEqual(res.dim, 2)
+        self.assertEqual(res._length, 2)
+        self.assertTupleEqual(res.shape, (2, 2))
+        self.assertEqual(cost, 2.0)
+        self.assertTrue(res.diagonalFlag)
+
+        a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
+        b = Tensor(shape = (2, 3, 3), labels = ['b1', 'b2', 'b3']) # deduce dim
+        makeLink('a1', 'b1', a, b)
+
+        cost, _ = contractCost(a, b)
+        self.assertEqual(cost, 18.0)
+
+        res, cost = contractAndCostWithSequence([a, b])
+        print(res)
+        self.assertEqual(res.dim, 3)
+        self.assertTrue(funcs.compareLists(list(res.shape), [2, 3, 3]))
+        self.assertEqual(cost, 18.0)
+
+
 
     def test_deduce(self):
 

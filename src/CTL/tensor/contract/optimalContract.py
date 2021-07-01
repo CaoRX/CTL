@@ -1,6 +1,6 @@
 import CTL.funcs.funcs as funcs 
 from CTL.tensor.tensor import Tensor
-from CTL.tensor.contract.contract import shareBonds, contractTensors
+from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
 from CTL.tensor.contract.tensorGraph import TensorGraph
 from CTL.tensor.contract.link import makeLink
 import numpy as np
@@ -90,7 +90,7 @@ def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim =
         cost, costLevel = contractCost(tensorList[s], tensorList[t])
         totalCost += cost 
         totalLevel = max(totalLevel, costLevel)
-        tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
+        tensorList[min(s, t)] = contractTwoTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
 
     return tensorList[0], totalCost
 

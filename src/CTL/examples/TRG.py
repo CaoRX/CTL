@@ -1,6 +1,6 @@
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import contractTensors
+from CTL.tensor.contract.contract import contractTwoTensors
 from CTL.tensor.tensorFactory import makeTriangleTensor, makeSquareTensor
 from CTL.tensor.contract.contractExp import triangleContractFTN, makeTriangleTensorDict, triangleTensorTrace
 from CTL.tensor.contract.contractExp import squareContractOutFTN
@@ -63,7 +63,7 @@ class TriangleTRG:
 
         dof = self.a.degreeOfFreedom
         makeLink(self.a.getLeg('a-1'), self.b.getLeg('b-1'))
-        iTensor = contractTensors(self.a, self.b)
+        iTensor = contractTwoTensors(self.a, self.b)
 
         a2Dim, b2Dim, a3Dim, b3Dim = iTensor.shapeOfLabels(['a-2', 'b-2', 'a-3', 'b-3'])
 
@@ -157,7 +157,7 @@ class SquareTRG:
 
         dof = self.a.degreeOfFreedom
         # makeLink(self.a.getLeg('a-1'), self.b.getLeg('b-1'))
-        # iTensor = contractTensors(self.a, self.b)
+        # iTensor = contractTwoTensors(self.a, self.b)
 
         # a2Dim, b2Dim, a3Dim, b3Dim = iTensor.shapeOfLabels(['a-2', 'b-2', 'a-3', 'b-3'])
 

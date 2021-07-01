@@ -364,3 +364,15 @@ def diagonalMatrix(a, dim):
 	for i in range(l):
 		res[tuple([i] * dim)] = a[i]
 	return res
+
+def indexTupleToStr(idx):
+	labelList = 'abcdefghijklmnopqrstuvwxyz'
+	if (not isinstance(idx, tuple)):
+		raise ValueError(errorMessage('indexTupleToStr requires a tuple as idx, {} gotten.'.format(idx)))
+	
+	for x in idx:
+		if (x >= 26):
+			raise ValueError(errorMessage('indexTupleToStr cannot transfer index >= 26 for index {}.'.format(idx)))
+	
+	return ''.join([labelList[x] for x in idx])
+	

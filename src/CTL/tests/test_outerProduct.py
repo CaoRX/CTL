@@ -3,7 +3,7 @@ from CTL.tests.packedTest import PackedTest
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractTensorList
-from CTL.tensor.contract.contract import contractTensors
+from CTL.tensor.contract.contract import contractTwoTensors
 import CTL.funcs.funcs as funcs
 
 import numpy as np 
@@ -17,7 +17,7 @@ class TestOuterProduct(PackedTest):
         a = Tensor(shape = (2, ), labels = ['a'])
         b = Tensor(shape = (2, ), labels = ['b'])
 
-        op = contractTensors(a, b, outProductWarning = False)
+        op = contractTwoTensors(a, b, outProductWarning = False)
         self.assertTrue(funcs.compareLists(op.labels, ['a', 'b']))
         
         a = Tensor(shape = (2, 2, 2), labels = ['a', 'b', 'c'])

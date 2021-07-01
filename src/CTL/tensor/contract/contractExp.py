@@ -3,7 +3,7 @@ from CTL.tensornetwork.tensordict import TensorDict
 from CTL.tensor.tensor import Tensor
 
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import contractTensors
+from CTL.tensor.contract.contract import contractTwoTensors
 import CTL.funcs.funcs as funcs
 
 def makeTriangleTensorDict(a):
@@ -62,7 +62,7 @@ def triangleTensorTrace(a, b):
     for label in ['1', '2', '3']:
         makeLink(label, label, tensorA = tensorA, tensorB = tensorB)
     
-    res = contractTensors(tensorA, tensorB)
+    res = contractTwoTensors(tensorA, tensorB)
     return res
 
 def squareHorizontalContractFTN(d):
@@ -160,5 +160,5 @@ def selfTrace(tensor):
     for leg1, leg2 in zip(a.legs, b.legs):
         makeLink(leg1, leg2)
 
-    return contractTensors(a, b)
+    return contractTwoTensors(a, b)
     
