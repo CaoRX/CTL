@@ -3,17 +3,20 @@ import numpy as np
 import string
 import random
 import math
+import warnings
 from copy import deepcopy
 
-def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None):
+def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None, deprecateMessage = None):
 	if (fileName is None):
 		fileNameInfo = ''
 	else:
 		fileNameInfo = 'in {} '.format(fileName)
 	if (newFuncName is None):
-		print('Warning: {} {}has been deprecated. This function should not be used anywhere.'.format(funcName, fileNameInfo))
+		if (deprecateMessage is None):
+			deprecateMessage = "This function should not be used anywhere."
+		warnings.warn('Warning: {} {}has been deprecated. {}'.format(funcName, fileNameInfo, deprecateMessage))
 	else:
-		print('Warning: {} {}has been deprecated. Please use {} instead.'.format(funcName, fileNameInfo, newFuncName))
+		warnings.warn('Warning: {} {}has been deprecated. Please use {} instead.'.format(funcName, fileNameInfo, newFuncName))
 
 def listDifference(total, used):
 	ret = list(total)
@@ -341,4 +344,43 @@ def identicalTensorDict(tensor, names):
 		res[name] = tensor
 	return res
 
+def checkAllEqual(tp):
+	if (len(tp) == 0):
+		return True
+	for x in list(tp):
+		if (x != tp[0]):
+			return False
+	return True
 
+def errorMessage(err, location = None):
+	if (location is None):
+		return "Error: {}".format(err)
+	else:
+		return "Error in {}: {}".format(location, err)
+
+def diagonalMatrix(a, dim):
+	l = a.shape[0]
+	res = np.zeros(tuple([l] * dim))
+	for i in range(l):
+		res[tuple([i] * dim)] = a[i]
+	return res
+
+def indexTupleToStr(idx):
+	labelList = 'abcdefghijklmnopqrstuvwxyz'
+	if (not isinstance(idx, tuple)):
+		raise ValueError(errorMessage('indexTupleToStr requires a tuple as idx, {} gotten.'.format(idx)))
+	
+	for x in idx:
+		if (x >= 26):
+			raise ValueError(errorMessage('indexTupleToStr cannot transfer index >= 26 for index {}.'.format(idx)))
+	
+	return ''.join([labelList[x] for x in idx])
+
+def ndEye(n, l):
+	res = np.zeros(tuple([l] * n))
+	if (n == 1):
+		res[0] = 1.0
+	else:
+		res[np.diag_indices(l, n)] = 1
+	return res
+	

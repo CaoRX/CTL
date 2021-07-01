@@ -1,6 +1,6 @@
 import CTL.funcs.funcs as funcs 
 from CTL.tensor.tensor import Tensor
-from CTL.tensor.contract.contract import shareBonds, contractTensors
+from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
 from CTL.tensor.contract.tensorGraph import TensorGraph
 from CTL.tensor.contract.link import makeLink
 import numpy as np
@@ -12,6 +12,7 @@ def copyTensorList(tensorList):
         resTensorList.append(tensor.copy())
         tensorMap[tensor] = resTensorList[-1]
     # use the objects themselves as key, so no worry about double name
+    # print(tensorMap)
     
     addedBonds = set()
     for tensor in tensorList:
@@ -30,10 +31,20 @@ def copyTensorList(tensorList):
     return resTensorList 
 
 def contractCost(ta, tb):
+    diagonalA, diagonalB = ta.diagonalFlag, tb.diagonalFlag 
+    if (diagonalA and diagonalB):
+        return ta.bondDimension(), 1
+
+    diagonal = diagonalA or diagonalB
+    
     bonds = shareBonds(ta, tb)
     intersectionShape = tuple([bond.legs[0].dim for bond in bonds])
-    cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
-    costLevel = len(ta.shape) + len(tb.shape) - len(intersectionShape)
+    if (not diagonal):
+        cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // funcs.tupleProduct(intersectionShape)
+        costLevel = len(ta.shape) + len(tb.shape) - len(intersectionShape)
+    else:
+        cost = funcs.tupleProduct(ta.shape) * funcs.tupleProduct(tb.shape) // (funcs.tupleProduct(intersectionShape) ** 2)
+        costLevel = len(ta.shape) + len(tb.shape) - 2 * len(intersectionShape)
     return cost, costLevel
 
 def makeTensorGraph(tensorList):
@@ -41,7 +52,9 @@ def makeTensorGraph(tensorList):
     # UndirectedGraph is used
     # addFreeEdge for empty legs
     n = len(tensorList)
-    g = TensorGraph(n)
+    
+    diagonalFlags = [tensor.diagonalFlag for tensor in tensorList]
+    g = TensorGraph(n = n, diagonalFlags = diagonalFlags)
     bondSet = set()
     idxDict = dict()
     for i in range(n):
@@ -64,7 +77,7 @@ def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
 
-def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
+def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
     if (seq is None):
         seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
     totalCost = 0.0
@@ -77,9 +90,13 @@ def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, in
         cost, costLevel = contractCost(tensorList[s], tensorList[t])
         totalCost += cost 
         totalLevel = max(totalLevel, costLevel)
-        tensorList[min(s, t)] = contractTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
+        tensorList[min(s, t)] = contractTwoTensors(tensorList[s], tensorList[t], outProductWarning = outProductWarning)
 
-    return tensorList[0]
+    return tensorList[0], totalCost
+
+def contractWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
+    res, _ = contractAndCostWithSequence(tensorList = tensorList, seq = seq, bf = bf, typicalDim = typicalDim, inplace = inplace, outProductWarning = outProductWarning)
+    return res
 
 def contractTensorList(tensorList, outProductWarning = True):
     return contractWithSequence(tensorList, outProductWarning = outProductWarning)
