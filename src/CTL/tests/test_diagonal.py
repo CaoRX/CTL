@@ -89,6 +89,98 @@ class TestDiagonalTensor(PackedTest):
         # print(cost1, cost2)
 
         # print(res1.a, res2.a)
+
+    def test_deduce(self):
+
+        a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
+        self.assertTupleEqual(a.shape, (2, 2))
+        self.assertEqual(a.dim, 2)
+
+        a = DiagonalTensor(shape = (2, 2))
+        self.assertTupleEqual(a.shape, (2, 2))
+        self.assertEqual(a.dim, 2)
+        self.assertTrue((a.a == np.ones(2)).all()) # default as identity tensor
+
+        def shapeNotEqualFunc():
+            _ = DiagonalTensor(shape = (2, 3))
+        
+        self.assertRaises(ValueError, shapeNotEqualFunc)
+
+        def labelsShortFunc():
+            _ = DiagonalTensor(shape = (2, 2), labels = ['a1'])
+        def labelsLongFunc():
+            _ = DiagonalTensor(shape = (2, 2), labels = ['a', 'b', 'c'])
+
+        self.assertRaises(ValueError, labelsShortFunc)
+        self.assertRaises(ValueError, labelsLongFunc)
+
+        a = DiagonalTensor(shape = (2, 2), data = np.zeros((2, 2)))
+        self.assertTupleEqual(a.shape, (2, 2))
+        self.assertEqual(a.dim, 2)
+
+        a = DiagonalTensor(shape = (2, 2, 2), data = np.zeros(2))
+        self.assertTupleEqual(a.shape, (2, 2, 2))
+        self.assertEqual(a.dim, 3)
+
+        def dataDimErrorFunc():
+            _ = DiagonalTensor(shape = (2, 2), data = np.zeros((2, 2, 2)))
+        def dataShapeErrorFunc():
+            _ = DiagonalTensor(shape = (2, 2), data = np.zeros((2, 3))) # no error in 9be9325, newly added
+
+        self.assertRaises(ValueError, dataDimErrorFunc)
+        self.assertRaises(ValueError, dataShapeErrorFunc)
+
+        # now start (shape = None) tests
+
+        a = DiagonalTensor(labels = ['a', 'b'], data = np.zeros(3))
+        self.assertEqual(a._length, 3)
+        self.assertEqual(a.shape, (3, 3))
+        self.assertEqual(a.dim, 2)
+
+        a = DiagonalTensor(labels = ['a', 'b'], data = np.zeros((4, 4)))
+        self.assertEqual(a._length, 4)
+        self.assertEqual(a.shape, (4, 4))
+        self.assertEqual(a.dim, 2)
+
+        a = DiagonalTensor(labels = ['a', 'b'], data = np.array([[1, 2], [3, 4]]))
+        self.assertEqual(a._length, 2)
+        self.assertEqual(a.shape, (2, 2))
+        self.assertTrue((a.a == np.array([1, 4])).all())
+
+        def dataDimErrorFunc2():
+            _ = DiagonalTensor(labels = ['a', 'b', 'c'], data = np.zeros((2, 2)))
+        
+        def dataShapeErrorFunc2():
+            _ = DiagonalTensor(labels = ['a', 'b', 'c'], data = np.zeros((2, 2, 3)))
+        
+        def dataNoneErrorFunc():
+            _ = DiagonalTensor(labels = ['a', 'b', 'c'], data = None)
+        
+        self.assertRaises(ValueError, dataDimErrorFunc2)
+        self.assertRaises(ValueError, dataShapeErrorFunc2)
+        self.assertRaises(ValueError, dataNoneErrorFunc)
+
+        # now start(shape = None, labels = None)
+        
+        a = DiagonalTensor(data = np.zeros(2)) # 1D diagonal tensor as a simple vector
+        self.assertEqual(a.dim, 1)
+        self.assertEqual(a._length, 2)
+        self.assertListEqual(a.labels, ['a'])
+
+        a = DiagonalTensor(data = np.array([[1, 2], [4, 3]]))
+        self.assertEqual(a.dim, 2)
+        self.assertEqual(a._length, 2)
+        self.assertTrue((a.a == np.array([1, 3])).all())
+
+        def dataShapeErrorFunc3():
+            _ = DiagonalTensor(data = np.zeros((2, 2, 3)))
+        
+        def nothingErrorFunc():
+            _ = DiagonalTensor()
+
+        self.assertRaises(ValueError, dataShapeErrorFunc3)
+        self.assertRaises(ValueError, nothingErrorFunc)
+
         
 
 

@@ -19,6 +19,24 @@ class DiagonalTensor(Tensor):
         else:
             raise ValueError(funcs.errorMessage(location = "DiagonalTensor.deduceDimension", err = "both data and labels are None."))
         
+    
+    # deduce strategy:
+    # we want length and dim
+    # priority for length: shape > data
+    # priority for dim: shape > labels > data
+
+    # 1. shape exist: shape can be either an integer, or a n-element tuple
+    # for int case: deduce dim from labels, then data
+    # for tuple case: (length, data) is ready
+
+    # then check labels: should be either None or len(labels) == dim
+    # then check data: either None, length-element array, dim-dimensional tensor
+
+    # 2. shape not exist: check labels for dim
+    # then check data for dim(1d array, dim-d array with all equal shapes)
+    # and generate l from shape of data
+
+    # 3. labels not exist: check data for (dim, length)
 
     def deduceData(self, data, labels, shape):
         # in Tensor: the "shape" has the highest priority
@@ -49,7 +67,7 @@ class DiagonalTensor(Tensor):
                     if (data.shape[0] != l):
                         raise ValueError(funcs.errorMessage(location = funcName, err = "data length is not the same as length deduced from shape: {} expected but {} obtained.".format(l, data.shape[0])))
                 
-                elif (len(data.shape) != dim) or (data.shape[0] != l):
+                elif (len(data.shape) != dim) or (data.shape != tuple([l] * dim)):
                     raise ValueError(funcs.errorMessage(location = funcName, err = "data shape is not correct: {} expected but {} obtained.".format(tuple([l] * dim), data.shape)))
 
 
@@ -63,7 +81,8 @@ class DiagonalTensor(Tensor):
             elif not funcs.checkAllEqual(data.shape):
                 raise ValueError(funcs.errorMessage(location = funcName, err = "data.shape {} is not valid.".format(data.shape)))
             else:
-                assert (len(data.shape) == dim), funcs.errorMessage(location = funcName, err = "dimension of data is not compatible with dimension deduced from labels: expect {} but {} is given.".format(dim, len(data.shape)))
+                if (len(data.shape) != dim):
+                    raise ValueError(funcs.errorMessage(location = funcName, err = "dimension of data is not compatible with dimension deduced from labels: expect {} but {} is given.".format(dim, len(data.shape))))
                 l = data.shape[0]
         
         else:
@@ -251,7 +270,8 @@ class DiagonalTensor(Tensor):
     def single(self):
         # return the single value of this tensor
         # only works if shape == (,)
-        assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        # assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        assert self._length == 1, "Error: cannot get single value from diagTensor whose length is not (1,)."
         return self.a
 
     def toTensor(self, labels):
