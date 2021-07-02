@@ -274,7 +274,8 @@ class DiagonalTensor(Tensor):
         assert self._length == 1, "Error: cannot get single value from diagTensor whose length is not (1,)."
         return self.a
 
-    def toTensor(self, labels):
-        self.reArrange(labels)
+    def toTensor(self, labels = None):
+        if (labels is not None):
+            self.reArrange(labels)
         return funcs.diagonalMatrix(self.a, self.dim)
         

@@ -290,8 +290,9 @@ class Tensor(TensorBase):
         assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
         return self.a
 
-    def toTensor(self, labels):
-        self.reArrange(labels)
+    def toTensor(self, labels = None):
+        if (labels is not None):
+            self.reArrange(labels)
         return self.a
 
     # def complementIndices(self, labs):

@@ -44,6 +44,17 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 
 		if (ta.diagonalFlag and tb.diagonalFlag):
 			return DiagonalTensor(labels = labels, data = ta.a * tb.a, shape = shape, legs = legs)
+		elif (ta.diagonalFlag):
+			data = np.zeros(shape, dtype = ta.a.dtype)
+			# print('data = {}'.format(data))
+			einsumStr = ('j' * ta.dim) + '...->j...'
+			# print(einsumStr)
+			outerData = np.multiply.outer(ta.a, tb.a)
+			# print('ta.shape = {}, tb.shape = {}, outer.shape = {}'.format(ta.shape, tb.shape, outerData.shape))
+			# print(np.einsum(einsumStr, data), outerData)
+			np.einsum(einsumStr, data)[...] = outerData
+			# print('data = {}'.format(data))
+			return Tensor(labels = labels, data = data, shape = shape, legs = legs)
 		else:
 			return Tensor(labels = labels, data = np.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
 

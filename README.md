@@ -26,7 +26,7 @@ Tensor(shape = (3, 3), labels = ['up', 'down'])
 
 ## Tensor network contraction example
 
-Run the example/example.py for a simple example
+Run the bin/example.py for a simple example
 ```console
 python bin/example.py
 ```
