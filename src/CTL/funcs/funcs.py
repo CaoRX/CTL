@@ -337,6 +337,10 @@ def tupleSwap(tp):
 
 def floatEqual(a, b, eps = 1e-7):
 	return np.abs(a - b) < eps
+def floatArrayEqual(a, b, eps = 1e-7):
+    if (a.shape != b.shape):
+        return False
+    return floatEqual(np.ravel(a), np.ravel(b), eps).all()
 
 def identicalTensorDict(tensor, names):
 	res = dict()

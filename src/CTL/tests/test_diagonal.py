@@ -86,7 +86,8 @@ class TestDiagonalTensor(PackedTest):
         makeLink('b', 'y', a, c)
 
         res2, cost2 = contractAndCostWithSequence([a, b, c])
-        self.assertListEqual(list(res1.a), list(res2.a))
+        # self.assertListEqual(list(res1.a), list(res2.a))
+        self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
         # print(cost1, cost2)
 
@@ -240,7 +241,8 @@ class TestDiagonalTensor(PackedTest):
 
         self.assertTrue(funcs.compareLists(list(res1.labels), ['a2']))
         self.assertTrue(funcs.compareLists(list(res2.labels), ['a2']))
-        self.assertListEqual(list(res1.a), list(res2.a))
+        # self.assertListEqual(list(res1.a), list(res2.a))
+        self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
         aData = np.random.random_sample(2)
         aTensorData = np.array([[aData[0], 0], [0, aData[1]]])
@@ -260,7 +262,7 @@ class TestDiagonalTensor(PackedTest):
         self.assertTrue(funcs.compareLists(res1.labels, []))
         self.assertTrue(funcs.compareLists(res2.labels, []))
         # self.assertListEqual(list(res1.single(), list(res2.a))
-        self.assertEqual(res1.single(), res2.single())
+        self.assertTrue(funcs.floatEqual(res1.single(), res2.single()))
 
         aData = np.random.random_sample(2)
         aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
@@ -282,7 +284,8 @@ class TestDiagonalTensor(PackedTest):
         # print(res1.labels, res2.labels)
         # print(res1.a, res2.a)
         res2.reArrange(res1.labels)
-        self.assertListEqual(list(np.ravel(res1.a)), list(np.ravel(res2.a)))
+        self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
+        # self.assertListEqual(list(np.ravel(res1.a)), list(np.ravel(res2.a)))
 
         aData = np.random.random_sample(2)
         aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
@@ -308,7 +311,34 @@ class TestDiagonalTensor(PackedTest):
         # print(res1.labels, res2.labels)
         res2.reArrange(res1.labels)
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
-        self.assertListEqual(list(np.ravel(res1.a)), list(np.ravel(res2.a)))
+        self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
+        # self.assertListEqual(list(np.ravel(res1.a)), list(np.ravel(res2.a)))
+
+        aData = np.random.random_sample(2)
+        aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
+        bData = np.random.random_sample((2, 4, 7))
+        a = DiagonalTensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aData)
+        b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData)
+        makeLink('a1', 'b1', a, b)
+        # makeLink('a3', 'b2', a, b)
+        res1 = contractTwoTensors(a, b)
+
+        a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData)
+        b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData)
+        makeLink('a1', 'b1', a, b)
+        # makeLink('a3', 'b2', a, b)
+        res2 = contractTwoTensors(b, a)
+
+        # print('ndEye(2, 2) = {}'.format(funcs.ndEye(2, 2)))
+        # print('ndEye(1, 2) = {}'.format(funcs.ndEye(1, 2)))
+        # print('ndEye(3, 2) = {}'.format(funcs.ndEye(3, 2)))
+
+        self.assertTrue(funcs.compareLists(list(res1.labels), ['a2', 'a3', 'b2', 'b3']))
+        self.assertTrue(funcs.compareLists(list(res2.labels), ['a2', 'a3', 'b2', 'b3']))
+        # print(res1.labels, res2.labels)
+        res2.reArrange(res1.labels)
+        # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
+        self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
 
 
