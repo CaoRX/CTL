@@ -340,6 +340,13 @@ class TestDiagonalTensor(PackedTest):
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
         self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
+    def test_toTensor(self):
+        a = DiagonalTensor(shape = (3, 3, 3), labels = ['a', 'b', 'c'], data = np.array([1, 2, 3]))
+        aTensor = a.toTensor()
+        aRealTensor = np.zeros((3, 3, 3))
+        for i in range(3):
+            aRealTensor[(i, i, i)] = i + 1
+        self.assertTrue(funcs.floatArrayEqual(aTensor, aRealTensor))
 
 
 

@@ -365,8 +365,9 @@ def errorMessage(err, location = None):
 def diagonalMatrix(a, dim):
 	l = a.shape[0]
 	res = np.zeros(tuple([l] * dim))
-	for i in range(l):
-		res[tuple([i] * dim)] = a[i]
+	res[np.diag_indices(dim, l)] = a
+    # for i in range(l):
+	# 	res[tuple([i] * dim)] = a[i]
 	return res
 
 def indexTupleToStr(idx):
