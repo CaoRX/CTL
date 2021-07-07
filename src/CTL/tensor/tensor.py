@@ -12,11 +12,128 @@ class Tensor(TensorBase):
 
     # bondNameSet = set([])
 
-    # how to implement diagonal tensor?
-    # we want: 1. used just as the Tensor, and 
-    # 2. with lower cost in contraction
-    # solution 1. another DiagonalTensor class, implementing all existing functions (hard to append new functions)
-    # solution 2. a class inherit Tensor, and rewrite the methods if needed
+    # we want to update the deduction of the shape of tensor
+    # there are problems now(July 7th, 2021) that:
+    # if we give legs with different shape from the shape(or data), it will keep the data while Tensor.shape gives different results from Tensor.a.shape
+    # to solve this problem: we need to change the priority of deduction to the shape
+    
+    # deduce strategy:
+    # we want shape, and labels
+    # we have legs, shape, labels, data
+    # priority for shape: legs > shape > data
+    # priority for labels: legs > labels
+
+    # 1. legs exist: 
+    # if labels exist: check the length and content of labels with legs
+    # if shape exist: check whether shape == tuple([leg.dim for leg in legs])
+    # if data exist: check whehter data.shape == tuple([leg.dim for leg in legs]) (if not, but the total size equal, we transfer data to the given shape)
+
+    # 2. legs not exist, shape exist
+    # if data exist, check the total number of components of data equal to shape, otherwise random
+    # if labels exist: check the number of labels equal to dimension, otherwise auto-generate
+    
+    # 3. legs not exist, shape not exist
+    # if data exist: generate shape according to data, and auto-generate legs
+
+    def checkLegsLabelsCompatible(self, legs, labels):
+        # we know that legs is not None
+        # so labels should be either None, or a list that corresponding to legs
+        if (labels is None):
+            return True 
+        if (isinstance(labels, list) or isinstance(labels, tuple)):
+            labelList = list(labels)
+            if (len(labelList) != len(legs)):
+                return False 
+            for label, leg in zip(labelList, legs):
+                if (label != leg.name):
+                    return False 
+            return True
+        else:
+            return False
+
+    def checkLegsShapeCompatible(self, legs, shape):
+        if (shape is None):
+            return True 
+        if (isinstance(shape, list) or isinstance(shape, tuple)):
+            shapeList = list(shape)
+            if (len(shapeList) != len(legs)):
+                return False 
+            for dim, leg in zip(shapeList, legs):
+                if (dim != leg.dim):
+                    return False 
+            return True
+        else:
+            return False
+    
+    def checkShapeDataCompatible(self, shape, data):
+        # we know shape, and want to see if data is ok
+        if (data is None):
+            return True 
+        return (funcs.tupleProduct(data.shape) == funcs.tupleProduct(shape))
+
+    def checkShapeLabelsCompatible(self, shape, labels):
+        # we know shape(is not None), and we want to see if labels is ok
+        if (labels is None):
+            return True 
+        return len(labels) == len(shape)
+
+    def generateData(self, shape, data):
+        if (data is None):
+            data = self.xp.random.random_sample(shape)
+        elif (data.shape != shape):
+            data = data.reshape(shape)
+        return data
+            
+    def deduction(self, legs, shape, labels, data):
+        if (legs is not None):
+
+            if (not self.checkLegsLabelsCompatible(legs = legs, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with legs {}'.format(labels, legs), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = [leg.name for leg in legs]
+
+            if (not self.checkLegsShapeCompatible(legs = legs, shape = shape)):
+                raise ValueError(funcs.errorMessage('shape {} is not compatible with legs {}'.format(shape, legs), location = "Tensor.deduction"))
+            if (shape is None):
+                shape = tuple([leg.dim for leg in legs]) 
+
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+            
+            data = self.generateData(shape = shape, data = data)
+        
+        elif (shape is not None):
+
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
+            
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+            
+            data = self.generateData(shape = shape, data = data)
+
+        elif (data is not None):
+            shape = data.shape 
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
+
+        else:
+            raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = "Tensor.deduction"))
+        
+        if (legs is None):
+            legs = []
+            for label, dim in zip(labels, list(shape)):
+                legs.append(Leg(self, dim, label))
+
+        else:
+            for leg in legs:
+                leg.tensor = self
+
+        return legs, shape, labels, np.copy(data)
 
     def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
         super().__init__(None)
@@ -25,41 +142,53 @@ class Tensor(TensorBase):
             return 
         else:
             self.diagonalFlag = False
-        # print('Tensor(shape = {}, labels = {}, data.shape = {})'.format(shape, labels, data.shape))
-        assert (not ((data is None) and (shape is None))), "Error: TensorBase must be initialized with either data or shape."
-        if (shape is None):
-            shape = data.shape
-        # print(shape, data.shape)
-
-        assert ((labels is None) or (len(shape) == len(labels))), "Error: the number of labels input is {}, while the dimension is {}.".format(len(labels), len(shape))
 
         self.xp = np
-        # self.shape = shape
+
+        legs, shape, labels, data = self.deduction(legs = legs, shape = shape, labels = labels, data = data)
+        
         self.totalSize = funcs.tupleProduct(shape)
-        if (data is None):
-            #self.a = self.xp.zeros(self.shape, dtype = self.xp.float64)
-            self.a = self.xp.random.random_sample(shape)
-        else:
-            self.a = self.xp.copy(data)
-        assert (self.totalSize == funcs.tupleProduct(self.a.shape)), 'Error: expect {} elements but {} gotten.'.format(self.totalSize, funcs.tupleProduct(self.a.shape))
-        if (self.a.shape != shape):
-            self.a = self.xp.reshape(self.a, shape)
-        # print('a shape = {}'.format(self.a.shape))
-    
-        if (labels is None):
-            labels = self.generateLabels(len(shape))
         self.degreeOfFreedom = degreeOfFreedom
         self.name = name
 
-        if (legs is None):
-            self.legs = []
-            for label, dim in zip(labels, list(self.shape)):
-                self.legs.append(Leg(self, dim, label))
-        else:
-            assert (len(legs) == self.dim), "Error: number of legs and dim are not compatible in Tensor.__init__(): {} and {}.".format(len(legs), self.dim)
-            self.legs = legs 
-            for leg in self.legs:
-                leg.tensor = self
+        self.legs = legs 
+        self.a = data
+        # shape and labels will be auto generated from legs
+
+        # print('Tensor(shape = {}, labels = {}, data.shape = {})'.format(shape, labels, data.shape))
+        # assert (not ((data is None) and (shape is None))), "Error: TensorBase must be initialized with either data or shape."
+        # if (shape is None):
+        #     shape = data.shape
+        # # print(shape, data.shape)
+
+        # assert ((labels is None) or (len(shape) == len(labels))), "Error: the number of labels input is {}, while the dimension is {}.".format(len(labels), len(shape))
+
+        # # self.shape = shape
+        # self.totalSize = funcs.tupleProduct(shape)
+        # if (data is None):
+        #     #self.a = self.xp.zeros(self.shape, dtype = self.xp.float64)
+        #     self.a = self.xp.random.random_sample(shape)
+        # else:
+        #     self.a = self.xp.copy(data)
+        # assert (self.totalSize == funcs.tupleProduct(self.a.shape)), 'Error: expect {} elements but {} gotten.'.format(self.totalSize, funcs.tupleProduct(self.a.shape))
+        # if (self.a.shape != shape):
+        #     self.a = self.xp.reshape(self.a, shape)
+        # # print('a shape = {}'.format(self.a.shape))
+    
+        # if (labels is None):
+        #     labels = self.generateLabels(len(shape))
+        # self.degreeOfFreedom = degreeOfFreedom
+        # self.name = name
+
+        # if (legs is None):
+        #     self.legs = []
+        #     for label, dim in zip(labels, list(self.shape)):
+        #         self.legs.append(Leg(self, dim, label))
+        # else:
+        #     assert (len(legs) == self.dim), "Error: number of legs and dim are not compatible in Tensor.__init__(): {} and {}.".format(len(legs), self.dim)
+        #     self.legs = legs 
+        #     for leg in self.legs:
+        #         leg.tensor = self
 
     @property 
     def labels(self):
