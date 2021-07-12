@@ -86,9 +86,9 @@ class Tensor(TensorBase):
         if (data is None):
             data = self.xp.random.random_sample(shape)
         elif (data.shape != shape):
-            data = np.copy(data.reshape(shape))
+            data = self.xp.copy(data.reshape(shape))
         else:
-            data = np.copy(data)
+            data = self.xp.copy(data)
         return data
             
     def deduction(self, legs, shape, labels, data, isTensorLike = False):
@@ -408,7 +408,7 @@ class Tensor(TensorBase):
             for leg in self.legs[:n]:
                 newDim *= leg.dim
         else:
-            self.a = np.reshape(self.a, newShape)
+            self.a = self.xp.reshape(self.a, newShape)
             newDim = self.a.shape[0]
         self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
 
