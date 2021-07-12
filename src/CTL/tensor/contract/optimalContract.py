@@ -5,11 +5,14 @@ from CTL.tensor.contract.tensorGraph import TensorGraph
 from CTL.tensor.contract.link import makeLink
 import numpy as np
 
-def copyTensorList(tensorList):
+def copyTensorList(tensorList, tensorLikeFlag = False):
     resTensorList = []
     tensorMap = dict()
     for tensor in tensorList:
-        resTensorList.append(tensor.copy())
+        if (tensorLikeFlag):
+            resTensorList.append(tensor.toTensorLike())
+        else:
+            resTensorList.append(tensor.copy())
         tensorMap[tensor] = resTensorList[-1]
     # use the objects themselves as key, so no worry about double name
     # print(tensorMap)
