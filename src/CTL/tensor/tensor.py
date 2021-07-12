@@ -12,54 +12,156 @@ class Tensor(TensorBase):
 
     # bondNameSet = set([])
 
-    # how to implement diagonal tensor?
-    # we want: 1. used just as the Tensor, and 
-    # 2. with lower cost in contraction
-    # solution 1. another DiagonalTensor class, implementing all existing functions (hard to append new functions)
-    # solution 2. a class inherit Tensor, and rewrite the methods if needed
+    # we want to update the deduction of the shape of tensor
+    # there are problems now(July 7th, 2021) that:
+    # if we give legs with different shape from the shape(or data), it will keep the data while Tensor.shape gives different results from Tensor.a.shape
+    # to solve this problem: we need to change the priority of deduction to the shape
+    
+    # deduce strategy:
+    # we want shape, and labels
+    # we have legs, shape, labels, data
+    # priority for shape: legs > shape > data
+    # priority for labels: legs > labels
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
+    # 1. legs exist: 
+    # if labels exist: check the length and content of labels with legs
+    # if shape exist: check whether shape == tuple([leg.dim for leg in legs])
+    # if data exist: check whehter data.shape == tuple([leg.dim for leg in legs]) (if not, but the total size equal, we transfer data to the given shape)
+
+    # 2. legs not exist, shape exist
+    # if data exist, check the total number of components of data equal to shape, otherwise random
+    # if labels exist: check the number of labels equal to dimension, otherwise auto-generate
+    
+    # 3. legs not exist, shape not exist
+    # if data exist: generate shape according to data, and auto-generate legs
+
+    # now we can add the tensor-like property
+    # we still deduce the legs, shape, labels, data, but without real data
+
+    def checkLegsLabelsCompatible(self, legs, labels):
+        # we know that legs is not None
+        # so labels should be either None, or a list that corresponding to legs
+        if (labels is None):
+            return True 
+        if (isinstance(labels, list) or isinstance(labels, tuple)):
+            labelList = list(labels)
+            if (len(labelList) != len(legs)):
+                return False 
+            for label, leg in zip(labelList, legs):
+                if (label != leg.name):
+                    return False 
+            return True
+        else:
+            return False
+
+    def checkLegsShapeCompatible(self, legs, shape):
+        if (shape is None):
+            return True 
+        if (isinstance(shape, list) or isinstance(shape, tuple)):
+            shapeList = list(shape)
+            if (len(shapeList) != len(legs)):
+                return False 
+            for dim, leg in zip(shapeList, legs):
+                if (dim != leg.dim):
+                    return False 
+            return True
+        else:
+            return False
+    
+    def checkShapeDataCompatible(self, shape, data):
+        # we know shape, and want to see if data is ok
+        if (data is None):
+            return True 
+        return (funcs.tupleProduct(data.shape) == funcs.tupleProduct(shape))
+
+    def checkShapeLabelsCompatible(self, shape, labels):
+        # we know shape(is not None), and we want to see if labels is ok
+        if (labels is None):
+            return True 
+        return len(labels) == len(shape)
+
+    def generateData(self, shape, data, isTensorLike):
+        if (isTensorLike):
+            return None
+        if (data is None):
+            data = self.xp.random.random_sample(shape)
+        elif (data.shape != shape):
+            data = self.xp.copy(data.reshape(shape))
+        else:
+            data = self.xp.copy(data)
+        return data
+            
+    def deduction(self, legs, shape, labels, data, isTensorLike = False):
+        # print('deduction(legs = {}, shape = {}, labels = {}, data = {}, isTensorLike = {})'.format(legs, shape, labels, data, isTensorLike))
+        if (legs is not None):
+
+            if (not self.checkLegsLabelsCompatible(legs = legs, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with legs {}'.format(labels, legs), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = [leg.name for leg in legs]
+
+            if (not self.checkLegsShapeCompatible(legs = legs, shape = shape)):
+                raise ValueError(funcs.errorMessage('shape {} is not compatible with legs {}'.format(shape, legs), location = "Tensor.deduction"))
+            if (shape is None):
+                shape = tuple([leg.dim for leg in legs]) 
+
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+        
+        elif (shape is not None):
+
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
+            
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+
+        elif (data is not None):
+            shape = data.shape 
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
+
+        else:
+            raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = "Tensor.deduction"))
+
+        data = self.generateData(shape = shape, data = data, isTensorLike = isTensorLike)
+        
+        if (legs is None):
+            legs = []
+            for label, dim in zip(labels, list(shape)):
+                legs.append(Leg(self, dim, label))
+
+        else:
+            for leg in legs:
+                leg.tensor = self
+
+        return legs, shape, labels, data
+
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False):
         super().__init__(None)
+
+        # only data needs a copy
+        # labels and shape: they are virtual, will be saved in legs
+        self.tensorLikeFlag = tensorLikeFlag
+        self.xp = np
         if (diagonalFlag):
             self.diagonalFlag = True 
             return 
         else:
             self.diagonalFlag = False
-        # print('Tensor(shape = {}, labels = {}, data.shape = {})'.format(shape, labels, data.shape))
-        assert (not ((data is None) and (shape is None))), "Error: TensorBase must be initialized with either data or shape."
-        if (shape is None):
-            shape = data.shape
-        # print(shape, data.shape)
 
-        assert ((labels is None) or (len(shape) == len(labels))), "Error: the number of labels input is {}, while the dimension is {}.".format(len(labels), len(shape))
-
-        self.xp = np
-        # self.shape = shape
+        legs, shape, labels, data = self.deduction(legs = legs, shape = shape, labels = labels, data = data, isTensorLike = tensorLikeFlag)
+        
         self.totalSize = funcs.tupleProduct(shape)
-        if (data is None):
-            #self.a = self.xp.zeros(self.shape, dtype = self.xp.float64)
-            self.a = self.xp.random.random_sample(shape)
-        else:
-            self.a = self.xp.copy(data)
-        assert (self.totalSize == funcs.tupleProduct(self.a.shape)), 'Error: expect {} elements but {} gotten.'.format(self.totalSize, funcs.tupleProduct(self.a.shape))
-        if (self.a.shape != shape):
-            self.a = self.xp.reshape(self.a, shape)
-        # print('a shape = {}'.format(self.a.shape))
-    
-        if (labels is None):
-            labels = self.generateLabels(len(shape))
         self.degreeOfFreedom = degreeOfFreedom
         self.name = name
 
-        if (legs is None):
-            self.legs = []
-            for label, dim in zip(labels, list(self.shape)):
-                self.legs.append(Leg(self, dim, label))
-        else:
-            assert (len(legs) == self.dim), "Error: number of legs and dim are not compatible in Tensor.__init__(): {} and {}.".format(len(legs), self.dim)
-            self.legs = legs 
-            for leg in self.legs:
-                leg.tensor = self
+        self.legs = legs 
+        self.a = data
 
     @property 
     def labels(self):
@@ -69,8 +171,28 @@ class Tensor(TensorBase):
     def chi(self):
         return self.shape[0]
 
+    @property
+    def dim(self):
+        if (self.a is None):
+            return len(self.legs)
+        else:
+            return len(self.a.shape)
+    
+    @property 
+    def shape(self):
+        if (self.a is None):
+            # print('shape from TensorLike')
+            # print(self.legs)
+            return tuple([leg.dim for leg in self.legs])
+        else:
+            return self.a.shape
+
 
     def __str__(self):
+        if (self.tensorLikeFlag):
+            objectStr = 'TensorLike'
+        else:
+            objectStr = 'Tensor'
         if not (self.degreeOfFreedom is None):
             dofStr = ', degree of freedom = {}'.format(self.degreeOfFreedom)
         else:
@@ -79,9 +201,13 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'Tensor({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
+        return '{}({}shape = {}, labels = {}{})'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def __repr__(self):
+        if (self.tensorLikeFlag):
+            objectStr = 'TensorLike'
+        else:
+            objectStr = 'Tensor'
         if not (self.degreeOfFreedom is None):
             dofStr = ', degree of freedom = {}'.format(self.degreeOfFreedom)
         else:
@@ -90,7 +216,7 @@ class Tensor(TensorBase):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'Tensor({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
+        return '{}({}shape = {}, labels = {}{})\n'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
         return self.shape[0]
@@ -146,15 +272,18 @@ class Tensor(TensorBase):
         # print(labelList)
         # print(self.labels)
         self.legs = movedLegs + self.legs 
-        self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        if (not self.tensorLikeFlag):
+            self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
         return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to matrix since no data contained.', 'Tensor.toMatrix')
         assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
         if (rows is not None) and (isinstance(rows[0], str)):
             rows = [self.getLeg(label) for label in rows]
@@ -185,8 +314,14 @@ class Tensor(TensorBase):
         return funcs.listDifference(self.legs, legs)
 
     def copy(self):
-        return Tensor(data = self.xp.copy(self.a), degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels)
+        return Tensor(data = self.a, shape = self.shape, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, diagonalFlag = self.diagonalFlag, tensorLikeFlag = self.tensorLikeFlag)
         # no copy of tensor legs, which may contain connection information
+        # the data will be copied in the new tensor, since all data is generated by "generateData"
+    def toTensorLike(self):
+        if (self.tensorLikeFlag):
+            return self.copy()
+        else:
+            return Tensor(data = None, degreeOfFreedom = self.degreeOfFreedom, shape = self.shape, name = self.name, labels = self.labels, diagonalFlag = self.diagonalFlag, tensorLikeFlag = True)
     
     def copyN(self, n):
         return [self.copy() for _ in range(n)]
@@ -260,16 +395,21 @@ class Tensor(TensorBase):
         # print(labelList)
         # print(self.labels)
         self.legs = movedLegs + self.legs 
-        self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        if (not self.tensorLikeFlag):
+            self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def outProduct(self, labelList, newLabel):
         self.moveLabelsToFront(labelList)
         n = len(labelList)
         newShape = (-1, ) + self.shape[n:]
-        self.a = np.reshape(self.a, newShape)
-        # self.shape = self.a.shape
 
-        newDim = self.a.shape[0]
+        if (self.tensorLikeFlag):
+            newDim = 1
+            for leg in self.legs[:n]:
+                newDim *= leg.dim
+        else:
+            self.a = self.xp.reshape(self.a, newShape)
+            newDim = self.a.shape[0]
         self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
 
     def reArrange(self, labels):
@@ -277,9 +417,11 @@ class Tensor(TensorBase):
         self.moveLabelsToFront(labels)
 
     def norm(self):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have norm since no data contained.', 'Tensor.norm')
         return self.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have trace since no data contained.', 'Tensor.trace')
         mat = self.toMatrix(rows = rows, cols = cols)
         assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
         return self.xp.trace(mat)
@@ -287,13 +429,21 @@ class Tensor(TensorBase):
     def single(self):
         # return the single value of this tensor
         # only works if shape == (,)
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to single value since no data contained.', 'Tensor.single')
         assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
         return self.a
 
     def toTensor(self, labels = None):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to tensor since no data contained.', 'Tensor.toTensor')
         if (labels is not None):
             self.reArrange(labels)
         return self.a
+
+    def typeName(self):
+        if (self.tensorLikeFlag):
+            return "TensorLike"
+        else:
+            return "Tensor"
 
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)

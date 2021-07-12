@@ -340,6 +340,74 @@ class TestDiagonalTensor(PackedTest):
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
         self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
+    def test_toTensor(self):
+        a = DiagonalTensor(shape = (3, 3, 3), labels = ['a', 'b', 'c'], data = np.array([1, 2, 3]))
+        aTensor = a.toTensor()
+        aRealTensor = np.zeros((3, 3, 3))
+        for i in range(3):
+            aRealTensor[(i, i, i)] = i + 1
+        self.assertTrue(funcs.floatArrayEqual(aTensor, aRealTensor))
+
+    def test_DiagonalTensorCopy(self):
+        aData = np.ones((3, 3))
+        a = DiagonalTensor(shape = (3, 3), labels = ['a', 'b'], data = aData)
+        aData[(0, 0)] = 2.0
+        self.assertEqual(a.a[0], 1.0)
+
+        a = DiagonalTensor(shape = (3, 3), labels = ['a', 'b'])
+        b = a.copy()
+        b.a[0] = 2.0
+        self.assertEqual(a.a[0], 1.0)
+        self.assertEqual(b.a[0], 2.0)
+        self.assertEqual(a.diagonalFlag, b.diagonalFlag)
+        self.assertEqual(a.tensorLikeFlag, b.tensorLikeFlag)
+
+        a.renameLabel('a', 'c')
+        self.assertListEqual(b.labels, ['a', 'b'])
+
+class TestDiagonalTensorLike(PackedTest):
+
+    def __init__(self, methodName = 'runTest'):
+        super().__init__(methodName = methodName, name = 'Diagonal TensorLike')
+    
+    def test_diagonalTensorLike(self):
+        diagonalTensor = DiagonalTensor(shape = (3, 3), tensorLikeFlag = True)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['a', 'b'])
+        self.assertIsNone(diagonalTensor.a)
+
+        diagonalTensor = DiagonalTensor(data = np.zeros((3, 3)), tensorLikeFlag = True) # only data is given
+        self.assertTrue(diagonalTensor.diagonalFlag)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['a', 'b'])
+        self.assertIsNone(diagonalTensor.a)
+
+        diagonalTensor = DiagonalTensor(data = np.ones((3, 3)), labels = ['up', 'down'], tensorLikeFlag = True) # only data is given
+        self.assertTrue(diagonalTensor.diagonalFlag)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['up', 'down'])
+        self.assertIsNone(diagonalTensor.a)
+
+        self.assertRaises(AssertionError, diagonalTensor.norm)
+        self.assertRaises(AssertionError, diagonalTensor.trace)
+        self.assertRaises(AssertionError, diagonalTensor.toTensor)
+        self.assertRaises(AssertionError, lambda: diagonalTensor.toMatrix(rows = None, cols = None))
+        self.assertRaises(AssertionError, diagonalTensor.toVector)
+
+    def test_toTensorLike(self):
+        a = DiagonalTensor(shape = (3, 3), tensorLikeFlag = False)
+        self.assertIsNotNone(a.a)
+
+        aLike = a.toTensorLike()
+        self.assertIsNone(aLike.a)
+        self.assertTrue(aLike.tensorLikeFlag)
+        self.assertTupleEqual(aLike.shape, (3, 3))
+        self.assertListEqual(aLike.labels, ['a', 'b'])
+
+
 
 
 

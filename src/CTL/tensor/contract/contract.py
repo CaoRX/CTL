@@ -29,6 +29,11 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		return contractTwoTensors(tb, ta, bonds = bonds, outProductWarning = outProductWarning)
 	if (bonds is None):
 		bonds = shareBonds(ta, tb)
+
+	if (ta.tensorLikeFlag != tb.tensorLikeFlag):
+		raise TypeError(funcs.errorMessage("ta and tb must be the same type(tensor/tensorlike): {} and {} gotten.".format(ta.typeName, tb.typeName), location = 'CTL.tensor.contract.contractTwoTensors'))
+
+	tensorLikeContract = ta.tensorLikeFlag
 	
 	if (len(bonds) == 0):
 		if (outProductWarning):
@@ -43,20 +48,24 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		legs = ta.legs + tb.legs
 
 		if (ta.diagonalFlag and tb.diagonalFlag):
-			return DiagonalTensor(labels = labels, data = ta.a * tb.a, shape = shape, legs = legs)
+			if (tensorLikeContract):
+				return DiagonalTensor(labels = labels, data = None, shape = shape, legs = legs, tensorLikeFlag = True)
+			else:
+				return DiagonalTensor(labels = labels, data = ta.a * tb.a, shape = shape, legs = legs)
 		elif (ta.diagonalFlag):
-			data = np.zeros(shape, dtype = ta.a.dtype)
-			# print('data = {}'.format(data))
-			einsumStr = ('j' * ta.dim) + '...->j...'
-			# print(einsumStr)
-			outerData = np.multiply.outer(ta.a, tb.a)
-			# print('ta.shape = {}, tb.shape = {}, outer.shape = {}'.format(ta.shape, tb.shape, outerData.shape))
-			# print(np.einsum(einsumStr, data), outerData)
-			np.einsum(einsumStr, data)[...] = outerData
-			# print('data = {}'.format(data))
+			if (tensorLikeContract):
+				return Tensor(labels = labels, data = None, shape = shape, legs = legs, tensorLikeFlag = True)
+			else:
+				data = np.zeros(shape, dtype = ta.a.dtype)
+				einsumStr = ('j' * ta.dim) + '...->j...'
+				outerData = np.multiply.outer(ta.a, tb.a)
+				np.einsum(einsumStr, data)[...] = outerData
 			return Tensor(labels = labels, data = data, shape = shape, legs = legs)
 		else:
-			return Tensor(labels = labels, data = np.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
+			if (tensorLikeContract):
+				return Tensor(labels = labels, data = None, shape = shape, legs = legs, tensorLikeFlag = True)
+			else:
+				return Tensor(labels = labels, data = np.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
 
 		# aVector = ta.toVector()
 		# bVector = tb.toVector()
@@ -75,9 +84,13 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 
 	if (ta.diagonalFlag) and (tb.diagonalFlag):
 		# return a diagonal tensor
+		if (tensorLikeContract):
+			return DiagonalTensor(shape = newShape, data = None, legs = newLegs, tensorLikeFlag = True)
 		return DiagonalTensor(shape = newShape, data = ta.a * tb.a, legs = newLegs)
 	
 	if (ta.diagonalFlag):
+		if (tensorLikeContract):
+			return Tensor(shape = newShape, data = None, legs = newLegs, tensorLikeFlag = True)
 		# then tb is not diagonal tensor
 		# 1. calculate the core with broadcast
 		# 2. calculate the real tensor with np.outer
@@ -120,6 +133,9 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		newLegs = tbRemainLegs + taRemainLegs 
 		newShape = tuple([leg.dim for leg in newLegs])
 		return Tensor(shape = newShape, data = newData, legs = newLegs)
+
+	if (tensorLikeContract):
+		return Tensor(shape = newShape, data = None, legs = newLegs, tensorLikeFlag = True)
 
 	dataA = ta.toMatrix(rows = None, cols = contractALegs)
 	dataB = tb.toMatrix(rows = contractBLegs, cols = None)
