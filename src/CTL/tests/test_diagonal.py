@@ -354,6 +354,17 @@ class TestDiagonalTensor(PackedTest):
         aData[(0, 0)] = 2.0
         self.assertEqual(a.a[0], 1.0)
 
+        a = DiagonalTensor(shape = (3, 3), labels = ['a', 'b'])
+        b = a.copy()
+        b.a[0] = 2.0
+        self.assertEqual(a.a[0], 1.0)
+        self.assertEqual(b.a[0], 2.0)
+        self.assertEqual(a.diagonalFlag, b.diagonalFlag)
+        self.assertEqual(a.tensorLikeFlag, b.tensorLikeFlag)
+
+        a.renameLabel('a', 'c')
+        self.assertListEqual(b.labels, ['a', 'b'])
+
 class TestDiagonalTensorLike(PackedTest):
 
     def __init__(self, methodName = 'runTest'):
@@ -385,6 +396,18 @@ class TestDiagonalTensorLike(PackedTest):
         self.assertRaises(AssertionError, diagonalTensor.toTensor)
         self.assertRaises(AssertionError, lambda: diagonalTensor.toMatrix(rows = None, cols = None))
         self.assertRaises(AssertionError, diagonalTensor.toVector)
+
+    def test_toTensorLike(self):
+        a = DiagonalTensor(shape = (3, 3), tensorLikeFlag = False)
+        self.assertIsNotNone(a.a)
+
+        aLike = a.toTensorLike()
+        self.assertIsNone(aLike.a)
+        self.assertTrue(aLike.tensorLikeFlag)
+        self.assertTupleEqual(aLike.shape, (3, 3))
+        self.assertListEqual(aLike.labels, ['a', 'b'])
+
+
 
 
 

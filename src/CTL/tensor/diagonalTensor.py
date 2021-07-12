@@ -38,7 +38,7 @@ class DiagonalTensor(Tensor):
 
     # 3. labels not exist: check data for (dim, length)
 
-    def deduceData(self, data, labels, shape):
+    def deduceData(self, data, labels, shape, tensorLikeFlag):
         # in Tensor: the "shape" has the highest priority
         # so if the shape is given here, it should be taken
         # however, if the shape is given as an integer: then we need to deduce the dimension
@@ -99,7 +99,7 @@ class DiagonalTensor(Tensor):
             
         shape = tuple([l] * dim) 
 
-        if (self.tensorLikeFlag):
+        if (tensorLikeFlag):
             data = None
         elif (data is None):
             # default is identity
@@ -109,6 +109,8 @@ class DiagonalTensor(Tensor):
         else:
             data = self.xp.array([data[tuple([x] * dim)] for x in range(l)])
 
+        # must be a copy of original "data" if exist
+
         if (labels is None):
             labels = self.generateLabels(dim)
         return data, labels, shape
@@ -117,7 +119,7 @@ class DiagonalTensor(Tensor):
     def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False):
         super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag)
 
-        data, labels, shape = self.deduceData(data, labels, shape)
+        data, labels, shape = self.deduceData(data = data, labels = labels, shape = shape, tensorLikeFlag = tensorLikeFlag)
 
         self.a = data
         self.totalSize = funcs.tupleProduct(shape)
@@ -247,8 +249,13 @@ class DiagonalTensor(Tensor):
         return data
 
     def copy(self):
-        return DiagonalTensor(data = self.xp.copy(self.a), degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, tensorLikeFlag = self.tensorLikeFlag)
+        return DiagonalTensor(data = self.a, shape = self.shape, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, tensorLikeFlag = self.tensorLikeFlag)
         # no copy of tensor legs, which may contain connection information
+    def toTensorLike(self):
+        if (self.tensorLikeFlag):
+            return self.copy()
+        else:
+            return DiagonalTensor(data = None, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, shape = self.shape, tensorLikeFlag = True)
 
     def moveLabelsToFront(self, labelList):
         moveFrom = []
@@ -294,4 +301,10 @@ class DiagonalTensor(Tensor):
         if (labels is not None):
             self.reArrange(labels)
         return funcs.diagonalMatrix(self.a, self.dim)
+
+    def typeName(self):
+        if (self.tensorLikeFlag):
+            return "DiagonalTensorLike"
+        else:
+            return "DiagonalTensor"
         

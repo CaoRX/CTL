@@ -292,3 +292,21 @@ class TestTensorLike(PackedTest):
             _ = Tensor(tensorLikeFlag = True)
 
         self.assertRaises(ValueError, nothingErrorFunc)
+
+    def test_toTensorLike(self):
+        a = Tensor(shape = (5, 3, 4), labels = ['c', 'b', 'a'], tensorLikeFlag = False)
+        aLike = a.toTensorLike()
+
+        self.assertIsNone(aLike.a) 
+        self.assertTrue(aLike.tensorLikeFlag)
+        self.assertListEqual(aLike.labels, ['c', 'b', 'a'])
+        self.assertTupleEqual(aLike.shape, (5, 3, 4))
+
+        a = Tensor(shape = (5, 3, 4), labels = ['c', 'b', 'a'], tensorLikeFlag = True)
+        # print('test_toTensorLike.a = {}'.format(a))
+        aLike = a.toTensorLike()
+
+        self.assertIsNone(aLike.a) 
+        self.assertTrue(aLike.tensorLikeFlag)
+        self.assertListEqual(aLike.labels, ['c', 'b', 'a'])
+        self.assertTupleEqual(aLike.shape, (5, 3, 4))
