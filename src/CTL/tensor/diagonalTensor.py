@@ -98,7 +98,10 @@ class DiagonalTensor(Tensor):
         # print('l = {}, dim = {}'.format(l, dim))
             
         shape = tuple([l] * dim) 
-        if (data is None):
+
+        if (self.tensorLikeFlag):
+            data = None
+        elif (data is None):
             # default is identity
             data = self.xp.ones(l)
         elif (len(data.shape) == 1):
@@ -111,13 +114,12 @@ class DiagonalTensor(Tensor):
         return data, labels, shape
             
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None):
-        super().__init__(diagonalFlag = True)
-        self.xp = np 
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False):
+        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag)
 
         data, labels, shape = self.deduceData(data, labels, shape)
 
-        self.a = self.xp.copy(data)
+        self.a = data
         self.totalSize = funcs.tupleProduct(shape)
 
         # functions of Tensor from here
@@ -156,6 +158,10 @@ class DiagonalTensor(Tensor):
 
 
     def __str__(self):
+        if (self.tensorLikeFlag):
+            objectStr = 'DiagonalTensorLike'
+        else:
+            objectStr = 'DiagonalTensor'
         if not (self.degreeOfFreedom is None):
             dofStr = ', degree of freedom = {}'.format(self.degreeOfFreedom)
         else:
@@ -164,9 +170,13 @@ class DiagonalTensor(Tensor):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'DiagonalTensor({}shape = {}, labels = {}{})'.format(nameStr, self.shape, self.labels, dofStr)
+        return '{}({}shape = {}, labels = {}{})'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def __repr__(self):
+        if (self.tensorLikeFlag):
+            objectStr = 'DiagonalTensorLike'
+        else:
+            objectStr = 'DiagonalTensor'
         if not (self.degreeOfFreedom is None):
             dofStr = ', degree of freedom = {}'.format(self.degreeOfFreedom)
         else:
@@ -175,7 +185,7 @@ class DiagonalTensor(Tensor):
             nameStr = self.name + ', ' 
         else:
             nameStr = ''
-        return 'DiagonalTensor({}shape = {}, labels = {}{})\n'.format(nameStr, self.shape, self.labels, dofStr)
+        return '{}({}shape = {}, labels = {}{})'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
         return self._length
@@ -203,10 +213,12 @@ class DiagonalTensor(Tensor):
         # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to vector since no data contained.', 'DiagonalTensor.toVector')
         funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector", deprecateMessage = "This will return a vector corresponding to the diagonal of tensor instead of the complete tensor.")
         return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to matrix since no data contained.', 'DiagonalTensor.toMatrix')
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs
@@ -235,7 +247,7 @@ class DiagonalTensor(Tensor):
         return data
 
     def copy(self):
-        return DiagonalTensor(data = self.xp.copy(self.a), degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels)
+        return DiagonalTensor(data = self.xp.copy(self.a), degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, tensorLikeFlag = self.tensorLikeFlag)
         # no copy of tensor legs, which may contain connection information
 
     def moveLabelsToFront(self, labelList):
@@ -262,19 +274,23 @@ class DiagonalTensor(Tensor):
         raise TypeError(funcs.errorMessage(location = "DiagonalTensor.outProduct", err = "DiagonalTensor cannot perform outProduct, since the diagonal nature will be destroyed."))
 
     def norm(self):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have norm since no data contained.', 'DiagonalTensor.norm')
         return self.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have trace since no data contained.', 'DiagonalTensor.trace')
         return self.xp.sum(self.a)
 
     def single(self):
         # return the single value of this tensor
         # only works if shape == (,)
         # assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to single value since no data contained.', 'DiagonalTensor.single')
         assert self._length == 1, "Error: cannot get single value from diagTensor whose length is not (1,)."
         return self.a
 
     def toTensor(self, labels = None):
+        assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to tensor since no data contained.', 'DiagonalTensor.toTensor')
         if (labels is not None):
             self.reArrange(labels)
         return funcs.diagonalMatrix(self.a, self.dim)

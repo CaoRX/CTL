@@ -348,6 +348,44 @@ class TestDiagonalTensor(PackedTest):
             aRealTensor[(i, i, i)] = i + 1
         self.assertTrue(funcs.floatArrayEqual(aTensor, aRealTensor))
 
+    def test_DiagonalTensorCopy(self):
+        aData = np.ones((3, 3))
+        a = DiagonalTensor(shape = (3, 3), labels = ['a', 'b'], data = aData)
+        aData[(0, 0)] = 2.0
+        self.assertEqual(a.a[0], 1.0)
+
+class TestDiagonalTensorLike(PackedTest):
+
+    def __init__(self, methodName = 'runTest'):
+        super().__init__(methodName = methodName, name = 'Diagonal TensorLike')
+    
+    def test_diagonalTensorLike(self):
+        diagonalTensor = DiagonalTensor(shape = (3, 3), tensorLikeFlag = True)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['a', 'b'])
+        self.assertIsNone(diagonalTensor.a)
+
+        diagonalTensor = DiagonalTensor(data = np.zeros((3, 3)), tensorLikeFlag = True) # only data is given
+        self.assertTrue(diagonalTensor.diagonalFlag)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['a', 'b'])
+        self.assertIsNone(diagonalTensor.a)
+
+        diagonalTensor = DiagonalTensor(data = np.ones((3, 3)), labels = ['up', 'down'], tensorLikeFlag = True) # only data is given
+        self.assertTrue(diagonalTensor.diagonalFlag)
+        self.assertEqual(diagonalTensor.dim, 2)
+        self.assertTupleEqual(diagonalTensor.shape, (3, 3))
+        self.assertListEqual(diagonalTensor.labels, ['up', 'down'])
+        self.assertIsNone(diagonalTensor.a)
+
+        self.assertRaises(AssertionError, diagonalTensor.norm)
+        self.assertRaises(AssertionError, diagonalTensor.trace)
+        self.assertRaises(AssertionError, diagonalTensor.toTensor)
+        self.assertRaises(AssertionError, lambda: diagonalTensor.toMatrix(rows = None, cols = None))
+        self.assertRaises(AssertionError, diagonalTensor.toVector)
+
 
 
 
