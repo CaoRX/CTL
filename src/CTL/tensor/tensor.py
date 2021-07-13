@@ -446,6 +446,14 @@ class Tensor(TensorBase):
         else:
             return "Tensor"
 
+    def labelInTensor(self, label):
+        return label in self.labels 
+    def labelsInTensor(self, labels):
+        for label in labels:
+            if not (label in self.labels):
+                return False
+
+        return True
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)
 

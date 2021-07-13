@@ -105,6 +105,8 @@ class FreeBoundaryMPS:
                 self.tensors[i] = u
                 self.tensors[i - 1] = sv
 
-    def swap(self, tensorA, tensorB):
+    def swap(self, aIdx, bIdx):
         # tensorA and tensorB are tensors in tensorList
-        pass 
+        assert ((aIdx >= 0) and (aIdx < self.n) and (bIdx < self.n) and (bIdx >= 0) and (abs(aIdx - bIdx) == 1)), funcs.errorMessage("index {} and {} are not valid for MPS with {} tensors.".format(aIdx, bIdx, self.n), location = "FreeBoundaryMPS.swap")
+        
+        self.tensors[aIdx], _, self.tensors[bIdx] = SchimdtDecomposition(self.tensors[aIdx], self.tensors[bIdx], self.chi, squareRootSeparation = True, swapLabels = (['o'], ['o']))
