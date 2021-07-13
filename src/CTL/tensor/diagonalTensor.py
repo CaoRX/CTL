@@ -11,6 +11,11 @@ class DiagonalTensor(Tensor):
         # if the labels is given: then use labels
         # otherwise, if data is given(as an ndarray), then we return then len(data.shape)
         # otherwise, error
+
+        if (data is not None) and (len(data.shape) != 1) and (labels is not None) and ((len(labels) != len(data.shape)) or (len(labels) == 0 and len(data.shape) == 1)):
+            raise ValueError(funcs.errorMessage(location = "DiagonalTensor.deduceDimension", err = "data {} and labels {} are not compatible.".format(data, labels)))
+        # what if len(labels) == 0, len(data.shape) == 1?
+
         if (labels is not None):
             return len(labels)
         elif (data is not None):
@@ -18,12 +23,21 @@ class DiagonalTensor(Tensor):
             return len(data.shape)
         else:
             raise ValueError(funcs.errorMessage(location = "DiagonalTensor.deduceDimension", err = "both data and labels are None."))
-        
+    
+    # TODO: add the affect of "legs" to the deduction
+    # the strategy is almost the same as Tensor
+    # the only difference is that, when we have one integer as shape, and we have dimension: we can give the real shape by repeat for dim times
     
     # deduce strategy:
     # we want length and dim
     # priority for length: shape > data
     # priority for dim: shape > labels > data
+
+    # 0. leg exist: the shape is already done
+    # check if shape of leg is ok for diagonal tensor
+    # if shape exist: check if shape is ok with shape of leg(integer / tuple)
+    # if label exist: check if dimension of labels ok with legs
+    # if data exist: ...
 
     # 1. shape exist: shape can be either an integer, or a n-element tuple
     # for int case: deduce dim from labels, then data
@@ -38,7 +52,64 @@ class DiagonalTensor(Tensor):
 
     # 3. labels not exist: check data for (dim, length)
 
-    def deduceData(self, data, labels, shape, tensorLikeFlag):
+    def checkLegsDiagonalCompatible(self, legs):
+        if (len(legs) == 0):
+            return True 
+        l = legs[0].dim 
+        for leg in legs:
+            if (leg.dim != l):
+                return False 
+        return True
+    def checkShapeDiagonalCompatible(self, shape):
+        if (len(shape) == 0):
+            return True 
+        l = shape[0]
+        for dim in shape:
+            if (dim != l):
+                return False 
+        return True
+
+    def checkLegsShapeCompatible(self, legs, shape):
+        if (shape is None):
+            return True 
+        if (isinstance(shape, int)):
+            shape = tuple([shape] * len(legs))
+        if (isinstance(shape, list) or isinstance(shape, tuple)):
+            shapeList = list(shape)
+            if (len(shapeList) != len(legs)):
+                return False 
+            for dim, leg in zip(shapeList, legs):
+                if (dim != leg.dim):
+                    return False 
+            return True
+        else:
+            return False
+    
+    def checkShapeDataCompatible(self, shape, data):
+        # we know shape, and want to see if data is ok
+        if (data is None):
+            return True 
+        if (isinstance(shape, int)):
+            shape = tuple([shape] * len(data.shape))
+        return ((len(data.shape) == 1) and (len(shape) > 0) and (len(data) == shape[0])) or (funcs.tupleProduct(data.shape) == funcs.tupleProduct(shape))
+
+    def generateData(self, shape, data, isTensorLike):
+        if (isTensorLike):
+            return None
+        # print('generating data for data = {}'.format(data))
+        if (data is None):
+            data = self.xp.ones(shape[0])
+        # otherwise, data can be 1D-array, or ndarray
+        elif (len(data.shape) == 1):
+            data = self.xp.copy(data)
+        else:
+            l, dim = len(shape), shape[0]
+            # print('dim = {}, l = {}'.format(dim, l))
+            # print(self.xp.diag_indices(dim, l))
+            data = self.xp.copy(data[self.xp.diag_indices(dim, l)])
+        return data
+
+    def deduction(self, legs, data, labels, shape, isTensorLike = False):
         # in Tensor: the "shape" has the highest priority
         # so if the shape is given here, it should be taken
         # however, if the shape is given as an integer: then we need to deduce the dimension
@@ -46,82 +117,151 @@ class DiagonalTensor(Tensor):
         # if shape exist: then according to shape(but dim may be deduced)
         # otherwise, if labels exist, then dim from labels, and l from data
         # otherwise, both dim and l from data
-        funcName = "DiagonalTensor.deduceData"
-        if (shape is not None):
+        funcName = "DiagonalTensor.deduction"
+
+        if (legs is not None):
+
+            if (not self.checkLegsDiagonalCompatible(legs = legs)):
+                raise ValueError(funcs.errorMessage('legs {} cannot be considered as legs for diagonal tensor.'.format(legs), location = funcName))
+
+            if (not self.checkLegsLabelsCompatible(legs = legs, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with legs {}'.format(labels, legs), location = funcName))
+            if (labels is None):
+                labels = [leg.name for leg in legs]
+
+            if (not self.checkLegsShapeCompatible(legs = legs, shape = shape)):
+                raise ValueError(funcs.errorMessage('shape {} is not compatible with legs {}'.format(shape, legs), location = funcName))
+            if (shape is None) or (isinstance(shape, int)):
+                shape = tuple([leg.dim for leg in legs]) 
+
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = funcName))
+
+        elif (shape is not None):
+
             if (isinstance(shape, int)):
-                dim = self.deduceDimension(data, labels)
-                l = shape
-            else:
-                dim = len(shape)
-                if (dim == 0) or (not funcs.checkAllEqual(shape)):
-                    raise ValueError(funcs.errorMessage(location = funcName, err = "shape {} is not valid.".format(shape)))
-                l = shape[0]
-                # then we need to deduce dimension
+                dim = self.deduceDimension(data = data, labels = labels)
+                shape = tuple([shape] * dim)
             
-            if (labels is not None) and (len(labels) != dim):
-                raise ValueError(funcs.errorMessage(location = funcName, err = "number of labels is not the same as dim: {} expected but {} obtained.".format(dim, len(labels))))
+            if (not self.checkShapeDiagonalCompatible(shape = shape)):
+                raise ValueError(funcs.errorMessage('shape {} cannot be considered as shape for diagonal tensor.'.format(shape), location = funcName))
+
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = funcName))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
             
-            elif (data is not None):
-                # data can be either shape, or an array of l
-                if (len(data.shape) == 1):
-                    if (data.shape[0] != l):
-                        raise ValueError(funcs.errorMessage(location = funcName, err = "data length is not the same as length deduced from shape: {} expected but {} obtained.".format(l, data.shape[0])))
-                
-                elif (len(data.shape) != dim) or (data.shape != tuple([l] * dim)):
-                    raise ValueError(funcs.errorMessage(location = funcName, err = "data shape is not correct: {} expected but {} obtained.".format(tuple([l] * dim), data.shape)))
+            if (not self.checkShapeDataCompatible(shape = shape, data = data)):
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = funcName))
 
+        elif (data is not None):
+            # legs, shape are both None
+            shape = data.shape 
+            if (not self.checkShapeDiagonalCompatible(shape = shape)):
+                raise ValueError(funcs.errorMessage('data shape {} cannot be considered as shape for diagonal tensor.'.format(shape), location = funcName))
+            
+            dim = self.deduceDimension(data = data, labels = labels)
+            if (len(shape) == 1) and (dim > 1):
+                shape = tuple([shape[0]] * dim)
 
-            # shape is None, how to deduce shape?
-        elif (labels is not None):
-            dim = len(labels)
-            if (data is None):
-                raise ValueError(funcs.errorMessage(location = funcName, err = "cannot deduce data shape since data and shape are both None."))
-            elif (len(data.shape) == 1):
-                l = len(data)
-            elif not funcs.checkAllEqual(data.shape):
-                raise ValueError(funcs.errorMessage(location = funcName, err = "data.shape {} is not valid.".format(data.shape)))
-            else:
-                if (len(data.shape) != dim):
-                    raise ValueError(funcs.errorMessage(location = funcName, err = "dimension of data is not compatible with dimension deduced from labels: expect {} but {} is given.".format(dim, len(data.shape))))
-                l = data.shape[0]
-        
+            if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = funcName))
+            if (labels is None):
+                labels = self.generateLabels(len(shape))
+
         else:
-            # deduce from data.shape
-            if (data is None):
-                raise ValueError(funcs.errorMessage(location = funcName, err = "data, labes and shape are all None."))
-            elif not funcs.checkAllEqual(data.shape):
-                raise ValueError(funcs.errorMessage(location = funcName, err = "data.shape {} is not valid.".format(data.shape)))
-            else:
-                dim = len(data.shape)
-                l = data.shape[0]
+            raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = funcName))
+
+        # elif (shape is not None):
+        #     if (isinstance(shape, int)):
+        #         dim = self.deduceDimension(data, labels)
+        #         l = shape
+        #     else:
+        #         dim = len(shape)
+        #         if (dim == 0) or (not funcs.checkAllEqual(shape)):
+        #             raise ValueError(funcs.errorMessage(location = funcName, err = "shape {} is not valid.".format(shape)))
+        #         l = shape[0]
+        #         # then we need to deduce dimension
+            
+        #     if (labels is not None) and (len(labels) != dim):
+        #         raise ValueError(funcs.errorMessage(location = funcName, err = "number of labels is not the same as dim: {} expected but {} obtained.".format(dim, len(labels))))
+            
+        #     elif (data is not None):
+        #         # data can be either shape, or an array of l
+        #         if (len(data.shape) == 1):
+        #             if (data.shape[0] != l):
+        #                 raise ValueError(funcs.errorMessage(location = funcName, err = "data length is not the same as length deduced from shape: {} expected but {} obtained.".format(l, data.shape[0])))
+                
+        #         elif (len(data.shape) != dim) or (data.shape != tuple([l] * dim)):
+        #             raise ValueError(funcs.errorMessage(location = funcName, err = "data shape is not correct: {} expected but {} obtained.".format(tuple([l] * dim), data.shape)))
+
+
+        #     # shape is None, how to deduce shape?
+        # elif (labels is not None):
+        #     dim = len(labels)
+        #     if (data is None):
+        #         raise ValueError(funcs.errorMessage(location = funcName, err = "cannot deduce data shape since data and shape are both None."))
+        #     elif (len(data.shape) == 1):
+        #         l = len(data)
+        #     elif not funcs.checkAllEqual(data.shape):
+        #         raise ValueError(funcs.errorMessage(location = funcName, err = "data.shape {} is not valid.".format(data.shape)))
+        #     else:
+        #         if (len(data.shape) != dim):
+        #             raise ValueError(funcs.errorMessage(location = funcName, err = "dimension of data is not compatible with dimension deduced from labels: expect {} but {} is given.".format(dim, len(data.shape))))
+        #         l = data.shape[0]
+        
+        # else:
+        #     # deduce from data.shape
+        #     if (data is None):
+        #         raise ValueError(funcs.errorMessage(location = funcName, err = "data, labes and shape are all None."))
+        #     elif not funcs.checkAllEqual(data.shape):
+        #         raise ValueError(funcs.errorMessage(location = funcName, err = "data.shape {} is not valid.".format(data.shape)))
+        #     else:
+        #         dim = len(data.shape)
+        #         l = data.shape[0]
 
         # print('l = {}, dim = {}'.format(l, dim))
             
-        shape = tuple([l] * dim) 
+        # shape = tuple([l] * dim) 
 
-        if (tensorLikeFlag):
-            data = None
-        elif (data is None):
-            # default is identity
-            data = self.xp.ones(l)
-        elif (len(data.shape) == 1):
-            data = self.xp.copy(data)
-        else:
-            data = self.xp.array([data[tuple([x] * dim)] for x in range(l)])
+        data = self.generateData(shape = shape, data = data, isTensorLike = isTensorLike)
+
+        # if (tensorLikeFlag):
+        #     data = None
+        # elif (data is None):
+        #     # default is identity
+        #     data = self.xp.ones(l)
+        # elif (len(data.shape) == 1):
+        #     data = self.xp.copy(data)
+        # else:
+        #     data = self.xp.array([data[tuple([x] * dim)] for x in range(l)])
 
         # must be a copy of original "data" if exist
 
-        if (labels is None):
-            labels = self.generateLabels(dim)
-        return data, labels, shape
+        # if (labels is None):
+        #     labels = self.generateLabels(dim)
+        
+        if (legs is None):
+            legs = []
+            for label, dim in zip(labels, list(shape)):
+                legs.append(Leg(self, dim, label))
+
+        else:
+            for leg in legs:
+                leg.tensor = self
+
+        return legs, data, labels, shape
+
+        
             
 
     def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False):
         super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag)
 
-        data, labels, shape = self.deduceData(data = data, labels = labels, shape = shape, tensorLikeFlag = tensorLikeFlag)
+        legs, data, labels, shape = self.deduction(legs = legs, data = data, labels = labels, shape = shape, isTensorLike = tensorLikeFlag)
 
         self.a = data
+        self.legs = legs
         self.totalSize = funcs.tupleProduct(shape)
 
         # functions of Tensor from here
@@ -131,16 +271,6 @@ class DiagonalTensor(Tensor):
 
         self._dim = len(shape)
         self._length = shape[0]
-
-        if (legs is None):
-            self.legs = []
-            for label, dim in zip(labels, list(self.shape)):
-                self.legs.append(Leg(self, dim, label))
-        else:
-            assert (len(legs) == self.dim), "Error: number of legs and dim are not compatible in Tensor.__init__(): {} and {}.".format(len(legs), self.dim)
-            self.legs = legs 
-            for leg in self.legs:
-                leg.tensor = self
 
     @property 
     def dim(self):

@@ -93,40 +93,41 @@ class Tensor(TensorBase):
             
     def deduction(self, legs, shape, labels, data, isTensorLike = False):
         # print('deduction(legs = {}, shape = {}, labels = {}, data = {}, isTensorLike = {})'.format(legs, shape, labels, data, isTensorLike))
+        funcName = "Tensor.deduction"
         if (legs is not None):
 
             if (not self.checkLegsLabelsCompatible(legs = legs, labels = labels)):
-                raise ValueError(funcs.errorMessage('labels {} is not compatible with legs {}'.format(labels, legs), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with legs {}'.format(labels, legs), location = funcName))
             if (labels is None):
                 labels = [leg.name for leg in legs]
 
             if (not self.checkLegsShapeCompatible(legs = legs, shape = shape)):
-                raise ValueError(funcs.errorMessage('shape {} is not compatible with legs {}'.format(shape, legs), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('shape {} is not compatible with legs {}'.format(shape, legs), location = funcName))
             if (shape is None):
                 shape = tuple([leg.dim for leg in legs]) 
 
             if (not self.checkShapeDataCompatible(shape = shape, data = data)):
-                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = funcName))
         
         elif (shape is not None):
 
             if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
-                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = funcName))
             if (labels is None):
                 labels = self.generateLabels(len(shape))
             
             if (not self.checkShapeDataCompatible(shape = shape, data = data)):
-                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('data shape {} is not compatible with required shape {}'.format(data.shape, shape), location = funcName))
 
         elif (data is not None):
             shape = data.shape 
             if (not self.checkShapeLabelsCompatible(shape = shape, labels = labels)):
-                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = "Tensor.deduction"))
+                raise ValueError(funcs.errorMessage('labels {} is not compatible with required shape {}'.format(labels, shape), location = funcName))
             if (labels is None):
                 labels = self.generateLabels(len(shape))
 
         else:
-            raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = "Tensor.deduction"))
+            raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = funcName))
 
         data = self.generateData(shape = shape, data = data, isTensorLike = isTensorLike)
         
