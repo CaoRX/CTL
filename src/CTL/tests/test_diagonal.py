@@ -7,6 +7,7 @@ from CTL.tensor.contract.optimalContract import contractTensorList, generateOpti
 from CTL.tensor.contract.contract import contractTwoTensors
 from CTL.tensor.contract.optimalContract import makeTensorGraph, contractAndCostWithSequence
 import CTL.funcs.funcs as funcs
+from CTL.tensor.leg import Leg
 
 import numpy as np 
 
@@ -16,6 +17,7 @@ class TestDiagonalTensor(PackedTest):
         super().__init__(methodName = methodName, name = 'diagonalTensor')
 
     def test_diagonalTensor(self):
+        self.showTestCaseBegin("diagonal tensor")
         diagonalTensor = DiagonalTensor(shape = (3, 3))
         self.assertEqual(diagonalTensor.dim, 2)
         self.assertTupleEqual(diagonalTensor.shape, (3, 3))
@@ -35,9 +37,11 @@ class TestDiagonalTensor(PackedTest):
 
         self.assertEqual(diagonalTensor.norm(), np.sqrt(3.0))
         self.assertEqual(diagonalTensor.trace(), 3.0)
+        self.showTestCaseEnd("diagonal tensor")
 
     def test_contraction(self):
-        print('Begin test diagonalTensor contraction.')
+        self.showTestCaseBegin("diagonal tensor contraction")
+        # print('Begin test diagonalTensor contraction.')
         a = DiagonalTensor(shape = (2, 2), labels = ['a', 'b'])
         b = Tensor(shape = (2, ), labels = ['x'])
         c = Tensor(shape = (2, ), labels = ['y'])
@@ -130,8 +134,74 @@ class TestDiagonalTensor(PackedTest):
         self.assertEqual(res.dim, 3)
         self.assertTrue(funcs.compareLists(list(res.shape), [2, 3, 3]))
         self.assertEqual(cost, 18.0)
+        self.showTestCaseEnd("diagonal tensor contraction")
 
     def test_deduce(self):
+
+        self.showTestCaseBegin("diagonal tensor shape deduction")
+
+        legA = Leg(tensor = None, dim = 5, name = 'a')
+        legB = Leg(tensor = None, dim = 5, name = 'b')
+        legBError = Leg(tensor = None, dim = 6, name = 'b')
+
+        a = DiagonalTensor(legs = [legA, legB])
+        self.assertTupleEqual(a.shape, (5, 5))
+        self.assertEqual(a.dim, 2)
+        self.assertTrue(funcs.compareLists(a.labels, ['a', 'b']))
+        self.assertTrue(funcs.floatArrayEqual(a.a, np.ones(5)))
+
+        a = DiagonalTensor(legs = [legA, legB], labels = ['a', 'b'])
+        self.assertTupleEqual(a.shape, (5, 5))
+        self.assertEqual(a.dim, 2)
+        self.assertTrue(funcs.compareLists(a.labels, ['a', 'b']))
+        self.assertTrue(funcs.floatArrayEqual(a.a, np.ones(5)))
+
+        a = DiagonalTensor(legs = [legA, legB], shape = 5)
+        self.assertTupleEqual(a.shape, (5, 5))
+        self.assertEqual(a.dim, 2)
+        self.assertTrue(funcs.compareLists(a.labels, ['a', 'b']))
+        self.assertTrue(funcs.floatArrayEqual(a.a, np.ones(5)))
+
+        a = DiagonalTensor(legs = [legA, legB], shape = 5, data = np.zeros(5))
+        self.assertTupleEqual(a.shape, (5, 5))
+        self.assertEqual(a.dim, 2)
+        self.assertTrue(funcs.compareLists(a.labels, ['a', 'b']))
+        self.assertTrue(funcs.floatArrayEqual(a.a, np.zeros(5)))
+
+        def legDimNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legBError])
+
+        def labelsSizeNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], labels = ['a'])
+        def labelsOrderNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], labels = ['b', 'a'])
+
+        def shapeSizeNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], shape = (5, 6, 7))
+        def shapeOrderNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], shape = (6, 5))
+        
+        def dataDimNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], data = np.zeros((5, 6, 7)))
+        def dataShapeNotEqualFunc():
+            _ = DiagonalTensor(legs = [legA, legB], data = np.zeros((5, 6)))
+        def labelsShapeNotCompatibleFunc():
+            _ = DiagonalTensor(legs = [legA, legB], labels = ['a'], data = np.zeros((5, 5)))
+        def dimensionless1DDataErrorFunc():
+            _ = DiagonalTensor(legs = [], labels = [], data = np.zeros(3))
+        def dimensionless1DDataErrorFunc2():
+            _ = DiagonalTensor(labels = [], data = np.zeros(3))
+
+        self.assertRaises(ValueError, legDimNotEqualFunc)
+        self.assertRaises(ValueError, labelsSizeNotEqualFunc)
+        self.assertRaises(ValueError, labelsOrderNotEqualFunc)
+        self.assertRaises(ValueError, shapeSizeNotEqualFunc)
+        self.assertRaises(ValueError, shapeOrderNotEqualFunc)
+        self.assertRaises(ValueError, dataDimNotEqualFunc)
+        self.assertRaises(ValueError, dataShapeNotEqualFunc)
+        self.assertRaises(ValueError, labelsShapeNotCompatibleFunc)
+        self.assertRaises(ValueError, dimensionless1DDataErrorFunc)
+        self.assertRaises(ValueError, dimensionless1DDataErrorFunc2)
 
         a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
         self.assertTupleEqual(a.shape, (2, 2))
@@ -222,7 +292,11 @@ class TestDiagonalTensor(PackedTest):
         self.assertRaises(ValueError, dataShapeErrorFunc3)
         self.assertRaises(ValueError, nothingErrorFunc)
 
+        self.showTestCaseEnd("diagonal tensor shape deduction")
+
     def test_extremeContraction(self):
+
+        self.showTestCaseBegin("diagonal tensor extreme contraction")
 
         aData = np.random.random_sample(2)
         aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
@@ -340,15 +414,20 @@ class TestDiagonalTensor(PackedTest):
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
         self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
+        self.showTestCaseEnd("diagonal tensor extreme contraction")
+
     def test_toTensor(self):
+        self.showTestCaseBegin("diagonal tensor toTensor")
         a = DiagonalTensor(shape = (3, 3, 3), labels = ['a', 'b', 'c'], data = np.array([1, 2, 3]))
         aTensor = a.toTensor()
         aRealTensor = np.zeros((3, 3, 3))
         for i in range(3):
             aRealTensor[(i, i, i)] = i + 1
         self.assertTrue(funcs.floatArrayEqual(aTensor, aRealTensor))
+        self.showTestCaseEnd("diagonal tensor toTensor")
 
     def test_DiagonalTensorCopy(self):
+        self.showTestCaseBegin("diagonal tensor copy")
         aData = np.ones((3, 3))
         a = DiagonalTensor(shape = (3, 3), labels = ['a', 'b'], data = aData)
         aData[(0, 0)] = 2.0
@@ -364,6 +443,7 @@ class TestDiagonalTensor(PackedTest):
 
         a.renameLabel('a', 'c')
         self.assertListEqual(b.labels, ['a', 'b'])
+        self.showTestCaseEnd('diagonal tensor copy')
 
 class TestDiagonalTensorLike(PackedTest):
 

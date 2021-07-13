@@ -13,6 +13,9 @@ class Leg:
         else:
             return self.bond.anotherSide(self)
 
+    def setTensor(self, tensor):
+        self.tensor = tensor
+
     def __repr__(self):
         # if (self.tensor.name is not None):
         parentStr = ', parent = {}'.format(self.tensor.__repr__())

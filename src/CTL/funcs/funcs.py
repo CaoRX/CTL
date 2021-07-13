@@ -361,6 +361,11 @@ def errorMessage(err, location = None):
 		return "Error: {}".format(err)
 	else:
 		return "Error in {}: {}".format(location, err)
+def warningMessage(warn, location = None):
+	if (location is None):
+		return "Warning: {}".format(warn)
+	else:
+		return "Warning in {}: {}".format(location, warn)
 
 def diagonalMatrix(a, dim):
 	l = a.shape[0]

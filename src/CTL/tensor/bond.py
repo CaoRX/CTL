@@ -1,5 +1,6 @@
 from CTL.funcs.stringSet import StringSet, getBondName
 from CTL.tensor.leg import Leg
+from CTL.funcs.funcs import errorMessage
 
 class Bond:
     # bondNameSet = set([])
@@ -24,5 +25,13 @@ class Bond:
         else:
             assert False, "Error: {} is not in ({}, {}).".format(leg, leg1, leg2)
             return None
+
+    def sideLeg(self, tensor):
+        if (self.legs[0] in tensor.legs):
+            return self.legs[0]
+        elif (self.legs[1] in tensor.legs):
+            return self.legs[1]
+        else:
+            raise ValueError(errorMessage("legs {} is not in tensor {}.".format(self.legs, tensor), location = 'Bond.sideLeg'))
 
 # getBondName = Bond.bondNameSet.newString
