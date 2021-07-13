@@ -280,7 +280,7 @@ class Tensor(TensorBase):
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
         return self.xp.copy(self.xp.ravel(self.a))
     
-    def toMatrix(self, rows, cols):
+    def toMatrix(self, rows = None, cols = None):
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs

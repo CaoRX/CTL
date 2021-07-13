@@ -7,7 +7,7 @@ from CTL.tensor.leg import Leg
 from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.contract.link import makeLink
 
-def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels = ([], [])):
+def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels = ([], []), singularValueEps = 1e-10):
     '''
     Schimdt decomposition between tensor ta and tb
     return ta, s, tb
@@ -29,8 +29,8 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     sb = shareBonds(ta, tb)
     assert (len(sb) > 0), funcs.errorMessage("Schimdt Decomposition cannot accept two tensors without common bonds, {} and {} gotten.".format(ta, tb), location = funcName)
 
-    sharedLabelA = sb[0].sideLeg(ta).label 
-    sharedLabelB = sb[0].sideLeg(tb).label
+    sharedLabelA = sb[0].sideLeg(ta).name
+    sharedLabelB = sb[0].sideLeg(tb).name
     # if (sharedLabelA.startswith('a-')):
     #     raise ValueError(funcs.errorMessage(err = "shared label {} of tensor A starts with 'a-'.".format(sharedLabelA), location = funcName))
     # if (sharedLabelB.startswith('b-')):
@@ -70,7 +70,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
 
     u, s, vh = np.linalg.svd(mat)
 
-    chi = min([chi, totShapeA, totShapeB])
+    chi = min([chi, totShapeA, totShapeB, funcs.nonZeroElementN(s, singularValueEps)])
     u = u[:, :chi]
     s = s[:chi]
     vh = vh[:chi]

@@ -5,6 +5,7 @@ import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
 from CTL.tensor.contract.optimalContract import copyTensorList
 from CTL.examples.Schimdt import SchimdtDecomposition
+from CTL.tensor.tensorFunc import isIsometry
 import warnings
 
 class FreeBoundaryMPS:
@@ -45,7 +46,7 @@ class FreeBoundaryMPS:
         bondChi = -1
         for i in range(self.n - 1):
             bond = shareBonds(self.tensors[i], self.tensors[i + 1])[0]
-            bondChi = min(bondChi, bond.dim) 
+            bondChi = min(bondChi, bond.legs[0].dim) 
         
         if (chi is None):
             return bondChi 
@@ -67,7 +68,7 @@ class FreeBoundaryMPS:
 
         for i in range(self.n):
             for leg in self.tensors[i].legs:
-                if (leg not in self.internalBonds):
+                if (leg.bond not in self.internalBonds):
                     leg.name = 'o'
 
     def __init__(self, tensorList, chi = None):
@@ -79,8 +80,11 @@ class FreeBoundaryMPS:
 
         self.chi = self.getChi(chi)
         self.renameBonds()
+    
+    def __repr__(self):
+        return 'FreeBoundaryMPS(tensors = {}, chi = {})'.format(self.tensors, self.chi)
 
-    def canonicalize(self, direct):
+    def canonicalize(self, direct = 0):
         # the workflow of canonicalization:
         # direct = 0: left to right
         # direct = 1: right to left
@@ -110,3 +114,28 @@ class FreeBoundaryMPS:
         assert ((aIdx >= 0) and (aIdx < self.n) and (bIdx < self.n) and (bIdx >= 0) and (abs(aIdx - bIdx) == 1)), funcs.errorMessage("index {} and {} are not valid for MPS with {} tensors.".format(aIdx, bIdx, self.n), location = "FreeBoundaryMPS.swap")
         
         self.tensors[aIdx], _, self.tensors[bIdx] = SchimdtDecomposition(self.tensors[aIdx], self.tensors[bIdx], self.chi, squareRootSeparation = True, swapLabels = (['o'], ['o']))
+
+    def checkCanonical(self, direct = 0):
+        '''
+        check if the current MPS is in canonical 
+        '''
+        funcName = 'FreeBoundaryMPS.checkCanonical'
+        assert (direct in [0, 1]), funcs.errorMessage("direct must in [0, 1].", location = funcName)
+        if (self.n == 0):
+            warnings.warn(funcs.warningMessage("number of tensors in MPS is 0, return True", location = funcName))
+            return True
+        if (direct == 0):
+            if (not isIsometry(self.tensors[0], ['o'])):
+                return False 
+            for i in range(1, self.n - 1):
+                if (not isIsometry(self.tensors[i], ['l', 'o'])):
+                    return False 
+            return True 
+        else:
+            if (not isIsometry(self.tensors[-1], ['o'])):
+                return False 
+            for i in range(self.n - 2, 0, -1):
+                if (not isIsometry(self.tensors[i], ['r', 'o'])):
+                    return False 
+            return True
+        

@@ -118,7 +118,7 @@ def checkIdentity(a, eps = 1e-10):
 
 def symmetricError(a):
 	return np.linalg.norm(a - np.transpose(a)) / np.linalg.norm(a)
-def transposeConjugate(a):
+def transposeConjugate(a, np = np):
 	# transpose conjugate of matrix a
 	return np.conjugate(np.transpose(a))
 def aDaggerAProduct(a):
@@ -393,4 +393,6 @@ def ndEye(n, l):
 	else:
 		res[np.diag_indices(l, n)] = 1
 	return res
-	
+
+def nonZeroElementN(s, eps = 1e-10):
+	return np.count_nonzero(s > eps)
