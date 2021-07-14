@@ -28,6 +28,10 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     funcName = 'CTL.examples.Schimdt.SchimdtDecomposition'
     sb = shareBonds(ta, tb)
     assert (len(sb) > 0), funcs.errorMessage("Schimdt Decomposition cannot accept two tensors without common bonds, {} and {} gotten.".format(ta, tb), location = funcName)
+    assert (ta.tensorLikeFlag == tb.tensorLikeFlag), funcs.errorMessage("Schimdt Decomposition must havge two objects being either Tensor or TensorLike simultaneously, but {} and {} obtained.".format(ta, tb), location = funcName)
+
+    TLFlag = ta.tensorLikeFlag
+    sbDim = funcs.tupleProduct(tuple([bond.legs[0].dim for bond in sb]))
 
     sharedLabelA = sb[0].sideLeg(ta).name
     sharedLabelB = sb[0].sideLeg(tb).name
@@ -64,21 +68,31 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     totShapeA = funcs.tupleProduct(shapeA)
     totShapeB = funcs.tupleProduct(shapeB)
 
-    mat = tot.toMatrix(rows = labelA, cols = labelB)
+    if (TLFlag):
+        u = None 
+        vh = None
+        s = None
+        chi = min([chi, totShapeA, totShapeB, sbDim])
+    else:
+        mat = tot.toMatrix(rows = labelA, cols = labelB)
 
-    np = ta.xp # default numpy
+        np = ta.xp # default numpy
 
-    u, s, vh = np.linalg.svd(mat)
+        u, s, vh = np.linalg.svd(mat)
 
-    chi = min([chi, totShapeA, totShapeB, funcs.nonZeroElementN(s, singularValueEps)])
-    u = u[:, :chi]
-    s = s[:chi]
-    vh = vh[:chi]
+        chi = min([chi, totShapeA, totShapeB, funcs.nonZeroElementN(s, singularValueEps)])
+        u = u[:, :chi]
+        s = s[:chi]
+        vh = vh[:chi]
 
     if (squareRootSeparation):
-        sqrtS = np.sqrt(s)
-        uS = funcs.rightDiagonalProduct(u, sqrtS)
-        vS = funcs.leftDiagonalProduct(vh, sqrtS)
+        if (TLFlag):
+            uS = None 
+            vS = None
+        else:
+            sqrtS = np.sqrt(s)
+            uS = funcs.rightDiagonalProduct(u, sqrtS)
+            vS = funcs.leftDiagonalProduct(vh, sqrtS)
 
         outLegForU = Leg(None, chi, name = sharedLabelA)
         # inLegForU = Leg(None, chi, name = sharedLabelB)
@@ -87,10 +101,10 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
         # inLegForV = Leg(None, chi, name = sharedLabelA)
         outLegForV = Leg(None, chi, name = sharedLabelB)
 
-        uTensor = Tensor(data = uS, legs = legA + [outLegForU], shape = shapeA + (chi, ))
+        uTensor = Tensor(data = uS, legs = legA + [outLegForU], shape = shapeA + (chi, ), tensorLikeFlag = TLFlag)
         # s1Tensor = DiagonalTensor(data = np.sqrt(s), legs = [inLegForU, internalLegForS1], shape = (chi, chi))
         # s2Tensor = DiagonalTensor(data = np.sqrt(s), legs = [internalLegForS2, inLegForV], shape = (chi, chi))
-        vTensor = Tensor(data = vS, legs = [outLegForV] + legB, shape = (chi, ) + shapeB)
+        vTensor = Tensor(data = vS, legs = [outLegForV] + legB, shape = (chi, ) + shapeB, tensorLikeFlag = TLFlag)
 
         # legs should be automatically set by Tensor / DiagonalTensor, so no need for setTensor
         
@@ -123,9 +137,9 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     inLegForV = Leg(None, chi, name = sharedLabelA)
     outLegForV = Leg(None, chi, name = sharedLabelB)
 
-    uTensor = Tensor(data = u, legs = legA + [outLegForU], shape = shapeA + (chi, ))
-    sTensor = DiagonalTensor(data = s, legs = [inLegForU, inLegForV], shape = (chi, chi))
-    vTensor = Tensor(data = vh, legs = [outLegForV] + legB, shape = (chi, ) + shapeB)
+    uTensor = Tensor(data = u, legs = legA + [outLegForU], shape = shapeA + (chi, ), tensorLikeFlag = TLFlag)
+    sTensor = DiagonalTensor(data = s, legs = [inLegForU, inLegForV], shape = (chi, chi), tensorLikeFlag = TLFlag)
+    vTensor = Tensor(data = vh, legs = [outLegForV] + legB, shape = (chi, ) + shapeB, tensorLikeFlag = TLFlag)
 
     # legs should be automatically set by Tensor / DiagonalTensor, so no need for setTensor
     

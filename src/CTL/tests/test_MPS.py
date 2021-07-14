@@ -3,7 +3,7 @@ from CTL.tensor.tensor import Tensor
 import numpy as np
 from CTL.tests.packedTest import PackedTest
 import CTL.funcs.funcs as funcs
-from CTL.examples.MPS import FreeBoundaryMPS
+from CTL.examples.MPS import FreeBoundaryMPS, mergeMPS, contractMPS
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.tensorFunc import isIsometry
 
@@ -60,3 +60,92 @@ class TestMPS(PackedTest):
         mps.canonicalize(0)
         self.assertTrue(mps.checkCanonical(excepIdx = 0))
         self.assertEqual(mps.getTensor(0).legs[0].name, 'o')
+
+    def createMPSA(self, tensorLikeFlag = False):
+        tensor1L = Tensor(shape = (3, 3), labels = ['o', 'internal'], tensorLikeFlag = tensorLikeFlag)
+        tensor11 = Tensor(shape = (3, 5, 4), labels = ['itl', 'oo', 'itr'], tensorLikeFlag = tensorLikeFlag)
+        tensor12 = Tensor(shape = (4, 2, 4), labels = ['itl', 'oo', 'itr'], tensorLikeFlag = tensorLikeFlag)
+        tensor13 = Tensor(shape = (4, 3, 2), labels = ['itl', 'oo', 'itr'], tensorLikeFlag = tensorLikeFlag)
+        tensor1R = Tensor(shape = (2, 5), labels = ['internal', 'o'], tensorLikeFlag = tensorLikeFlag)
+
+        makeLink('internal', 'itl', tensor1L, tensor11)
+        makeLink('itr', 'itl', tensor11, tensor12)
+        makeLink('itr', 'itl', tensor12, tensor13)
+        makeLink('itr', 'internal', tensor13, tensor1R)
+
+        tensorsA = [tensor1L, tensor11, tensor12, tensor13, tensor1R]
+
+        mpsA = FreeBoundaryMPS(tensorList = tensorsA, chi = 16)
+        return mpsA
+
+    def createMPSB(self, tensorLikeFlag = False):
+        tensor2L = Tensor(shape = (3, 3), labels = ['o', 'internal'], tensorLikeFlag = tensorLikeFlag)
+        tensor21 = Tensor(shape = (3, 5, 4), labels = ['itl', 'oo', 'itr'], tensorLikeFlag = tensorLikeFlag)
+        tensor22 = Tensor(shape = (4, 2, 4), labels = ['itl', 'oo', 'itr'], tensorLikeFlag = tensorLikeFlag)
+        tensor2R = Tensor(shape = (4, 5), labels = ['internal', 'o'], tensorLikeFlag = tensorLikeFlag)
+
+        makeLink('internal', 'itl', tensor2L, tensor21)
+        makeLink('itr', 'itl', tensor21, tensor22)
+        makeLink('itr', 'internal', tensor22, tensor2R)
+
+        tensorsB = [tensor2L, tensor21, tensor22, tensor2R]
+        mpsB = FreeBoundaryMPS(tensorList = tensorsB, chi = 12)
+        return mpsB
+    def test_MPSContraction(self):
+        mpsA = self.createMPSA(tensorLikeFlag = False)
+        mpsB = self.createMPSB(tensorLikeFlag = False)
+
+        tensorA2 = mpsA.getTensor(2)
+        tensorB2 = mpsB.getTensor(2)
+
+        makeLink('o', 'o', tensorA2, tensorB2)
+        # print(mpsA, mpsB)
+        mps = contractMPS(mpsA, mpsB)
+        # print(mps)
+
+        mps.canonicalize(idx = 2)
+        self.assertTrue(mps.checkCanonical())
+        self.assertTrue(mps.n, 7) # 4 + 5 - 2
+        self.assertTrue(mps.activeIdx, 2)
+
+        mpsA = self.createMPSA(tensorLikeFlag = True)
+        mpsB = self.createMPSB(tensorLikeFlag = True)
+
+        tensorA2 = mpsA.getTensor(2)
+        tensorB2 = mpsB.getTensor(2)
+
+        makeLink('o', 'o', tensorA2, tensorB2)
+        # print(mpsA, mpsB)
+        mps = contractMPS(mpsA, mpsB)
+        # print(mps)
+
+        mps.canonicalize(idx = 2)
+        self.assertTrue(mps.checkCanonical())
+        self.assertTrue(mps.n, 7) # 4 + 5 - 2
+        self.assertTrue(mps.activeIdx, 2)
+
+
+    def test_MPSMerge(self):
+        mpsA = self.createMPSA()
+        mpsB = self.createMPSB()
+
+        makeLink('o', 'o', mpsA.getTensor(1), mpsB.getTensor(1))
+        makeLink('o', 'o', mpsA.getTensor(4), mpsB.getTensor(3))
+
+        print(mpsA, mpsB)
+
+        mergeMPS(mpsA, mpsB)
+        print(mpsA, mpsB)
+
+        self.assertTrue(mpsA.checkCanonical(excepIdx = mpsA.n - 1))
+        self.assertTrue(mpsB.checkCanonical(excepIdx = mpsB.n - 1))
+        self.assertEqual(mpsA.n, 4)
+        self.assertEqual(mpsB.n, 3)
+
+        mpsA.moveTensor(mpsA.n - 1, 1)
+        mpsB.moveTensor(mpsB.n - 1, 0)
+        mps = contractMPS(mpsB, mpsA)
+        mps.canonicalize(idx = 2)
+
+        self.assertTrue(mps.checkCanonical())
+        self.assertEqual(mps.n, 5)

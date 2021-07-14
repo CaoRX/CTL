@@ -238,16 +238,16 @@ class FreeBoundaryMPS:
 def commonLegs(mpsA, mpsB):
     indexA = []
     indexB = []
+    # print(mpsA, mpsB)
     for idx in range(mpsA.n):
         tensor = mpsA._tensors[idx]
         leg = tensor.getLeg('o')
-        if (leg.bond is None):
-            try:
-                idxB = mpsB._tensors.index(leg.anotherSide().tensor)
-            except:
+        if (leg.bond is not None):
+            idxB = mpsB._tensors.index(leg.anotherSide().tensor)
+            if (idxB is None):
                 continue
-        indexA.append(idx)
-        indexB.append(idxB)
+            indexA.append(idx)
+            indexB.append(idxB)
     return indexA, indexB
 def contractMPS(mpsA, mpsB):
     '''
@@ -273,6 +273,7 @@ def contractMPS(mpsA, mpsB):
     '''
     funcName = 'CTL.examples.MPS.contractMPS'
     indexA, indexB = commonLegs(mpsA, mpsB)
+    print('indexA = {}, indexB = {}'.format(indexA, indexB))
     assert (len(indexA) == 1), funcs.errorMessage("contractMPS can only work on two MPSes sharing one bond, {} obtained.".format((indexA, indexB)), location = funcName)
     if (mpsA.chi != mpsB.chi):
         warnings.warn(funcs.warningMessage(warn = "chi for two MPSes are not equal: {} and {}, choose minimum for new chi.".format(mpsA.chi, mpsB.chi), location = funcName))
@@ -281,6 +282,8 @@ def contractMPS(mpsA, mpsB):
 
     mpsA.moveTensor(indexA, mpsA.n - 1)
     mpsB.moveTensor(indexB, 0)
+    # print('mpsA after swap = {}'.format(mpsA))
+    # print('mpsB after swap = {}'.format(mpsB))
 
     tensorA = mpsA.getTensor(mpsA.n - 1)
     tensorB = mpsB.getTensor(0)
@@ -330,8 +333,16 @@ def mergeMPS(mpsA, mpsB):
     idxB1, idxB2 = indexB 
     idxB1, idxB2 = mpsB.makeAdjacent(idxB1, idxB2)
 
+    print('mpsA after swap = {}'.format(mpsA))
+    print('mpsB after swap = {}'.format(mpsB))
+
     assert (idxA1 + 1 == idxA2) and (idxB1 + 1 == idxB2), funcs.errorMessage("index is not adjacent after swapping: ({}, {}) and ({}, {}).".format(idxA1, idxA2, idxB1, idxB2), location = funcName)
     doubleMerge(mpsA, mpsB, idxA1, idxB1)
 
-
-    # otherwise, merge indexA & indexB
+def createMPSFromTensor(tensor):
+    '''
+    tensor is a real Tensor with n outer legs
+    transfer it into an MPS with Schimdt decomposition
+    after this, we can manage the tensor network decomposition by MPS network decomposition
+    '''
+    pass
