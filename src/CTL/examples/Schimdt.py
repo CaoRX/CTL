@@ -36,7 +36,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     # if (sharedLabelB.startswith('b-')):
     #     raise ValueError(funcs.errorMessage(err = "shared label {} of tensor B starts with 'b-'.".format(sharedLabelB), location = funcName))
 
-    assert (ta.xp == tb.xp), funcs.errorMessage("Schimdt Decomposition cannot accetp two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
+    assert (ta.xp == tb.xp), funcs.errorMessage("Schimdt Decomposition cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
 
     assert (len(swapLabels[0]) == len(swapLabels[1])), funcs.errorMessage(err = "invalid swap labels {}.".format(swapLabels), location = funcName)
     assert ta.labelsInTensor(swapLabels[0]), funcs.errorMessage(err = "{} not in tensor {}.".format(swapLabels[0], ta), location = funcName)
@@ -76,17 +76,21 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     vh = vh[:chi]
 
     if (squareRootSeparation):
+        sqrtS = np.sqrt(s)
+        uS = funcs.rightDiagonalProduct(u, sqrtS)
+        vS = funcs.leftDiagonalProduct(vh, sqrtS)
+
         outLegForU = Leg(None, chi, name = sharedLabelA)
-        inLegForU = Leg(None, chi, name = sharedLabelB)
-        internalLegForS1 = Leg(None, chi, name = 'o')
-        internalLegForS2 = Leg(None, chi, name = 'o')
-        inLegForV = Leg(None, chi, name = sharedLabelA)
+        # inLegForU = Leg(None, chi, name = sharedLabelB)
+        # internalLegForS1 = Leg(None, chi, name = 'o')
+        # internalLegForS2 = Leg(None, chi, name = 'o')
+        # inLegForV = Leg(None, chi, name = sharedLabelA)
         outLegForV = Leg(None, chi, name = sharedLabelB)
 
-        uTensor = Tensor(data = u, legs = legA + [outLegForU], shape = shapeA + (chi, ))
-        s1Tensor = DiagonalTensor(data = np.sqrt(s), legs = [inLegForU, internalLegForS1], shape = (chi, chi))
-        s2Tensor = DiagonalTensor(data = np.sqrt(s), legs = [internalLegForS2, inLegForV], shape = (chi, chi))
-        vTensor = Tensor(data = vh, legs = [outLegForV] + legB, shape = (chi, ) + shapeB)
+        uTensor = Tensor(data = uS, legs = legA + [outLegForU], shape = shapeA + (chi, ))
+        # s1Tensor = DiagonalTensor(data = np.sqrt(s), legs = [inLegForU, internalLegForS1], shape = (chi, chi))
+        # s2Tensor = DiagonalTensor(data = np.sqrt(s), legs = [internalLegForS2, inLegForV], shape = (chi, chi))
+        vTensor = Tensor(data = vS, legs = [outLegForV] + legB, shape = (chi, ) + shapeB)
 
         # legs should be automatically set by Tensor / DiagonalTensor, so no need for setTensor
         
@@ -105,11 +109,13 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
             if (leg.name.startswith('b-')):
                 leg.name = leg.name[2:]
 
-        makeLink(outLegForU, inLegForU)
-        makeLink(outLegForV, inLegForV)
-        makeLink(internalLegForS1, internalLegForS2)
-        uTensor = contractTwoTensors(uTensor, s1Tensor)
-        vTensor = contractTwoTensors(vTensor, s2Tensor)
+        makeLink(outLegForU, outLegForV)
+
+        # makeLink(outLegForU, inLegForU)
+        # makeLink(outLegForV, inLegForV)
+        # makeLink(internalLegForS1, internalLegForS2)
+        # uTensor = contractTwoTensors(uTensor, s1Tensor)
+        # vTensor = contractTwoTensors(vTensor, s2Tensor)
         return uTensor, None, vTensor
 
     outLegForU = Leg(None, chi, name = sharedLabelA)

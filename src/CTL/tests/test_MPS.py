@@ -5,6 +5,7 @@ from CTL.tests.packedTest import PackedTest
 import CTL.funcs.funcs as funcs
 from CTL.examples.MPS import FreeBoundaryMPS
 from CTL.tensor.contract.link import makeLink
+from CTL.tensor.tensorFunc import isIsometry
 
 class TestMPS(PackedTest):
     def __init__(self, methodName = 'runTest'):
@@ -30,18 +31,32 @@ class TestMPS(PackedTest):
         self.assertEqual(mps.n, 5)
         # print(mps)
 
-        self.assertTrue(mps.checkMPSProperty(mps.tensors))
+        self.assertTrue(mps.checkMPSProperty(mps._tensors))
 
-        mps.canonicalize(direct = 0)
+        mps.canonicalize(idx = 0)
         # print(mps)
-        mps.canonicalize(direct = 0)
+        mps.canonicalize(idx = 0)
         # print(mps)
 
-        self.assertTrue(mps.checkCanonical(direct = 0))
-        self.assertFalse(mps.checkCanonical(direct = 1))
+        self.assertTrue(mps.checkCanonical(excepIdx = 0))
+        self.assertFalse(mps.checkCanonical(excepIdx = 2))
 
-        mps.canonicalize(direct = 1)
+        mps.canonicalize(idx = 2)
         # print(mps)
-        self.assertTrue(mps.checkCanonical(direct = 1))
-        self.assertFalse(mps.checkCanonical(direct = 0))
+        self.assertTrue(mps.checkCanonical(excepIdx = 2))
+        self.assertFalse(mps.checkCanonical(excepIdx = 0))
+        self.assertTrue(mps.checkCanonical())
+        self.assertEqual(mps.activeIdx, 2)
+
+        mps.moveTensor(2, 4)
+        self.assertTrue(isIsometry(mps.getTensor(0), labels = ['o']))
+        self.assertTrue(isIsometry(mps.getTensor(1), labels = ['o', 'l']))
+
+    def test_singleTensorMPS(self):
+        tensor = Tensor(data = np.random.random_sample(3), labels = ['oo'])
+        mps = FreeBoundaryMPS(tensorList = [tensor], chi = 16)
         
+        self.assertEqual(mps.n, 1)
+        mps.canonicalize(0)
+        self.assertTrue(mps.checkCanonical(excepIdx = 0))
+        self.assertEqual(mps.getTensor(0).legs[0].name, 'o')

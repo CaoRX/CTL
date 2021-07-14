@@ -2,6 +2,8 @@ import numpy as np
 import CTL.funcs.funcs as funcs
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.diagonalTensor import DiagonalTensor
+from CTL.tensor.leg import Leg 
+from CTL.tensor.contract.link import makeLink, mergeLink
 import warnings
 
 def shareBonds(ta, tb):
@@ -144,6 +146,100 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 	newData = np.reshape(newData, newShape)
 
 	return Tensor(shape = newShape, data = newData, legs = newLegs)
+
+def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
+	'''
+	input two tensors, connected with each other
+	(if not connected: error)
+	merge the bonds between two tensors to one bond
+	if chi is None: only merge but no approximation needed, otherwise truncate to at max chi
+	if bondName given: rename the legs of the bond to bondName
+	otherwise: name1|name2|... for all merged names for both side
+	'''
+	funcName = "CTL.tensor.contract.contract.truncate"
+
+	assert (ta.xp == tb.xp), funcs.errorMessage("Truncation cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
+
+	assert (ta.tensorLikeFlag == tb.tensorLikeFlag), funcs.errorMessage('two tensors to be merged must be either Tensor or TensorLike simultaneously, {} and {} obtained.'.format(ta, tb), location = funcName)
+
+	tensorLikeFlag = ta.tensorLikeFlag
+
+	xp = ta.xp
+	ta, tb = mergeLink(ta, tb, bondName = bondName, renameWarning = renameWarning)
+	if (chi is None):
+		# no need for truncation
+		return ta, tb
+
+	sb = shareBonds(ta, tb)
+	# assert (len(sb) > 0), funcs.errorMessage("Truncation cannot work on two tensors without common bonds: {} and {} gotten.".format(ta, tb), location = funcName)
+
+	# if (bondName is None):
+	# 	bondNameListA = [bond.sideLeg(ta).name for bond in sb]
+	# 	bondNameListB = [bond.sideLeg(tb).name for bond in sb]
+	# 	bondNameA = '|'.join(bondNameListA)
+	# 	bondNameB = '|'.join(bondNameListB)
+	# elif (isinstance(bondName, str)):
+	# 	bondNameA = bondName 
+	# 	bondNameB = bondName 
+	# else:
+	# 	bondNameA, bondNameB = bondName # tuple/list
+
+	if (len(sb) == 0):
+		if (renameWarning):
+			warnings.warn(funcs.warningMessage(warn = 'mergeLink cannot merge links between two tensors {} and {} sharing one bond, only rename'.format(ta, tb), location = funcName), RuntimeWarning)
+		return ta, tb
+
+	assert (len(sb) == 1), funcs.errorMessage("There should only be one common leg between ta and tb after mergeLink, {} obtained.".format(sb), location = funcName)
+	
+	legA = [bond.sideLeg(ta) for bond in sb]
+	legB = [bond.sideLeg(tb) for bond in sb]
+
+	bondNameA = legA[0].name 
+	bondNameB = legB[0].name
+
+	remainLegA = ta.complementLegs(legA)
+	remainLegB = tb.complementLegs(legB)
+
+	if (not tensorLikeFlag):
+
+		matA = ta.toMatrix(rows = None, cols = legA)
+		matB = tb.toMatrix(rows = legB, cols = None)
+
+		mat = matA @ matB 
+
+		u, s, vh = xp.linalg.svd(mat)
+
+		chi = min([chi, funcs.nonZeroElementN(s), matA.shape[0], matB.shape[1]])
+		u = u[:, :chi]
+		s = s[:chi]
+		vh = vh[:chi]
+
+		uOutLeg = Leg(tensor = None, dim = chi, name = bondNameA)
+		vOutLeg = Leg(tensor = None, dim = chi, name = bondNameB)
+		# print(legA, legB)
+
+		sqrtS = xp.sqrt(s)
+		uS = funcs.rightDiagonalProduct(u, sqrtS)
+		vS = funcs.leftDiagonalProduct(vh, sqrtS)
+
+		uTensor = Tensor(data = uS, legs = remainLegA + [uOutLeg])
+		vTensor = Tensor(data = vS, legs = [vOutLeg] + remainLegB)
+
+	else:
+		chi = min([chi, legA[0].dim, ta.totalSize // legA[0].dim, tb.totalSize // legB[0].dim])
+		uOutLeg = Leg(tensor = None, dim = chi, name = bondNameA)
+		vOutLeg = Leg(tensor = None, dim = chi, name = bondNameB)
+		uTensor = Tensor(tensorLikeFlag = True, legs = remainLegA + [uOutLeg])
+		vTensor = Tensor(tensorLikeFlag = True, legs = [vOutLeg] + remainLegB)
+
+	makeLink(uOutLeg, vOutLeg)
+	return uTensor, vTensor
+
+# def merge(ta1, ta2, tb1, tb2, chi):
+# 	funcName = 'CTL.tensor.contract.contract.merge'
+# 	assert (len(shareBonds(ta1, ta2)) > 0), funcs.errorMessage("{} and {} does not sharing bonds.".format(ta1, ta2), location = funcName)
+# 	assert (len(shareBonds(tb1, tb2)) > 0), funcs.errorMessage("{} and {} does not sharing bonds.".format(tb1, tb2), location = funcName)
+# 	return truncate(contractTwoTensors(ta1, ta2), contractTwoTensors(tb1, tb2), chi = chi)
 
 # def contractTwoTensorsByLabel(ta, tb, labels): # not in-place
 # 	labelA, labelB = labels

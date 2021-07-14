@@ -2,7 +2,8 @@
 # given a tensor, return the MPS by taking each bond as an MPS tensor
 
 import CTL.funcs.funcs as funcs
-from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
+from CTL.tensor.contract.contract import shareBonds, contractTwoTensors, merge
+from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.optimalContract import copyTensorList
 from CTL.examples.Schimdt import SchimdtDecomposition
 from CTL.tensor.tensorFunc import isIsometry
@@ -30,7 +31,7 @@ class FreeBoundaryMPS:
             if (len(shareBonds(tensorList[i], tensorList[i + 1])) != 1):
                 return False 
         
-        if (tensorList[0].dim != 2) or (tensorList[-1].dim != 2):
+        if (n > 1) and ((tensorList[0].dim != 2) or (tensorList[-1].dim != 2)):
             return False
         
         for i in range(1, n - 1):
@@ -45,7 +46,7 @@ class FreeBoundaryMPS:
         # otherwise, take chi
         bondChi = -1
         for i in range(self.n - 1):
-            bond = shareBonds(self.tensors[i], self.tensors[i + 1])[0]
+            bond = shareBonds(self._tensors[i], self._tensors[i + 1])[0]
             bondChi = min(bondChi, bond.legs[0].dim) 
         
         if (chi is None):
@@ -61,13 +62,13 @@ class FreeBoundaryMPS:
         # 'o' for external bonds
         self.internalBonds = set()
         for i in range(self.n - 1):
-            bond = shareBonds(self.tensors[i], self.tensors[i + 1])[0]
-            bond.sideLeg(self.tensors[i]).name = 'r'
-            bond.sideLeg(self.tensors[i + 1]).name = 'l'
+            bond = shareBonds(self._tensors[i], self._tensors[i + 1])[0]
+            bond.sideLeg(self._tensors[i]).name = 'r'
+            bond.sideLeg(self._tensors[i + 1]).name = 'l'
             self.internalBonds.add(bond)
 
         for i in range(self.n):
-            for leg in self.tensors[i].legs:
+            for leg in self._tensors[i].legs:
                 if (leg.bond not in self.internalBonds):
                     leg.name = 'o'
 
@@ -75,67 +76,262 @@ class FreeBoundaryMPS:
         if (not self.checkMPSProperty(tensorList)):
             raise ValueError(funcs.errorMessage("tensorList {} cannot be considered as an MPS".format(tensorList), location = "FreeBoundaryMPS.__init__"))
         
-        self.tensors = copyTensorList(tensorList)
-        self.n = len(self.tensors)
+        self._tensors = copyTensorList(tensorList)
+        # _tensors should not be modified directly: it will destroy the property self.activeIdx
+        # please use MPS.setTensor(idx, tensor) for changing the tensors
 
         self.chi = self.getChi(chi)
         self.renameBonds()
+
+        self.activeIdx = None
     
+    @property 
+    def n(self):
+        return len(self._tensors)
     def __repr__(self):
-        return 'FreeBoundaryMPS(tensors = {}, chi = {})'.format(self.tensors, self.chi)
+        return 'FreeBoundaryMPS(tensors = {}, chi = {})'.format(self._tensors, self.chi)
 
-    def canonicalize(self, direct = 0):
-        # the workflow of canonicalization:
-        # direct = 0: left to right
-        # direct = 1: right to left
-        # consider direct = 0: first contract 0 and 1
-        # then do an SVD over o0 and (o1, r1): T_0 T_1 = U S V
-        # the bond dimension should be min(o0, (o1, r1), chi)
-        # then we take U as new tensors[0], and SV to tensors[1]
-        # do the same for 1, 2, ... n - 2, and final S is into tensors[n - 1
+    # def canonicalize(self, direct = 0):
+    #     # the workflow of canonicalization:
+    #     # direct = 0: left to right
+    #     # direct = 1: right to left
+    #     # consider direct = 0: first contract 0 and 1
+    #     # then do an SVD over o0 and (o1, r1): T_0 T_1 = U S V
+    #     # the bond dimension should be min(o0, (o1, r1), chi)
+    #     # then we take U as new tensors[0], and SV to tensors[1]
+    #     # do the same for 1, 2, ... n - 2, and final S is into tensors[n - 1
 
-        assert (direct in [0, 1]), funcs.errorMessage("direct must in [0, 1].", location = "FreeBoundaryMPS.canonicalize")
+    #     assert (direct in [0, 1]), funcs.errorMessage("direct must in [0, 1].", location = "FreeBoundaryMPS.canonicalize")
         
-        if (direct == 0):
-            for i in range(self.n - 1):
-                u, s, v = SchimdtDecomposition(self.tensors[i], self.tensors[i + 1], self.chi)
-                sv = contractTwoTensors(s, v) 
-                self.tensors[i] = u
-                self.tensors[i + 1] = sv
-        else:
-            for i in range(self.n - 1, 0, -1):
-                u, s, v = SchimdtDecomposition(self.tensors[i], self.tensors[i - 1], self.chi)
-                sv = contractTwoTensors(s, v) 
-                self.tensors[i] = u
-                self.tensors[i - 1] = sv
+    #     if (direct == 0):
+    #         for i in range(self.n - 1):
+    #             u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i + 1], self.chi)
+    #             sv = contractTwoTensors(s, v) 
+    #             self._tensors[i] = u
+    #             self._tensors[i + 1] = sv
+    #     else:
+    #         for i in range(self.n - 1, 0, -1):
+    #             u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i - 1], self.chi)
+    #             sv = contractTwoTensors(s, v) 
+    #             self._tensors[i] = u
+    #             self._tensors[i - 1] = sv
+
+    def canonicalize(self, idx):
+        '''
+        canonicalize the MPS, and the only non-isometry will be put at 0 <= idx < n
+        after this, activeIdx will be set to idx
+        and we can check the canonicalization of the MPS with self.checkCanonical
+        if None for excepIdx(or set to the idx), it will give true before modified
+        '''
+        assert (isinstance(idx, int) and (idx >= 0) and (idx < self.n)), funcs.errorMessage('index must in [0, n - 1), {} gotten.'.format(idx), location = "FreeBoundaryMPS.canonicalize")
+        for i in range(idx):
+            # print('canonicalizing {} to {}'.format(i, i + 1))
+            u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i + 1], self.chi)
+            sv = contractTwoTensors(s, v)
+            self._tensors[i] = u
+            self._tensors[i + 1] = sv 
+        for i in range(self.n - 1, idx, -1):
+            # print('canonicalizing {} to {}'.format(i, i - 1))
+            u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i - 1], self.chi)
+            # print('isometry = {}'.format(isIsometry(u, ['o'])))
+            sv = contractTwoTensors(s, v) 
+            self._tensors[i] = u
+            self._tensors[i - 1] = sv
+
+        self.activeIdx = idx
+
+    def setTensor(self, idx, tensor):
+        assert (idx >= 0 and idx < self.n), funcs.errorMessage("index must be in [0, n) but {} obtained.".format(idx), location = "FreeBoundaryMPS.setTensor")
+        self._tensors[idx] = tensor 
+        self.activeIdx = None
+    def getTensor(self, idx):
+        return self._tensors[idx]
 
     def swap(self, aIdx, bIdx):
         # tensorA and tensorB are tensors in tensorList
         assert ((aIdx >= 0) and (aIdx < self.n) and (bIdx < self.n) and (bIdx >= 0) and (abs(aIdx - bIdx) == 1)), funcs.errorMessage("index {} and {} are not valid for MPS with {} tensors.".format(aIdx, bIdx, self.n), location = "FreeBoundaryMPS.swap")
         
-        self.tensors[aIdx], _, self.tensors[bIdx] = SchimdtDecomposition(self.tensors[aIdx], self.tensors[bIdx], self.chi, squareRootSeparation = True, swapLabels = (['o'], ['o']))
+        self._tensors[aIdx], _, self._tensors[bIdx] = SchimdtDecomposition(self._tensors[aIdx], self._tensors[bIdx], self.chi, squareRootSeparation = True, swapLabels = (['o'], ['o']))
+        
+        self.activeIdx = None
 
-    def checkCanonical(self, direct = 0):
+    def checkCanonical(self, excepIdx = None):
         '''
-        check if the current MPS is in canonical 
+        check if the current MPS is in canonical(isometry except for excepIdx)
+        if the index is not given: check with the index the last time the MPS has been canonicalized for
+        !!! Note that: this will be not true when excepIdx is None if the MPS has been changed directly by self._tensors[...] = ...
         '''
         funcName = 'FreeBoundaryMPS.checkCanonical'
-        assert (direct in [0, 1]), funcs.errorMessage("direct must in [0, 1].", location = funcName)
+        assert (excepIdx is not None) or (self.activeIdx is not None), funcs.errorMessage("exception index and MPS.activeIdx cannot be None at the same time.", location = funcName)
+        if (excepIdx is None):
+            excepIdx = self.activeIdx
+        assert (isinstance(excepIdx, int) and (excepIdx >= 0) and (excepIdx < self.n)), funcs.errorMessage("exception index must in [0, self.n), {} obtained.".format(excepIdx), location = funcName)
         if (self.n == 0):
             warnings.warn(funcs.warningMessage("number of tensors in MPS is 0, return True", location = funcName))
             return True
-        if (direct == 0):
-            if (not isIsometry(self.tensors[0], ['o'])):
+        # print([isIsometry(tensor, ['o']) for tensor in self._tensors])
+        for i in range(self.n):
+            if (i == excepIdx):
+                continue 
+            if (i == 0) or (i == self.n - 1):
+                labels = ['o']
+            elif (i < excepIdx):
+                labels = ['l', 'o']
+            else:
+                labels = ['r', 'o']
+            # print(i, labels, isIsometry(self._tensors[i], labels))
+            if not isIsometry(self._tensors[i], labels):
                 return False 
-            for i in range(1, self.n - 1):
-                if (not isIsometry(self.tensors[i], ['l', 'o'])):
-                    return False 
-            return True 
-        else:
-            if (not isIsometry(self.tensors[-1], ['o'])):
-                return False 
-            for i in range(self.n - 2, 0, -1):
-                if (not isIsometry(self.tensors[i], ['r', 'o'])):
-                    return False 
-            return True
         
+        return True
+        # if (direct == 0):
+        #     if (not isIsometry(self._tensors[0], ['o'])):
+        #         return False 
+        #     for i in range(1, self.n - 1):
+        #         if (not isIsometry(self._tensors[i], ['l', 'o'])):
+        #             return False 
+        #     return True 
+        # else:
+        #     if (not isIsometry(self._tensors[-1], ['o'])):
+        #         return False 
+        #     for i in range(self.n - 2, 0, -1):
+        #         if (not isIsometry(self._tensors[i], ['r', 'o'])):
+        #             return False 
+        #     return True
+    def isIndex(self, idx):
+        return (isinstance(idx, int) and (idx >= 0) and (idx < self.n))
+
+    def moveTensor(self, begIndex, endIndex):
+        '''
+        move then tensor at begIndex to endIndex
+        '''
+        funcName = 'FreeBoundaryMPS.moveTensor'
+        assert (self.isIndex(begIndex) and self.isIndex(endIndex)), funcs.errorMessage("{} or {} is invalid index.".format(begIndex, endIndex), location = funcName)
+
+        if (begIndex == endIndex):
+            warnings.warn(funcs.warningMessage("begIndex and endIndex is equal, do nothing.", location = funcName))
+            return 
+        
+        if (begIndex < endIndex):
+            for i in range(begIndex, endIndex):
+                self.swap(i, i + 1)
+        else:
+            for i in range(begIndex, endIndex, -1):
+                self.swap(i, i - 1)
+
+    def makeAdjacent(self, idx1, idx2):
+        funcName = 'FreeBoundaryMPS.makeAdjacent'
+        assert (self.isIndex(idx1) and self.isIndex(idx2)), funcs.errorMessage("{} or {} is invalid index.".format(idx1, idx2), location = funcName)
+        assert (idx1 != idx2), funcs.errorMessage("cannot make two identical indices adjacent: {} and {}.".format(idx1, idx2), location = funcName)
+        if (idx1 > idx2):
+            idx1, idx2 = idx2, idx1 
+        for i in range(idx1, idx2 - 1):
+            self.swap(i, i + 1)
+        return idx2 - 1, idx2
+    
+    def mergeTensor(self, idx, newTensor):
+        # merge idx & (idx + 1) to newTensor
+        funcName = 'FreeBoundaryMPS.mergeTensor'
+        assert (self.isIndex(idx) and self.isIndex(idx + 1)), funcs.errorMessage("{} or {} is invalid index.".format(idx, idx + 1), location = funcName)
+        self._tensors = self._tensors[:idx] + [newTensor] + self._tensors[(idx + 2):]
+
+def commonLegs(mpsA, mpsB):
+    indexA = []
+    indexB = []
+    for idx in range(mpsA.n):
+        tensor = mpsA._tensors[idx]
+        leg = tensor.getLeg('o')
+        if (leg.bond is None):
+            try:
+                idxB = mpsB._tensors.index(leg.anotherSide().tensor)
+            except:
+                continue
+        indexA.append(idx)
+        indexB.append(idxB)
+    return indexA, indexB
+def contractMPS(mpsA, mpsB):
+    '''
+    solution 0.
+    step 0. find all the connections between mpsA and mpsB(in some of o's, the same number)
+    step 1. make them continuous on both mps, merge them(merge 2, canonicalize, ...?)
+    step 2. use swap to move tensors to one end(tail of mpsA, head of mpsB)
+    step 3. merge two tensors, and eliminate the 2-way tensor(to one side)
+    Problem: how about canonicalization?
+    Only one bond should exist!
+
+    solution 1. we need to save the MPS information in tensors
+    extend as MPSTensor
+    problem: Schimdt will return a Tensor?
+    contractTwoTensors need to maintain MPS information?
+    maybe solution: to write a wrapper on these functions maintaining MPS information of Tensor
+
+    solution 2. "merge" for all pairs after one contraction(used here)
+    after the contraction, merge the new MPS(mergeMPS) with all existing MPSes
+    this may increase the cost of finding merges
+    but at the same time, make tensors not need to save MPS information, and for wider usage
+    so in this function: no need for considering this task
+    '''
+    funcName = 'CTL.examples.MPS.contractMPS'
+    indexA, indexB = commonLegs(mpsA, mpsB)
+    assert (len(indexA) == 1), funcs.errorMessage("contractMPS can only work on two MPSes sharing one bond, {} obtained.".format((indexA, indexB)), location = funcName)
+    if (mpsA.chi != mpsB.chi):
+        warnings.warn(funcs.warningMessage(warn = "chi for two MPSes are not equal: {} and {}, choose minimum for new chi.".format(mpsA.chi, mpsB.chi), location = funcName))
+    indexA = indexA[0]
+    indexB = indexB[0]
+
+    mpsA.moveTensor(indexA, mpsA.n - 1)
+    mpsB.moveTensor(indexB, 0)
+
+    tensorA = mpsA.getTensor(mpsA.n - 1)
+    tensorB = mpsB.getTensor(0)
+
+    newTensor = contractTwoTensors(tensorA, tensorB)
+    if (newTensor.dim == 0):
+        return newTensor.single()
+    
+    # otherwise, there must be tensors remaining in A or B
+    if (mpsA.n > 1):
+        newTensor = contractTwoTensors(mpsA.getTensor(-2), newTensor)
+        newTensorList = mpsA._tensors[:(-2)] + [newTensor] + mpsB._tensors[1:]
+    else:
+        newTensor = contractTwoTensors(newTensor, mpsB.getTensor(1))
+        newTensorList = mpsA._tensors[:(-1)] + [newTensor] + mpsB._tensors[2:]
+
+    return FreeBoundaryMPS(newTensorList, chi = min(mpsA.chi, mpsB.chi))
+
+
+def doubleMerge(mpsA, mpsB, idxA, idxB):
+    tensorA = contractTwoTensors(mpsA.getTensor(idxA), mpsA.getTensor(idxA + 1))
+    tensorB = contractTwoTensors(mpsB.getTensor(idxB), mpsB.getTensor(idxB + 1))
+
+    tensorA, tensorB = merge(tensorA, tensorB, chi = None, bondName = 'o')
+    mpsA.mergeTensor(idxA, tensorA)
+    mpsB.mergeTensor(idxB, tensorB)
+
+    mpsA.canonicalize(idx = idxA)
+    mpsB.canonicalize(idx = idxB)
+
+    tensorA, tensorB = mpsA.getTensor(idxA), mpsB.getTensor(idxB)
+    tensorA, tensorB = merge(tensorA, tensorB, chi = min(mpsA.chi, mpsB.chi), bondName = 'o', renameWarning = False)
+    mpsA.setTensor(idxA, tensorA)
+    mpsB.setTensor(idxB, tensorB)
+
+def mergeMPS(mpsA, mpsB):
+    funcName = 'CTL.examples.MPS.mergeMPS'
+    indexA, indexB = commonLegs(mpsA, mpsB)
+    if (len(indexA) <= 1):
+        # only 0 or 1 common bonds, no need for merge
+        return 
+    assert (len(indexA) == 2), funcs.errorMessage(err = "there should be no more than 2 common legs between MPSes {} and {}: indices {} and {} obtained.".format(mpsA, mpsB, indexA, indexB), location = funcName)
+
+    idxA1, idxA2 = indexA 
+    idxA1, idxA2 = mpsA.makeAdjacent(idxA1, idxA2)
+
+    idxB1, idxB2 = indexB 
+    idxB1, idxB2 = mpsB.makeAdjacent(idxB1, idxB2)
+
+    assert (idxA1 + 1 == idxA2) and (idxB1 + 1 == idxB2), funcs.errorMessage("index is not adjacent after swapping: ({}, {}) and ({}, {}).".format(idxA1, idxA2, idxB1, idxB2), location = funcName)
+    doubleMerge(mpsA, mpsB, idxA1, idxB1)
+
+
+    # otherwise, merge indexA & indexB

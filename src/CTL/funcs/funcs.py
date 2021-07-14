@@ -396,3 +396,14 @@ def ndEye(n, l):
 
 def nonZeroElementN(s, eps = 1e-10):
 	return np.count_nonzero(s > eps)
+
+def rightDiagonalProduct(a, diag):
+	return a * diag 
+def leftDiagonalProduct(a, diag):
+	return (a.T * diag).T
+
+def combineName(namesList, givenName = None):
+	if (givenName is None):
+		return '|'.join(namesList)
+	else:
+		return givenName
