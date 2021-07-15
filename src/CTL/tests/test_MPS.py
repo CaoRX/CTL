@@ -13,20 +13,21 @@ class TestMPS(PackedTest):
     
     def test_MPS(self):
         
-        tensorL = Tensor(data = np.random.random_sample((3, 3)), labels = ['o', 'internal'])
-        tensor1 = Tensor(data = np.random.random_sample((3, 5, 4)), labels = ['itl', 'oo', 'itr'])
-        tensor2 = Tensor(data = np.random.random_sample((4, 2, 4)), labels = ['itl', 'oo', 'itr'])
-        tensor3 = Tensor(data = np.random.random_sample((4, 3, 2)), labels = ['itl', 'oo', 'itr'])
-        tensorR = Tensor(data = np.random.random_sample((2, 5)), labels = ['internal', 'o'])
+        # tensorL = Tensor(data = np.random.random_sample((3, 3)), labels = ['o', 'internal'])
+        # tensor1 = Tensor(data = np.random.random_sample((3, 5, 4)), labels = ['itl', 'oo', 'itr'])
+        # tensor2 = Tensor(data = np.random.random_sample((4, 2, 4)), labels = ['itl', 'oo', 'itr'])
+        # tensor3 = Tensor(data = np.random.random_sample((4, 3, 2)), labels = ['itl', 'oo', 'itr'])
+        # tensorR = Tensor(data = np.random.random_sample((2, 5)), labels = ['internal', 'o'])
 
-        makeLink('internal', 'itl', tensorL, tensor1)
-        makeLink('itr', 'itl', tensor1, tensor2)
-        makeLink('itr', 'itl', tensor2, tensor3)
-        makeLink('itr', 'internal', tensor3, tensorR)
+        # makeLink('internal', 'itl', tensorL, tensor1)
+        # makeLink('itr', 'itl', tensor1, tensor2)
+        # makeLink('itr', 'itl', tensor2, tensor3)
+        # makeLink('itr', 'internal', tensor3, tensorR)
 
-        tensors = [tensorL, tensor1, tensor2, tensor3, tensorR]
+        # tensors = [tensorL, tensor1, tensor2, tensor3, tensorR]
 
-        mps = FreeBoundaryMPS(tensorList = tensors, chi = 16)
+        # mps = FreeBoundaryMPS(tensorList = tensors, chi = 16)
+        mps = self.createMPSA()
         self.assertEqual(mps.chi, 16)
         self.assertEqual(mps.n, 5)
         # print(mps)
@@ -91,6 +92,37 @@ class TestMPS(PackedTest):
         tensorsB = [tensor2L, tensor21, tensor22, tensor2R]
         mpsB = FreeBoundaryMPS(tensorList = tensorsB, chi = 12)
         return mpsB
+
+    def createMPSFromDim(self, dims, itbRange = (3, 10), tensorLikeFlag = False, chi = 16):
+        # internal bonds will be automaticall
+        lastDim = -1
+        tensors = []
+        n = len(dims)
+        
+        if (n == 1):
+            tensors.append(Tensor(shape = (dims[0], ), labels = ['o'], tensorLikeFlag = tensorLikeFlag))
+            return FreeBoundaryMPS(tensorList = tensors, chi = chi)
+
+        itbLow, itbHigh = itbRange
+        
+        bondDim = np.random.randint(low = itbLow, high = itbHigh)
+        tensor = Tensor(shape = (dims[0], bondDim), labels = ['o', 'r'], tensorLikeFlag = tensorLikeFlag)
+        tensors.append(tensor)
+        lastDim = bondDim 
+        for i in range(1, n - 1):
+            bondDim = np.random.randint(low = itbLow, high = itbHigh)
+            newTensor = Tensor(shape = (lastDim, dims[i], bondDim), labels = ['l', 'o', 'r'], tensorLikeFlag = tensorLikeFlag)
+            tensors.append(newTensor)
+            makeLink('r', 'l', tensor, newTensor)
+            lastDim = bondDim 
+            tensor = newTensor
+        
+        newTensor = Tensor(shape = (lastDim, dims[-1]), labels = ['l', 'o'], tensorLikeFlag = tensorLikeFlag)
+        tensors.append(newTensor)
+        makeLink('r', 'l', tensor, newTensor) 
+
+        return FreeBoundaryMPS(tensorList = tensors, chi = chi)
+        
     def test_MPSContraction(self):
         mpsA = self.createMPSA(tensorLikeFlag = False)
         mpsB = self.createMPSB(tensorLikeFlag = False)
@@ -149,3 +181,22 @@ class TestMPS(PackedTest):
 
         self.assertTrue(mps.checkCanonical())
         self.assertEqual(mps.n, 5)
+
+        mpsA = self.createMPSFromDim(dims = [3, 4, 5, 5, 2])
+        mpsB = self.createMPSFromDim(dims = [2, 5, 3, 3, 4])
+        mpsA.canonicalize(idx = 1)
+        mpsB.canonicalize(idx = 2)
+        print(mpsA, mpsB)
+
+        makeLink('o', 'o', mpsA.getTensor(1), mpsB.getTensor(4))
+        makeLink('o', 'o', mpsA.getTensor(0), mpsB.getTensor(2))
+        makeLink('o', 'o', mpsB.getTensor(0), mpsA.getTensor(4))
+
+        mergeMPS(mpsA, mpsB, beginFlag = True)
+        print(mpsA, mpsB)
+
+        self.assertEqual(mpsA.n, 3)
+        self.assertEqual(mpsB.n, 3) 
+        mps = contractMPS(mpsA, mpsB)
+        self.assertEqual(mps.n, 4)
+        print(mps)

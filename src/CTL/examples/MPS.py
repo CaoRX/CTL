@@ -235,20 +235,38 @@ class FreeBoundaryMPS:
         assert (self.isIndex(idx) and self.isIndex(idx + 1)), funcs.errorMessage("{} or {} is invalid index.".format(idx, idx + 1), location = funcName)
         self._tensors = self._tensors[:idx] + [newTensor] + self._tensors[(idx + 2):]
 
+    def hasTensor(self, tensor):
+        return tensor in self._tensors
+
+    def tensorIndex(self, tensor):
+        return self._tensors.index(tensor)
+
 def commonLegs(mpsA, mpsB):
     indexA = []
     indexB = []
     # print(mpsA, mpsB)
     for idx in range(mpsA.n):
-        tensor = mpsA._tensors[idx]
+        tensor = mpsA.getTensor(idx)
         leg = tensor.getLeg('o')
         if (leg.bond is not None):
-            idxB = mpsB._tensors.index(leg.anotherSide().tensor)
+            idxB = mpsB.tensorIndex(leg.anotherSide().tensor)
             if (idxB is None):
                 continue
             indexA.append(idx)
             indexB.append(idxB)
     return indexA, indexB
+
+def commonBonds(mpsA, mpsB):
+    bonds = []
+    for tensor in mpsA._tensors:
+        leg = tensor.getLeg('o')
+        if (leg.bond is not None):
+            tensorB = leg.anotherSide().tensor 
+            if (mpsB.hasTensor(tensorB)):
+                bonds.append(leg.bond)
+    
+    return bonds
+
 def contractMPS(mpsA, mpsB):
     '''
     solution 0.
@@ -302,8 +320,9 @@ def contractMPS(mpsA, mpsB):
 
     return FreeBoundaryMPS(newTensorList, chi = min(mpsA.chi, mpsB.chi))
 
-
 def doubleMerge(mpsA, mpsB, idxA, idxB):
+
+    funcName = 'CTL.examples.MPS.doubleMerge'
     tensorA = contractTwoTensors(mpsA.getTensor(idxA), mpsA.getTensor(idxA + 1))
     tensorB = contractTwoTensors(mpsB.getTensor(idxB), mpsB.getTensor(idxB + 1))
 
@@ -318,26 +337,72 @@ def doubleMerge(mpsA, mpsB, idxA, idxB):
     tensorA, tensorB = merge(tensorA, tensorB, chi = min(mpsA.chi, mpsB.chi), bondName = 'o', renameWarning = False)
     mpsA.setTensor(idxA, tensorA)
     mpsB.setTensor(idxB, tensorB)
+    
+    sb = shareBonds(tensorA, tensorB)
+    assert (len(sb) == 1), funcs.errorMessage("{} and {} do not share exactly one bond.".format(tensorA, tensorB), location = funcName)
+    return sb[0]
 
-def mergeMPS(mpsA, mpsB):
-    funcName = 'CTL.examples.MPS.mergeMPS'
-    indexA, indexB = commonLegs(mpsA, mpsB)
-    if (len(indexA) <= 1):
-        # only 0 or 1 common bonds, no need for merge
-        return 
-    assert (len(indexA) == 2), funcs.errorMessage(err = "there should be no more than 2 common legs between MPSes {} and {}: indices {} and {} obtained.".format(mpsA, mpsB, indexA, indexB), location = funcName)
+def getBondTensorIndices(mpsA, mpsB, bond):
+    funcName = 'CTL.examples.MPS.getBondTensorIndices'
+    legA, legB = bond.legs 
+    tensorA, tensorB = legA.tensor, legB.tensor 
+    if (not mpsA.hasTensor(tensorA)):
+        tensorA, tensorB = tensorB, tensorA
 
-    idxA1, idxA2 = indexA 
+    assert (mpsA.hasTensor(tensorA)), funcs.errorMessage('{} does not contain {}.'.format(mpsA, tensorA), location = funcName)
+    assert (mpsB.hasTensor(tensorB)), funcs.errorMessage('{} does not contain {}.'.format(mpsA, tensorB), location = funcName)
+
+    return mpsA.tensorIndex(tensorA), mpsB.tensorIndex(tensorB)
+
+def doubleMergeByBond(mpsA, mpsB, bond1, bond2):
+    funcName = 'CTL.examples.MPS.doubleMergeByBond'
+    idxA1, idxB1 = getBondTensorIndices(mpsA, mpsB, bond1)
+    idxA2, idxB2 = getBondTensorIndices(mpsA, mpsB, bond2)
+
     idxA1, idxA2 = mpsA.makeAdjacent(idxA1, idxA2)
-
-    idxB1, idxB2 = indexB 
     idxB1, idxB2 = mpsB.makeAdjacent(idxB1, idxB2)
 
     print('mpsA after swap = {}'.format(mpsA))
     print('mpsB after swap = {}'.format(mpsB))
 
     assert (idxA1 + 1 == idxA2) and (idxB1 + 1 == idxB2), funcs.errorMessage("index is not adjacent after swapping: ({}, {}) and ({}, {}).".format(idxA1, idxA2, idxB1, idxB2), location = funcName)
-    doubleMerge(mpsA, mpsB, idxA1, idxB1)
+    return doubleMerge(mpsA, mpsB, idxA1, idxB1)
+
+def mergeMPS(mpsA, mpsB, beginFlag = True):
+    '''
+    merge the common bonds between mpsA and mpsB to one bond
+    and merge all the corresponding tensors
+    if beginFlag = False, then there should be constraint that the common bonds should not be over 2
+    however, this function can handle any number of common bonds
+    it traces the bonds(instead of indices) when merging, each time choose two bonds and merge them
+    until there are one bond left
+    '''
+    funcName = 'CTL.examples.MPS.mergeMPS'
+    # indexA, indexB = commonLegs(mpsA, mpsB)
+    bonds = commonBonds(mpsA, mpsB)
+    if (len(bonds) <= 1):
+        # only 0 or 1 common bonds, no need for merge
+        return 
+    assert (beginFlag or (len(bonds) == 2)), funcs.errorMessage(err = "there should be no more than 2 common bonds between MPSes {} and {} if not at beginning: {} obtained.".format(mpsA, mpsB, bonds), location = funcName)
+
+    # what we want to do here: merge indices in indexA and indexB
+    # if only two indices: we can do it as following
+
+    # bonds = []
+    # for idxA, idxB in zip(indexA, indexB):
+    #     tensorA = mpsA.getTensor(idxA)
+    #     tensorB = mpsB.getTensor(idxB)
+    #     sb = shareBonds(tensorA, tensorB)
+    #     assert (len(sb) == 1), funcs.errorMessage("{} and {} do not share bonds.".format(tensorA, tensorB), location = funcName)
+    #     bonds.append(sb[0])
+
+    while (len(bonds) > 1):
+        bond1, bond2 = bonds[0], bonds[1]
+        newBond = doubleMergeByBond(mpsA, mpsB, bond1, bond2)
+        bonds = [newBond] + bonds[2:]
+
+    # otherwise, we need to repeat doubleMerge until there is one left
+    # use the bond to find the tensors?
 
 def createMPSFromTensor(tensor):
     '''
