@@ -45,7 +45,7 @@ An example that calculates the magnet moment of square lattice Ising model, with
 
 ## Arbitrary TN contraction example
 Run the bin/CATN.py for a Arbitrary TN example [\[1\]](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.060503) after finishing the installation:
-```
+```shell
 python bin/CATN.py
 ```
 
