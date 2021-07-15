@@ -207,7 +207,7 @@ class FreeBoundaryMPS:
     def isIndex(self, idx):
         return (isinstance(idx, int) and (idx >= 0) and (idx < self.n))
 
-    def moveTensor(self, begIndex, endIndex):
+    def moveTensor(self, begIndex, endIndex, warningFlag = True):
         '''
         move then tensor at begIndex to endIndex
         '''
@@ -215,7 +215,8 @@ class FreeBoundaryMPS:
         assert (self.isIndex(begIndex) and self.isIndex(endIndex)), funcs.errorMessage("{} or {} is invalid index.".format(begIndex, endIndex), location = funcName)
 
         if (begIndex == endIndex):
-            warnings.warn(funcs.warningMessage("begIndex and endIndex is equal, do nothing.", location = funcName))
+            if (warningFlag):
+                warnings.warn(funcs.warningMessage("begIndex and endIndex is equal, do nothing.", location = funcName))
             return 
         
         if (begIndex < endIndex):
@@ -305,8 +306,8 @@ def contractMPS(mpsA, mpsB):
     indexA = indexA[0]
     indexB = indexB[0]
 
-    mpsA.moveTensor(indexA, mpsA.n - 1)
-    mpsB.moveTensor(indexB, 0)
+    mpsA.moveTensor(indexA, mpsA.n - 1, warningFlag = False)
+    mpsB.moveTensor(indexB, 0, warningFlag = False)
     # print('mpsA after swap = {}'.format(mpsA))
     # print('mpsB after swap = {}'.format(mpsB))
 

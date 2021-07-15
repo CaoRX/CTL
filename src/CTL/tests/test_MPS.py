@@ -288,8 +288,6 @@ class TestMPS(PackedTest):
         makeLink('e5', 'f5', e, f)
         makeLink('e32', 'g32', e, g)
 
-
-
         return [a, b, d, c, g, f, e]
 
     def makeMPSContractionTest(self, tensors, eps = 1e-8):
