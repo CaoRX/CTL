@@ -248,8 +248,51 @@ class TestMPS(PackedTest):
         
         return tensors
 
-    def test_MPSTNContraction(self):
-        tensors = self.createCompleteGraph(n = 6)
+    def createSpecialTN(self):
+        a = Tensor(shape = (3, 5, 7), labels = ['a3', 'a5', 'a7'])
+        b = Tensor(shape = (2, 4, 5), labels = ['b2', 'b4', 'b5'])
+        c = Tensor(shape = (2, 7, 7, 7), labels = ['c2', 'c71', 'c72', 'c73'])
+        d = Tensor(shape = (7, 7, 3, 4), labels = ['d71', 'd72', 'd3', 'd4'])
+        makeLink('a3', 'd3', a, d)
+        makeLink('a5', 'b5', a, b)
+        makeLink('a7', 'c72', a, c) 
+        makeLink('b2', 'c2', b, c)
+        makeLink('b4', 'd4', b, d)
+        makeLink('c71', 'd72', c, d)
+        makeLink('c73', 'd71', c, d) 
+
+        return [a, b, d, c]
+
+    def createSpecialTN2(self):
+        a = Tensor(shape = (3, 5, 7), labels = ['a3', 'a5', 'a7'])
+        b = Tensor(shape = (2, 4, 5), labels = ['b2', 'b4', 'b5'])
+        c = Tensor(shape = (2, 7, 7, 7), labels = ['c2', 'c71', 'c72', 'c73'])
+        d = Tensor(shape = (7, 7, 3, 4), labels = ['d71', 'd72', 'd3', 'd4'])
+        e = Tensor(shape = (3, 3, 5), labels = ['e31', 'e32', 'e5'])
+        f = Tensor(shape = (2, 2, 5), labels = ['f21', 'f22', 'f5'])
+        g = Tensor(shape = (4, 4, 3, 3), labels = ['g41', 'g42', 'g31', 'g32'])
+        makeLink('a3', 'e31', a, e)
+        makeLink('a5', 'b5', a, b)
+        makeLink('a7', 'c72', a, c) 
+
+        makeLink('b2', 'f21', b, f)
+        makeLink('b4', 'g41', b, g)
+        
+        makeLink('c2', 'f22', c, f)
+        makeLink('c71', 'd72', c, d)
+        makeLink('c73', 'd71', c, d) 
+
+        makeLink('d3', 'g31', d, g)
+        makeLink('d4', 'g42', d, g)
+        
+        makeLink('e5', 'f5', e, f)
+        makeLink('e32', 'g32', e, g)
+
+
+
+        return [a, b, d, c, g, f, e]
+
+    def makeMPSContractionTest(self, tensors, eps = 1e-8):
         res, cost = contractAndCostWithSequence(tensors)
         print('res = {}, cost = {}'.format(res.single(), cost))
 
@@ -258,3 +301,9 @@ class TestMPS(PackedTest):
 
         eps = 1e-8
         self.assertTrue(funcs.floatEqual(res.single(), mpsRes.single(), eps = eps))
+
+    def test_MPSTNContraction(self):
+        self.makeMPSContractionTest(self.createCompleteGraph(n = 6))
+        self.makeMPSContractionTest(self.createSpecialTN())
+        self.makeMPSContractionTest(self.createSpecialTN2())
+

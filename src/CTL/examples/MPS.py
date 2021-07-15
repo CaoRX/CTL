@@ -74,7 +74,7 @@ class FreeBoundaryMPS:
                 if (leg.bond not in self.internalBonds):
                     leg.name = 'o'
 
-    def __init__(self, tensorList, chi = None, inplace = False):
+    def __init__(self, tensorList, chi = None, inplace = True):
         if (not self.checkMPSProperty(tensorList)):
             raise ValueError(funcs.errorMessage("tensorList {} cannot be considered as an MPS".format(tensorList), location = "FreeBoundaryMPS.__init__"))
         
