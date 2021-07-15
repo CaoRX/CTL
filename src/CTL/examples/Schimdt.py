@@ -6,6 +6,7 @@ from CTL.tensor.tensor import Tensor
 from CTL.tensor.leg import Leg
 from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.contract.link import makeLink
+import numpy as np
 
 def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels = ([], []), singularValueEps = 1e-10):
     '''
@@ -162,6 +163,56 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     makeLink(outLegForV, inLegForV)
 
     return uTensor, sTensor, vTensor
+
+def matrixSchimdtDecomposition(a, dim, chi = None, xp = np):
+    '''
+    Schimdt decomposition of matrix a
+    a can be either 1D or 2D
+    1. if a is 1D: then we reshape a to (dim, -1)
+    and then SVD to obtain u(dim, chi), s(chi, chi), vh(chi, -1), return u and s @ vh 
+    2. if a is 2D: (s0, s1): then we reshape a to (s0 * dim, s1 // dim)
+    SVD to obtain u(s0 * dim, chi), s(chi, chi), vh(chi, -1)
+    return u(s0, dim, chi), s @ vh(chi, s1 // dim)
+    '''
+
+    funcName = 'CTL.examples.Schimdt.matrixSchimdtDecomposition'
+
+    shape = a.shape
+
+    assert (len(shape) in [1, 2]), funcs.errorMessage("matrix shape can only be 1D or 2D, {} obtained.".format(shape), location = funcName)
+
+    if (len(shape) == 1):
+        l = shape[0]
+        assert ((dim != 0) and (l % dim == 0)), funcs.errorMessage("matrix shape {} cannot be Schimdt decomposed with dimension {}.".format(shape, dim), location = funcName)
+        a = a.reshape((dim, -1))
+        u, s, vh = xp.linalg.svd(a)
+        if (chi is None):
+            chi = min([u.shape[0], vh.shape[1], funcs.nonZeroElementN(s)])
+        else:
+            chi = min([u.shape[0], vh.shape[1], chi, funcs.nonZeroElementN(s)])
+        
+        u = u[:, :chi]
+        s = s[:chi]
+        vh = vh[:chi]
+
+        return u, funcs.leftDiagonalProduct(vh, s)
+    
+    else:
+        s0, s1 = shape
+        assert ((dim != 0) and (s1 % dim == 0)), funcs.errorMessage("matrix shape {} cannot be Schimdt decomposed with dimension {}.".format(shape, dim), location = funcName)
+        a = a.reshape(s0 * dim, -1)
+        u, s, vh = xp.linalg.svd(a)
+        if (chi is None):
+            chi = min([u.shape[0], vh.shape[1], funcs.nonZeroElementN(s)])
+        else:
+            chi = min([u.shape[0], vh.shape[1], chi, funcs.nonZeroElementN(s)])
+
+        u = u[:, :chi].reshape(s0, dim, chi)
+        s = s[:chi]
+        vh = vh[:chi]
+        return u, funcs.leftDiagonalProduct(vh, s)
+        
+        
 
     
     

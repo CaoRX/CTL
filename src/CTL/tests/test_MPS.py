@@ -3,9 +3,10 @@ from CTL.tensor.tensor import Tensor
 import numpy as np
 from CTL.tests.packedTest import PackedTest
 import CTL.funcs.funcs as funcs
-from CTL.examples.MPS import FreeBoundaryMPS, mergeMPS, contractMPS
+from CTL.examples.MPS import FreeBoundaryMPS, mergeMPS, contractMPS, createMPSFromTensor, contractWithMPS
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.tensorFunc import isIsometry
+from CTL.tensor.contract.optimalContract import contractAndCostWithSequence
 
 class TestMPS(PackedTest):
     def __init__(self, methodName = 'runTest'):
@@ -164,10 +165,10 @@ class TestMPS(PackedTest):
         makeLink('o', 'o', mpsA.getTensor(1), mpsB.getTensor(1))
         makeLink('o', 'o', mpsA.getTensor(4), mpsB.getTensor(3))
 
-        print(mpsA, mpsB)
+        # print(mpsA, mpsB)
 
         mergeMPS(mpsA, mpsB)
-        print(mpsA, mpsB)
+        # print(mpsA, mpsB)
 
         self.assertTrue(mpsA.checkCanonical(excepIdx = mpsA.n - 1))
         self.assertTrue(mpsB.checkCanonical(excepIdx = mpsB.n - 1))
@@ -186,17 +187,74 @@ class TestMPS(PackedTest):
         mpsB = self.createMPSFromDim(dims = [2, 5, 3, 3, 4])
         mpsA.canonicalize(idx = 1)
         mpsB.canonicalize(idx = 2)
-        print(mpsA, mpsB)
+        # print(mpsA, mpsB)
 
         makeLink('o', 'o', mpsA.getTensor(1), mpsB.getTensor(4))
         makeLink('o', 'o', mpsA.getTensor(0), mpsB.getTensor(2))
         makeLink('o', 'o', mpsB.getTensor(0), mpsA.getTensor(4))
 
         mergeMPS(mpsA, mpsB, beginFlag = True)
-        print(mpsA, mpsB)
+        # print(mpsA, mpsB)
 
         self.assertEqual(mpsA.n, 3)
         self.assertEqual(mpsB.n, 3) 
         mps = contractMPS(mpsA, mpsB)
         self.assertEqual(mps.n, 4)
-        print(mps)
+        # print(mps)
+
+    def test_createMPS(self):
+        tensor = Tensor(shape = (3, 4, 5))
+        mps = createMPSFromTensor(tensor = tensor, chi = 16)
+        self.assertEqual(mps.n, 3)
+        # print(mps)
+
+        with self.assertWarns(RuntimeWarning) as cm:
+            tensor = Tensor(shape = (3, ))
+            mps = createMPSFromTensor(tensor = tensor, chi = 16)
+            self.assertEqual(mps.n, 1)
+            # print(mps)
+
+        self.assertIn('MPS.py', cm.filename)
+        message = cm.warning.__str__()
+        self.assertIn('creating MPS for 1-D tensor', message)
+
+        def zeroDimensionMPSFunc():
+            tensor = Tensor(shape = ())
+            _ = createMPSFromTensor(tensor)
+        self.assertRaises(AssertionError, zeroDimensionMPSFunc)
+
+        tensor = Tensor(shape = (3, 4, 5, 3, 3, 2))
+        mps = createMPSFromTensor(tensor = tensor, chi = 16)
+        self.assertEqual(mps.n, 6)
+        # print(mps)
+
+    def createCompleteGraph(self, n, dimRange = (2, 3)):
+        low, high = dimRange
+        dims = np.random.randint(low = low, high = high, size = (n, n))
+        for i in range(n):
+            for j in range(i, n):
+                dims[j][i] = dims[i][j]
+        
+        tensors = []
+        for i in range(n):
+            shape = tuple([dims[i][j] for j in range(n) if (j != i)])
+            labels = [str(j) for j in range(n) if (j != i)]
+            tensor = Tensor(shape = shape, labels = labels)
+            tensors.append(tensor)
+
+        for i in range(n):
+            for j in range(i + 1, n):
+                makeLink(str(j), str(i), tensors[i], tensors[j])
+        
+        return tensors
+
+    def test_MPSTNContraction(self):
+        tensors = self.createCompleteGraph(n = 6)
+        res, cost = contractAndCostWithSequence(tensors)
+        print('res = {}, cost = {}'.format(res.single(), cost))
+
+        mpsRes = contractWithMPS(tensors, chi = 32)
+        print('res from mps = {}'.format(mpsRes.single()))
+
+        eps = 1e-8
+        self.assertTrue(funcs.floatEqual(res.single(), mpsRes.single(), eps = eps))

@@ -4,10 +4,12 @@
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors, merge
 from CTL.tensor.tensor import Tensor
-from CTL.tensor.contract.optimalContract import copyTensorList
-from CTL.examples.Schimdt import SchimdtDecomposition
+from CTL.tensor.leg import Leg
+from CTL.tensor.contract.optimalContract import copyTensorList, contractWithSequence, generateOptimalSequence
+from CTL.examples.Schimdt import SchimdtDecomposition, matrixSchimdtDecomposition
 from CTL.tensor.tensorFunc import isIsometry
 import warnings
+from CTL.tensor.contract.link import makeLink
 
 class FreeBoundaryMPS:
 
@@ -72,11 +74,15 @@ class FreeBoundaryMPS:
                 if (leg.bond not in self.internalBonds):
                     leg.name = 'o'
 
-    def __init__(self, tensorList, chi = None):
+    def __init__(self, tensorList, chi = None, inplace = False):
         if (not self.checkMPSProperty(tensorList)):
             raise ValueError(funcs.errorMessage("tensorList {} cannot be considered as an MPS".format(tensorList), location = "FreeBoundaryMPS.__init__"))
         
-        self._tensors = copyTensorList(tensorList)
+        if (inplace):
+            self._tensors = tensorList 
+        else:
+            self._tensors = copyTensorList(tensorList, linkOutgoingBonds = True)
+        # self._tensors = copyTensorList(tensorList)
         # _tensors should not be modified directly: it will destroy the property self.activeIdx
         # please use MPS.setTensor(idx, tensor) for changing the tensors
 
@@ -241,6 +247,9 @@ class FreeBoundaryMPS:
     def tensorIndex(self, tensor):
         return self._tensors.index(tensor)
 
+    def toTensor(self):
+        return contractWithSequence(self._tensors)
+
 def commonLegs(mpsA, mpsB):
     indexA = []
     indexB = []
@@ -248,10 +257,8 @@ def commonLegs(mpsA, mpsB):
     for idx in range(mpsA.n):
         tensor = mpsA.getTensor(idx)
         leg = tensor.getLeg('o')
-        if (leg.bond is not None):
+        if (leg.bond is not None) and (mpsB.hasTensor(leg.anotherSide().tensor)):
             idxB = mpsB.tensorIndex(leg.anotherSide().tensor)
-            if (idxB is None):
-                continue
             indexA.append(idx)
             indexB.append(idxB)
     return indexA, indexB
@@ -291,7 +298,7 @@ def contractMPS(mpsA, mpsB):
     '''
     funcName = 'CTL.examples.MPS.contractMPS'
     indexA, indexB = commonLegs(mpsA, mpsB)
-    print('indexA = {}, indexB = {}'.format(indexA, indexB))
+    # print('indexA = {}, indexB = {}'.format(indexA, indexB))
     assert (len(indexA) == 1), funcs.errorMessage("contractMPS can only work on two MPSes sharing one bond, {} obtained.".format((indexA, indexB)), location = funcName)
     if (mpsA.chi != mpsB.chi):
         warnings.warn(funcs.warningMessage(warn = "chi for two MPSes are not equal: {} and {}, choose minimum for new chi.".format(mpsA.chi, mpsB.chi), location = funcName))
@@ -308,7 +315,7 @@ def contractMPS(mpsA, mpsB):
 
     newTensor = contractTwoTensors(tensorA, tensorB)
     if (newTensor.dim == 0):
-        return newTensor.single()
+        return newTensor
     
     # otherwise, there must be tensors remaining in A or B
     if (mpsA.n > 1):
@@ -362,8 +369,8 @@ def doubleMergeByBond(mpsA, mpsB, bond1, bond2):
     idxA1, idxA2 = mpsA.makeAdjacent(idxA1, idxA2)
     idxB1, idxB2 = mpsB.makeAdjacent(idxB1, idxB2)
 
-    print('mpsA after swap = {}'.format(mpsA))
-    print('mpsB after swap = {}'.format(mpsB))
+    # print('mpsA after swap = {}'.format(mpsA))
+    # print('mpsB after swap = {}'.format(mpsB))
 
     assert (idxA1 + 1 == idxA2) and (idxB1 + 1 == idxB2), funcs.errorMessage("index is not adjacent after swapping: ({}, {}) and ({}, {}).".format(idxA1, idxA2, idxB1, idxB2), location = funcName)
     return doubleMerge(mpsA, mpsB, idxA1, idxB1)
@@ -404,10 +411,84 @@ def mergeMPS(mpsA, mpsB, beginFlag = True):
     # otherwise, we need to repeat doubleMerge until there is one left
     # use the bond to find the tensors?
 
-def createMPSFromTensor(tensor):
+def createMPSFromTensor(tensor, chi = 16):
     '''
     tensor is a real Tensor with n outer legs
     transfer it into an MPS with Schimdt decomposition
     after this, we can manage the tensor network decomposition by MPS network decomposition
+    finally consider if tensor is only a TensorLike object
     '''
-    pass
+
+    funcName = 'CTL.examples.MPS.createMPSFromTensor'
+
+    legs = [leg for leg in tensor.legs]
+    xp = tensor.xp 
+
+    n = len(legs)
+    assert (n > 0), funcs.errorMessage("cannot create MPS from 0-D tensor {}.".format(tensor), location = funcName)
+
+    if (n == 1):
+        warnings.warn(funcs.warningMessage("creating MPS for 1-D tensor {}.".format(tensor), location = funcName), RuntimeWarning)
+        return FreeBoundaryMPS([tensor], chi = chi)
+
+    a = xp.ravel(tensor.toTensor(labels = None))
+    
+    lastDim = -1
+    tensors = []
+    lastRightLeg = None
+    for i in range(n - 1):
+        u, v = matrixSchimdtDecomposition(a, dim = legs[i].dim, chi = chi, xp = xp)
+        leg = legs[i]
+        if (i == 0):
+            dim1 = u.shape[1]
+            rightLeg = Leg(None, dim = dim1, name = 'r')
+            tensor = Tensor(shape = (leg.dim, u.shape[1]), legs = [leg, rightLeg], data = u)
+            lastRightLeg = rightLeg
+            lastDim = dim1
+        else:
+            dim1 = u.shape[-1]
+            leftLeg = Leg(None, dim = lastDim, name = 'l')
+            rightLeg = Leg(None, dim = dim1, name = 'r')
+            tensor = Tensor(shape = (lastDim, leg.dim, u.shape[-1]), legs = [leftLeg, leg, rightLeg], data = u)
+
+            makeLink(leftLeg, lastRightLeg)
+
+            lastRightLeg = rightLeg 
+            lastDim = dim1
+        
+        tensors.append(tensor)
+        a = v
+
+    leftLeg = Leg(None, dim = lastDim, name = 'l')
+    tensor = Tensor(shape = (lastDim, legs[-1].dim), legs = [leftLeg, legs[-1]], data = a)
+    makeLink(leftLeg, lastRightLeg)
+    tensors.append(tensor)
+
+    # print(tensors)
+
+    return FreeBoundaryMPS(tensorList = tensors, chi = chi)
+
+def contractWithMPS(tensorList, chi = 16):
+    seq = generateOptimalSequence(tensorList)
+    # print('sequence = {}'.format(seq))
+    mpses = [createMPSFromTensor(tensor, chi = chi) for tensor in tensorList]
+
+    n = len(tensorList)
+    for i in range(n):
+        for j in range(i + 1, n):
+            mergeMPS(mpses[i], mpses[j], beginFlag = True)
+
+    for s, t in seq:
+        # print('mpses = {}'.format(mpses))
+        # print('contracting ({}, {})'.format(s, t))
+        loc = min(s, t)
+        mpses[loc] = contractMPS(mpses[s], mpses[t])
+        mpses[s + t - loc] = None 
+        for i in range(n):
+            if (i != loc) and (mpses[i] is not None):
+                mergeMPS(mpses[loc], mpses[i], beginFlag = False)
+
+    if (isinstance(mpses[0], FreeBoundaryMPS)):
+        return mpses[0].toTensor()
+    else:
+        return mpses[0]
