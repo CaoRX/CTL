@@ -6,7 +6,7 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor, makeSquareOutTensor
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import contractTwoTensors
+from CTL.tensor.contract.contract import contractTwoTensors, merge, shareBonds
 from CTL.tensor.contract.optimalContract import contractAndCostWithSequence, generateOptimalSequence, contractCost
 
 import numpy as np 
@@ -64,6 +64,7 @@ class TestContract(PackedTest):
 
         res1, cost1 = contractAndCostWithSequence([a, b, c])
         self._testIsTensorLike(res1)
+        self.assertTrue(funcs.floatEqual(cost1, 6.0))
         # print('seq = {}'.format(generateOptimalSequence([a, b, c])))
 
         a = Tensor(data = aData, labels = ['a', 'b', 'c'], tensorLikeFlag = True)
@@ -75,6 +76,7 @@ class TestContract(PackedTest):
 
         res2, cost2 = contractAndCostWithSequence([a, b, c])
         self._testIsTensorLike(res2)
+        self.assertTrue(funcs.floatEqual(cost2, 12.0))
         # self.assertListEqual(list(res1.a), list(res2.a))
         # self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
@@ -261,6 +263,14 @@ class TestContract(PackedTest):
         res2.reArrange(res1.labels)
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
         # self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
+
+
+        
+
+
+
+
+        
 
         
 

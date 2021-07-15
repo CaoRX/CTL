@@ -16,6 +16,10 @@ class TestTensor(PackedTest):
         data[0][0] = 1.0
         self.assertEqual(tensor.a[0][0], 0)
 
+        self.assertTrue(tensor.labelInTensor('a'))
+        self.assertTrue(tensor.labelsInTensor(['b', 'a']))
+        self.assertFalse(tensor.labelsInTensor(['c', 'a']))
+
     def test_TensorLabels(self):
         tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])
         self.assertEqual(tensor.indexOfLabel('abc'), 0)

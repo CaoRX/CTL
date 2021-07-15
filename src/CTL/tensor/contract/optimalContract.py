@@ -5,7 +5,7 @@ from CTL.tensor.contract.tensorGraph import TensorGraph
 from CTL.tensor.contract.link import makeLink
 import numpy as np
 
-def copyTensorList(tensorList, tensorLikeFlag = False):
+def copyTensorList(tensorList, tensorLikeFlag = False, linkOutgoingBonds = False):
     resTensorList = []
     tensorMap = dict()
     for tensor in tensorList:
@@ -21,8 +21,15 @@ def copyTensorList(tensorList, tensorLikeFlag = False):
     for tensor in tensorList:
         for leg, newLeg1 in zip(tensor.legs, tensorMap[tensor].legs):
             if (leg.bond is not None) and (leg.bond not in addedBonds):
-                addedBonds.add(leg.bond)
                 leg2 = leg.anotherSide()
+
+                addedBonds.add(leg.bond)
+
+                if (leg2.tensor not in tensorList):
+                    if (linkOutgoingBonds):
+                        del leg.bond 
+                        makeLink(newLeg1, leg2)
+                    continue
 
                 newTensorB = tensorMap[leg2.tensor]
 

@@ -42,3 +42,13 @@ A simple example about how to use FiniteTensorNetwork to create and contract own
 HOTRGImpurityExample(beta)
 ```
 An example that calculates the magnet moment of square lattice Ising model, with impurity tensor techniques, in no more than 20 lines. Also compared with exact results to show the correctness.
+
+## Arbitrary TN contraction example
+Run the bin/CATN.py for a Arbitrary TN example [\[1\]](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.060503) after finishing the installation:
+```
+python bin/CATN.py
+```
+
+This example builds a hand-made tensor network with random initialization, and compared the results of contraction between direct contraction and contraction with the help of MPS. Note that this functionality is a beta version, so may not work well for tensor networks built by users.
+
+\[1\] Pan F, Zhou P, Li S, et al. Contracting arbitrary tensor networks: general approximate algorithm and applications in graphical models and quantum circuit simulations\[J\]. Physical Review Letters, 2020, 125(6): 060503.

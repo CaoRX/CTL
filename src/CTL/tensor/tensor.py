@@ -280,7 +280,7 @@ class Tensor(TensorBase):
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
         return self.xp.copy(self.xp.ravel(self.a))
     
-    def toMatrix(self, rows, cols):
+    def toMatrix(self, rows = None, cols = None):
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs
@@ -399,9 +399,29 @@ class Tensor(TensorBase):
         if (not self.tensorLikeFlag):
             self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
-    def outProduct(self, labelList, newLabel):
-        self.moveLabelsToFront(labelList)
-        n = len(labelList)
+    # def outProduct(self, labelList, newLabel):
+    #     self.moveLabelsToFront(labelList)
+    #     n = len(labelList)
+    #     newShape = (-1, ) + self.shape[n:]
+
+    #     if (self.tensorLikeFlag):
+    #         newDim = 1
+    #         for leg in self.legs[:n]:
+    #             newDim *= leg.dim
+    #     else:
+    #         self.a = self.xp.reshape(self.a, newShape)
+    #         newDim = self.a.shape[0]
+    #     self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
+    #     # return the new leg, for usage of wider usage
+    #     return self.legs[0]
+
+    def outProduct(self, legList, newLabel):
+        assert (isinstance(legList, list) and (len(legList) > 0)), funcs.errorMessage(err = "outProduct cannot work on leg list of zero legs or non-list, {} obtained.".format(legList), location = 'Tensor.outProduct')
+        if (isinstance(legList[0], str)):
+            return self.outProduct([self.getLeg(label) for label in legList], newLabel)
+
+        self.moveLegsToFront(legList)
+        n = len(legList)
         newShape = (-1, ) + self.shape[n:]
 
         if (self.tensorLikeFlag):
@@ -412,6 +432,8 @@ class Tensor(TensorBase):
             self.a = self.xp.reshape(self.a, newShape)
             newDim = self.a.shape[0]
         self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
+        # return the new leg, for usage of wider usage
+        return self.legs[0]
 
     def reArrange(self, labels):
         assert (funcs.compareLists(self.labels, labels)), "Error: tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
@@ -446,6 +468,14 @@ class Tensor(TensorBase):
         else:
             return "Tensor"
 
+    def labelInTensor(self, label):
+        return label in self.labels 
+    def labelsInTensor(self, labels):
+        for label in labels:
+            if not (label in self.labels):
+                return False
+
+        return True
     # def complementIndices(self, labs):
     #     return funcs.listDifference(self.labels, labs)
 
