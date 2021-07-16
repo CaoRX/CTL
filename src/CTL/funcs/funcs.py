@@ -370,7 +370,7 @@ def warningMessage(warn, location = None):
 def diagonalMatrix(a, dim):
 	l = a.shape[0]
 	res = np.zeros(tuple([l] * dim))
-	res[np.diag_indices(dim, l)] = a
+	res[np.diag_indices(l, dim)] = a
     # for i in range(l):
 	# 	res[tuple([i] * dim)] = a[i]
 	return res

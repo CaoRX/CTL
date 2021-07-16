@@ -1,6 +1,7 @@
 # make tensors for Ising model
 
-from CTL.tensor.tensor import Tensor 
+from CTL.tensor.tensor import Tensor
+from CTL.tensor.diagonalTensor import DiagonalTensor
 import CTL.funcs.funcs as funcs
 import numpy as np 
 
@@ -62,3 +63,21 @@ def infiniteIsingExactM(T, V = 1.0):
         return 0.0
     else:
         return (1.0 - np.sinh(2 * V / T) ** (-4)) ** (0.125)
+
+def IsingEdgeMatrix(betaJ):
+    '''
+    edge matrix of Ising model
+    when combined with diagonal tensor at sites: tensor network of Ising model
+    '''
+    diag = np.sqrt(np.cosh(betaJ) * 0.5) + np.sqrt(np.sinh(betaJ) * 0.5)
+    offDiag = np.sqrt(np.cosh(betaJ) * 0.5) - np.sqrt(np.sinh(betaJ) * 0.5)
+    return np.array([[diag, offDiag], [offDiag, diag]])
+
+def IsingSiteTensor(betaJ, dim = 4, labels = None):
+    a = np.array([1.0, 1.0])
+    a = funcs.diagonalMatrix(a, dim = dim)
+    edgeMat = IsingEdgeMatrix(betaJ)
+    for _ in range(dim):
+        a = np.tensordot(a, edgeMat, (0, 0))
+        # print(a)
+    return Tensor(data = a, labels = labels)
