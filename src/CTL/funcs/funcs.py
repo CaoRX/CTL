@@ -62,13 +62,16 @@ def commonElements(x, y):
 def listSymmetricDifference(x, y):
 	return list(set(x) ^ set(y))
 
-def intToBitTuple(x, dim):
+def intToBitList(x, dim):
 	res = []
 	for _ in range(dim):
 		res.append(x % 2)
 		x = x // 2
 
-	return tuple(res)
+	return res 
+
+def intToBitTuple(x, dim):
+	return tuple(intToBitList(x, dim))
 
 def safeMod(x, m):
 	return ((x % m) + m) % m
@@ -370,7 +373,7 @@ def warningMessage(warn, location = None):
 def diagonalMatrix(a, dim):
 	l = a.shape[0]
 	res = np.zeros(tuple([l] * dim))
-	res[np.diag_indices(dim, l)] = a
+	res[np.diag_indices(l, dim)] = a
     # for i in range(l):
 	# 	res[tuple([i] * dim)] = a[i]
 	return res
@@ -407,3 +410,6 @@ def combineName(namesList, givenName = None):
 		return '|'.join(namesList)
 	else:
 		return givenName
+
+def isNumber(a):
+	return (type(a) == int) or (type(a) == float)

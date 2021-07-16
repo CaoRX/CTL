@@ -420,6 +420,8 @@ def createMPSFromTensor(tensor, chi = 16):
     finally consider if tensor is only a TensorLike object
     '''
 
+    # TODO: make this function work for tensorLike
+
     funcName = 'CTL.examples.MPS.createMPSFromTensor'
 
     legs = [leg for leg in tensor.legs]

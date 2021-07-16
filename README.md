@@ -44,11 +44,21 @@ HOTRGImpurityExample(beta)
 An example that calculates the magnet moment of square lattice Ising model, with impurity tensor techniques, in no more than 20 lines. Also compared with exact results to show the correctness.
 
 ## Arbitrary TN contraction example
-Run the bin/CATN.py for a Arbitrary TN example [\[1\]](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.060503) after finishing the installation:
+Run the bin/CATN.py for an Arbitrary TN example [\[1\]](https://journals.aps.org/prl/abstract/10.1103/PhysRevLett.125.060503) after finishing the installation:
 ```console
 python bin/CATN.py
 ```
 
+```python
+contractHandmadeTN()
+```
+
 This example builds a hand-made tensor network with random initialization, and compared the results of contraction between direct contraction and contraction with the help of MPS. Note that this functionality is a beta version, so may not work well for tensor networks built by users.
+
+```python
+squareIsingTest()
+```
+
+This example builds a square lattice Ising model of size (4, 4) with free boundary condition, and apply direct diagonalization, tensor network contraction and MPS contraction to calculate the partition function, and the results are compatible with each other.
 
 \[1\] Pan F, Zhou P, Li S, et al. Contracting arbitrary tensor networks: general approximate algorithm and applications in graphical models and quantum circuit simulations\[J\]. Physical Review Letters, 2020, 125(6): 060503.
