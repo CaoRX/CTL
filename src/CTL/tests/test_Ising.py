@@ -1,12 +1,12 @@
 from CTL.models.Ising import IsingSiteTensor, IsingEdgeMatrix, IsingTNFromUndirectedGraph, exactZFromGraphIsing
 from CTL.tests.packedTest import PackedTest
 import CTL.funcs.funcs as funcs
-from CTL.tensor.contract.optimalContract import contractAndCostWithSequence, generateOptimalSequence
+from CTL.tensor.contract.optimalContract import contractAndCostWithSequence, generateOptimalSequence, generateGreedySequence
 from CTL.examples.MPS import contractWithMPS
 
 import numpy as np 
 
-from CTL.funcs.graphFuncs import squareLatticePBC, squareLatticeFBC
+from CTL.funcs.graphFuncs import squareLatticePBC, squareLatticeFBC, completeGraph
 # from ncon import ncon
 
 class TestIsing(PackedTest):
@@ -76,5 +76,51 @@ class TestIsing(PackedTest):
         # self.assertTrue(funcs.floatEqual(ZMPS.single(), 2 ** 25, eps = 1e-5))
         print('ZMPS for (6, 6) = {}'.format(ZMPS.single()))
         self.assertTrue(funcs.floatEqual(ZMPS.single(), 2 ** 36, eps = 1e-2))
+
+        latticePBC = squareLatticePBC(n = 5, m = 5, weight = 0.5)
+        tensorNetwork = IsingTNFromUndirectedGraph(latticePBC)
+        ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        # self.assertTrue(funcs.floatEqual(ZMPS.single(), 2 ** 25, eps = 1e-5))
+        print('ZMPS for (5, 5) = {}'.format(ZMPS.single()))
+
+        # exactZ = exactZFromGraphIsing(latticePBC) (10 minutes needed)
+        exactZ = 274435114113.4535
+        print('exact Z = {}'.format(exactZ))
+        self.assertTrue(funcs.floatRelativeEqual(ZMPS.single(), exactZ, eps = 1e-5))
+
+        print('')
+
+    def test_fullConnectedIsing(self):
+        print('begin testing full connected Ising model:')
+        latticeFC = completeGraph(n = 10, weight = 0.5)
+        tensorNetwork = IsingTNFromUndirectedGraph(latticeFC)
+
+        # seq = generateOptimalSequence(tensorNetwork, typicalDim = None)
+        seq = generateGreedySequence(tensorNetwork)
+        Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork, seq = seq)
+        print('Z = {}, cost = {}'.format(Z.single(), cost))
+
+        ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        print('Z from MPS = {}'.format(ZMPS.single()))
+        
+        exactZ = exactZFromGraphIsing(latticeFC)
+        print('exact Z = {}'.format(exactZ))
+
+        self.assertTrue(funcs.floatEqual(Z.single(), exactZ, eps = 1e-3))
+        self.assertTrue(funcs.floatEqual(ZMPS.single(), exactZ, eps = 1e-3))
+
+        # latticeFC = completeGraph(n = 15, weight = 0.5)
+        # tensorNetwork = IsingTNFromUndirectedGraph(latticeFC)
+
+        # # seq = generateGreedySequence(tensorNetwork)
+        # # Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork, seq = seq)
+
+        # ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        # print('Z from MPS = {}'.format(ZMPS.single()))
+        
+        # exactZ = exactZFromGraphIsing(latticeFC)
+        # print('exact Z = {}'.format(exactZ))
+
+        print('')
 
 

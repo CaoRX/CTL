@@ -340,6 +340,8 @@ def tupleSwap(tp):
 
 def floatEqual(a, b, eps = 1e-7):
 	return np.abs(a - b) < eps
+def floatRelativeEqual(a, b, eps = 1e-7):
+	return np.abs(a - b) < eps * 0.5 * (a + b)
 def floatArrayEqual(a, b, eps = 1e-7):
     if (a.shape != b.shape):
         return False

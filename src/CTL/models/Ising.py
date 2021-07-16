@@ -147,7 +147,10 @@ def exactZFromGraphIsing(g):
 
     res = 0.0
     n = len(g.v)
-    for S in range(1 << n):
-        res += getIsingWeight(g, S)
+    # for S in range(1 << n):
+    #     if (S % 10000 == 0):
+    #         print('{}/{}'.format(S, 1 << n))
+    #     res += getIsingWeight(g, S)
+    res = np.sum(np.array([getIsingWeight(g, S) for S in range(1 << n)]))
 
     return res
