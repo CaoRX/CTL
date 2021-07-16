@@ -413,3 +413,14 @@ def combineName(namesList, givenName = None):
 
 def isNumber(a):
 	return (type(a) == int) or (type(a) == float)
+
+def pairIterator(a):
+	'''
+	generate the (x, y) pair in a, index(x) < index(y)
+	'''
+	n = len(a)
+	for i in range(n):
+		for j in range(i + 1, n):
+			yield a[i], a[j]
+
+	return

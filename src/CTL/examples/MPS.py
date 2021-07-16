@@ -5,7 +5,7 @@ import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors, merge
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.leg import Leg
-from CTL.tensor.contract.optimalContract import copyTensorList, contractWithSequence, generateOptimalSequence
+from CTL.tensor.contract.optimalContract import copyTensorList, contractWithSequence, generateOptimalSequence, generateGreedySequence
 from CTL.examples.Schimdt import SchimdtDecomposition, matrixSchimdtDecomposition
 from CTL.tensor.tensorFunc import isIsometry
 import warnings
@@ -471,8 +471,14 @@ def createMPSFromTensor(tensor, chi = 16):
 
     return FreeBoundaryMPS(tensorList = tensors, chi = chi)
 
-def contractWithMPS(tensorList, chi = 16):
-    seq = generateOptimalSequence(tensorList)
+def contractWithMPS(tensorList, chi = 16, seq = None, greedyFlag = True):
+    # TODO: change optimal sequence to greedy sequence
+    if (seq is None):
+        if (greedyFlag):
+            seq = generateGreedySequence(tensorList)
+            # print('greedy sequence = {}'.format(seq))
+        else:
+            seq = generateOptimalSequence(tensorList)
     # print('sequence = {}'.format(seq))
     mpses = [createMPSFromTensor(tensor, chi = chi) for tensor in tensorList]
 
