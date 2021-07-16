@@ -1,6 +1,7 @@
 from CTL.funcs.graph import UndirectedGraph
 import CTL.funcs.funcs as funcs
 import numpy as np
+import warnings
 
 class TensorGraph(UndirectedGraph):
     def __init__(self, n, diagonalFlags = None):
@@ -28,7 +29,10 @@ class TensorGraph(UndirectedGraph):
             self.optimalContractSequence()
         return self.optimalCost[(1 << self.n) - 1]
     
-    def optimalContractSequence(self, bf = False, typicalDim = 10):
+    def optimalContractSequence(self, bf = False, greedy = False, typicalDim = 10):
+
+        if (greedy and (typicalDim is not None)):
+            warnings.warn(funcs.warningMessage(warn = 'greedy search of contract sequence, typicalDim {} has been ignored.'.format(typicalDim), location = 'TensorGraph.optimalContractSequence'))
 
         def lowbitI(x):
             return (x & (-x)).bit_length() - 1
@@ -50,14 +54,22 @@ class TensorGraph(UndirectedGraph):
 
         n = len(self.v)
 
-        self.optimalCost = [None] * (1 << n)
-        self.optimalSeq = [None] * (1 << n)
-        self.contractRes = [None] * (1 << n)
+        if (not greedy):
+            self.optimalCost = [None] * (1 << n)
+            self.optimalSeq = [None] * (1 << n)
+            self.contractRes = [None] * (1 << n)
 
-        for i in range(n):
-            self.optimalCost[(1 << i)] = 0
-            self.optimalSeq[(1 << i)] = []
-            self.contractRes[(1 << i)] = (edges[i], shapes[i], self.diagonalFlags[i])
+            for i in range(n):
+                self.optimalCost[(1 << i)] = 0
+                self.optimalSeq[(1 << i)] = []
+                self.contractRes[(1 << i)] = (edges[i], shapes[i], self.diagonalFlags[i])
+
+        else:
+            self.greedyCost = 0
+            self.greedySeq = [] 
+            self.contractRes = [None] * n
+            for i in range(n):
+                self.contractRes[i] = (edges[i], shapes[i], self.diagonalFlags[i])
 
         def getCost(tsA, tsB):
             # to deal with diagonal tensors:
@@ -100,8 +112,12 @@ class TensorGraph(UndirectedGraph):
             return typicalDim ** costOrder
 
         def calculateContractRes(tsA, tsB):
-            edgesA, shapeA, diagonalA = self.contractRes[tsA]
-            edgesB, shapeB, diagonalB = self.contractRes[tsB]
+            if (isinstance(tsA, int)):
+                tsA = self.contractRes[tsA]
+            if (isinstance(tsB, int)):
+                tsB = self.contractRes[tsB]
+            edgesA, shapeA, diagonalA = tsA
+            edgesB, shapeB, diagonalB = tsB
 
             edges = funcs.listSymmetricDifference(edgesA, edgesB)
             shape = [None] * len(edges)
@@ -115,8 +131,16 @@ class TensorGraph(UndirectedGraph):
                     shape[edgeIndex[l]] = s
             return (edges, shape, diagonalA and diagonalB)
 
+        def getSize(tsA, tsB):
+            '''
+            contract self.contractRes[tsA] and self.contractRes[tsB]
+            then give the size of the output tensor
+            '''
+            _, shape, _ = calculateContractRes(tsA, tsB)
+            return funcs.tupleProduct(shape)
+
         costFunc = None
-        if (typicalDim is None):
+        if (greedy or (typicalDim is None)):
             costFunc = getCost
         else:
             costFunc = getCostTypical
@@ -157,6 +181,28 @@ class TensorGraph(UndirectedGraph):
             #print('minimum cost = {}'.format(self.optimalCost[full_s]))
             #print('result = {}'.format(self.contractRes[full_s]))
             return self.optimalSeq[fullSet]
+
+        def greedySearch():
+            tensorSet = list(range(n))
+
+            while (len(tensorSet) > 1):
+                minSize = -1
+                minTSA = -1
+                minTSB = -1
+
+                for tsA, tsB in funcs.pairIterator(tensorSet):
+                    newSize = getSize(tsA, tsB)
+                    if (minSize == -1) or (newSize < minSize):
+                        minSize = newSize 
+                        minTSA, minTSB = tsA, tsB 
+
+                tsA, tsB = minTSA, minTSB
+                self.greedySeq.append((tsA, tsB))
+                self.greedyCost += costFunc(tsA, tsB)
+                self.contractRes[tsA] = calculateContractRes(tsA, tsB)
+                tensorSet.remove(tsB)
+
+            return self.greedySeq
 
         def capping():
             obj_n = (1 << n)
@@ -245,8 +291,9 @@ class TensorGraph(UndirectedGraph):
             #print('result = {}'.format(self.contractRes[full_s]))
             # print('optimal cost = {}'.format(self.optimalCost[full_s]))
             return self.optimalSeq[full_s]
-
-        if (bf):
+        if (greedy):
+            return greedySearch()
+        elif (bf):
             return bruteForce()
         else:
             return capping()

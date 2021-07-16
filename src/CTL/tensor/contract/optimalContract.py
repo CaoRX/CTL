@@ -87,6 +87,10 @@ def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(bf = bf, typicalDim = typicalDim)
 
+def generateGreedySequence(tensorList):
+    tensorGraph = makeTensorGraph(tensorList)
+    return tensorGraph.optimalContractSequence(greedy = True, typicalDim = None)
+
 def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
     if (seq is None):
         seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
