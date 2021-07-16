@@ -55,3 +55,13 @@ def squareLatticeFBC(n, m = None, weight = 0.0):
                 g.addEdge(idx1 = getIndex(x, y), idx2 = getIndex(x + 1, y), weight = weightV)
     
     return g 
+
+def completeGraph(n, weight = 0.0):
+    funcName = 'CTL.funcs.graphFuncs.completeGraph'
+    assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
+
+    g = UndirectedGraph(n)
+    for x in range(n):
+        for y in range(x + 1, n):
+            g.addEdge(idx1 = x, idx2 = y, weight = weight)
+    return g
