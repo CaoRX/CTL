@@ -3,11 +3,21 @@
 # each V contains several edges
 # each edge contains two vertices
 
+import CTL.funcs.funcs as funcs
+
 class GraphEdge:
 
     def __init__(self, a, b, weight = None):
         self.vertices = (a, b)
         self.weight = weight
+
+    def anotherSide(self, a):
+        if (a == self.vertices[0]):
+            return self.vertices[1]
+        elif (a == self.vertices[1]):
+            return self.vertices[0]
+        else:
+            raise ValueError(funcs.errorMessage(err = 'Graph edge does not contain vertex {}.'.format(a), location = 'GraphEdge.anotherSide'))
 
 class GraphVertex:
 
@@ -15,6 +25,9 @@ class GraphVertex:
         self.name = name 
         self.index = index 
         self.edges = []
+
+    def __str__(self):
+        return 'GraphVertex(index = {}, name = {})'.format(self.index, self.name)
 
     def addEdge(self, v, weight = None):
         newEdge = GraphEdge(self, v, weight = weight)

@@ -17,7 +17,11 @@ from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractAndCostWithSequence
 from CTL.examples.MPS import contractWithMPS
 
+from CTL.models.Ising import IsingSiteTensor, IsingEdgeMatrix, IsingTNFromUndirectedGraph, exactZFromGraphIsing
+from CTL.funcs.graphFuncs import squareLatticeFBC, squareLatticeFBC
+
 def contractHandmadeTN():
+    print('contractHandmadeTN():')
     a = Tensor(shape = (3, 5, 7), labels = ['a3', 'a5', 'a7'])
     b = Tensor(shape = (2, 4, 5), labels = ['b2', 'b4', 'b5'])
     c = Tensor(shape = (2, 7, 7, 7), labels = ['c2', 'c71', 'c72', 'c73'])
@@ -49,6 +53,22 @@ def contractHandmadeTN():
 
     mpsRes = contractWithMPS(tensors, chi = 32)
     print('res from mps = {}'.format(mpsRes.single()))
+    print('')
+
+def squareIsingTest():
+    print('squareIsingTest():')
+    latticeFBC = squareLatticeFBC(n = 4, m = 4, weight = 0.5)
+    tensorNetwork = IsingTNFromUndirectedGraph(latticeFBC)
+
+    Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork)
+    print('Z = {}, cost = {}'.format(Z.single(), cost))
+
+    ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+    print('Z from MPS = {}'.format(ZMPS.single()))
+    
+    exactZ = exactZFromGraphIsing(latticeFBC)
+    print('exact Z = {}'.format(exactZ))
 
 if __name__ == '__main__':
     contractHandmadeTN()
+    squareIsingTest()
