@@ -80,7 +80,7 @@ def IsingSiteTensor(betaJ, dim = 4, labels = None):
     assert ((labels is None) or (len(labels) == dim)), funcs.errorMessage("labels {} do not have required dim {}.".format(labels, dim))
 
     a = np.array([1.0, 1.0])
-    a = funcs.diagonalMatrix(a, dim = dim)
+    a = funcs.diagonalNDTensor(a, dim = dim)
     if (funcs.isNumber(betaJ)):
         betaJ = [betaJ] * dim
     # edgeMat = IsingEdgeMatrix(betaJ)

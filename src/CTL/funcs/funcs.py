@@ -7,6 +7,20 @@ import warnings
 from copy import deepcopy
 
 def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None, deprecateMessage = None):
+	"""
+	Warn if a function has been deprecated.
+
+	Parameters
+	----------
+	funcName : str
+		The name of function that has been deprecated.
+	fileName : str, optional
+		The name of the file where the deprecated function locates, for understanding the details.
+	newFuncName : str, optional
+		The name of new functions work for a similar task, help the user to change the usage of deprecated function to a new one.
+	deprecateMessage : str, optional
+		Some extra texts for explaining why this function has been deprecated, or suggestions for other choices.
+	"""
 	if (fileName is None):
 		fileNameInfo = ''
 	else:
@@ -19,17 +33,62 @@ def deprecatedFuncWarning(funcName, fileName = None, newFuncName = None, depreca
 		warnings.warn('Warning: {} {}has been deprecated. Please use {} instead.'.format(funcName, fileNameInfo, newFuncName))
 
 def listDifference(total, used):
+	"""
+	Return the remaining part of "total" after removing elements in "used". Each element will be removed only once.
+
+	Parameters
+	----------
+	total : list of any
+		The original list from which we want to remove some elements.
+	used : list of any
+		The elements we want to remove from total.
+
+	Returns
+	-------
+	list of any
+		The list total after removing elements in used.
+	"""
 	ret = list(total)
 	for x in used:
 		ret.remove(x)
 	return ret
 
 def deleteAllInUsed(total, used):
+	"""
+	Return the list "total" after removing all appearances of elements in "used".
+
+	Parameters
+	----------
+	total : list-like of any
+		The original list from which we want to remove some elements.
+	used : iterable of any
+		The elements we want to remove from total.
+
+	Returns
+	-------
+	list of any
+		The list total after removing all elements appearing in used.
+	"""
 	usedSet = set(used)
 	ret = list(total)
 	return [x for x in ret if not (x in usedSet)]
 
 def tupleRemoveByIndex(initTuple, indexList):
+	"""
+	Remove the elements of given indices from a tuple.
+
+	Parameters
+	----------
+	initTuple : tuple of any
+		The given tuple from which we will remove elements.
+	indexList : list of ints
+		The indices of elements that we want to remove.
+
+	Returns 
+	-------
+	tuple of any
+		The tuple after removing elements from initTuple
+	"""
 	initList = list(initTuple)
 	indexSet = set(indexList)
 	resList = []
@@ -39,12 +98,37 @@ def tupleRemoveByIndex(initTuple, indexList):
 	return tuple(resList)
 
 def tupleProduct(shapeTuple):
+	"""
+	Calculate the product of elements in a tuple. Used for calculating total shape.
+	
+	Parameters
+	----------
+	shapeTuple : iterable of int or float
+		The shape-like object we are asking for total shape(product).
+	
+	Returns
+	-------
+	int/float
+		The product of elements in shapeTuple.
+	"""
 	res = 1
 	for x in shapeTuple:
 		res *= x
 	return res
 
 def spinChainProductSum(spins):
+	"""
+	Calculate the Ising nearest neighbor interactions of a spin chain, periodic boundary condition(PBC).
+
+	Parameters
+	----------
+	spins : list of ints or floats
+		The given spin under PBC.
+
+	Returns
+	float
+		The nearest neighbor interactions(products).
+	"""
 	res = 0.0
 	n = len(spins)
 	for i in range(n):
@@ -52,17 +136,69 @@ def spinChainProductSum(spins):
 	return res
 
 def compareLists(a, b):
+	"""
+	Compare two lists, return true if they are just the same under a permutation.
+
+	Parameters
+	----------
+	a, b : list of any
+		The two lists to compare.
+	
+	Returns
+	bool
+		whether a and b are the same under a permutation.
+	"""
 	return Counter(a) == Counter(b)
 
 def commonElements(x, y):
+	"""
+	Find the common elements in two lists.
+	Parameters
+	----------
+	x, y : list of any
+		The two lists of which we want the common elements.
+	
+	Returns
+	-------
+	list of any
+		The list of common elements. The same elements will only appear once.
+	"""
 	xc = Counter(x)
 	yc = Counter(y)
 	return list((xc & yc).elements())
 
 def listSymmetricDifference(x, y):
+	"""
+	Symmetric Difference of two lists.
+
+	Parameters
+	----------
+	x, y: list of any
+		The two list of which we want the symmetric difference.
+
+	Returns
+	-------
+	list of any
+		The list of elements that appear exactly once in either x or y.
+	"""
 	return list(set(x) ^ set(y))
 
 def intToBitList(x, dim):
+	"""
+	Transfer a bit-mask to a fixed-length list of bits.
+
+	Parameters
+	----------
+	x : int
+		A positive integer as a bit-mask.
+	dim : int
+		The length of bit list as the output.
+
+	Returns
+	-------
+	list of ints
+		0 / 1's of the bit-mask, of size (dim, )
+	"""
 	res = []
 	for _ in range(dim):
 		res.append(x % 2)
@@ -71,152 +207,469 @@ def intToBitList(x, dim):
 	return res 
 
 def intToBitTuple(x, dim):
+	"""
+	Transfer a bit-mask to a fixed-length tuple of bits.
+
+	Parameters
+	----------
+	x : int
+		A positive integer as a bit-mask.
+	dim : int
+		The length of bit list as the output.
+
+	Returns
+	-------
+	tuple of ints
+		0 / 1's of the bit-mask, of size (dim, )
+	"""
 	return tuple(intToBitList(x, dim))
 
 def safeMod(x, m):
+	"""
+	The safe module of integers, work for both positive and negative integers.
+
+	Parameters
+	----------
+	x : int
+		An integer to take module.
+	m : int
+		A positive integer as the module.
+
+	Returns
+	-------
+	int
+		A positve integer in [0, m) as the remainder of x.
+	"""
 	return ((x % m) + m) % m
 
 def intToDBaseTuple(x, dim, D):
+	"""
+	Transfer a integer to a base-D fixed-length tuple of digits.
+
+	Parameters
+	----------
+	x : int
+		A positive integer to be transformed into base-D.
+	dim : int
+		The length of digit tuple as the output.
+	D : int
+		The base of the digit tuple.
+
+	Returns
+	-------
+	tuple of ints
+		[0, D - 1) of the digit tuple, of size (dim, )
+	"""
 	res = []
 	for _ in range(dim):
 		res.append(x % D)
 		x = x // D
 	return tuple(res)
 
-def triangle_weight(sm, J):
+def triangleWeight(sm, J, np = np):
+	"""
+	(Deprecated)Calculate the weight of a triangle of Ising spins, depending on the number of same spin pairs.
+
+	Parameters
+	----------
+	sm : int
+		The number of spin pairs that are the same on the triangle.
+	J : float
+		The Ising interaction parameter of H = -J sum s_i s_{i + 1}.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		If the number sm is invalid(an odd number), return 0.0; otherwise return the Ising Boltzmann weight.
+	"""
 	# print('Warning: triangle_weight in funcs/funcs.py has been deprecated. This function should not be used anywhere.')
-	deprecatedFuncWarning(funcName = 'triangle_weight', fileName = 'funcs/funcs')
+	deprecatedFuncWarning(funcName = 'triangleWeight', fileName = 'funcs/funcs')
 	if (sm == 0):
 		return 1
 	if (sm == 2):
-		return np.exp(-J)
+		return np.exp(J)
 	return 0.0
 
-def loadData(filename):
-	f = open(filename, 'r')
+def loadData(fileName, np = np):
+	"""
+	Load the data of a text file containing a float array.
+
+	Parameters
+	----------
+	fileName : str
+		The name of file we want to load.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	numpy.ndarray
+		A 2-d array of the file, columns and rows as two dimensions.
+	"""
+	f = open(fileName, 'r')
 	data = np.array([np.array([np.float(x) for x in line.strip().split(' ')]) for line in f])
 	return data
 
 def randomString(n = 10):
+	"""
+	Generate a random string of form [a-zA-Z]{n}(ascii letters of length n).
+
+	Parameters
+	----------
+	n : int, default 10
+		The length of the random string.
+	
+	Returns
+	-------
+	str
+		A random string consisting ascii letters of length n.
+	"""
 	return ''.join(random.choice(string.ascii_letters) for i in range(n))
 
-def make_iden(shape):
-	# print('Warning: make_iden in funcs/funcs.py has been deprecated. This function should not be used anywhere.')
-	deprecatedFuncWarning(funcName = 'make_iden', fileName = 'funcs/funcs')
-	assert (len(shape) == 2), 'make_iden can only make 2D matrix, but got shape {}'.format(shape)
-	res = np.zeros(shape, dtype = np.float64)
-	for i in range(min(shape)):
-		res[i][i] = 1.0
+def identityError(a, np = np):
+	"""
+	Calculate the distance of matrix a to a 2D eye matrix
 
-	return res
+	Parameters
+	----------
+	a : 2-D ndarray.
 
-def identityError(a):
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		The norm of matrix (a - I).
+	"""
 	return np.linalg.norm(a - np.eye(a.shape[0], a.shape[1]))
 
-def diagError(a):
+def diagError(a, np = np):
+	"""
+	Calculate the error of matrix a to a 2D diagonal matrix
+	
+	Parameters
+	----------
+	a : 2-D ndarray.
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		The norm of matrix (a - a.diag).
+	"""
 	return np.linalg.norm(a - np.diag(np.diagonal(a))) / np.linalg.norm(a)
 
-def checkIdentity(a, eps = 1e-10):
-	return identityError(a) < eps
+def checkIdentity(a, eps = 1e-10, np = np):
+	"""
+	Calculate the distance of matrix a to a 2D eye matrix
 
-def symmetricError(a):
+	Parameters
+	----------
+	a : 2-D ndarray.
+
+	eps : float, optional. 
+		The threshold norm of difference between which we will consider two matrices as the same. By default, 1e-10.
+	
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	bool
+		Whether a is an identity matrix.
+	"""
+	return identityError(a, np = np) < eps
+
+def symmetricError(a, np = np):
+	"""
+	Calculate the distance of matrix a to a symmetric matrix.
+
+	Parameters
+	----------
+	a : 2-D ndarray.
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		Norm(a - a.T) / Norm(a), a measure of how symmetric a is.
+	"""
 	return np.linalg.norm(a - np.transpose(a)) / np.linalg.norm(a)
-def transposeConjugate(a, np = np):
-	# transpose conjugate of matrix a
-	return np.conjugate(np.transpose(a))
-def aDaggerAProduct(a):
-	return np.matmul(transposeConjugate(a), a)
-def aADaggerProduct(a):
-	return np.matmul(a, transposeConjugate(a))
 
-def projectorError(a):
-	print('project error of matrix with shape {}'.format(a.shape))
-	return identityError(aDaggerAProduct(a))
-def get_diff_error(a, b):
-	deprecatedFuncWarning(funcName = 'get_diff_error', fileName = 'funcs/funcs')
+def transposeConjugate(a, np = np):
+	"""
+	Calculate the transpose conjugate of a matrix.
+
+	Parameters
+	----------
+	a : 2-D ndarray, shape of (h, w)
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	2-D ndarray, shape of (w, h)
+		The transpose conjugate of matrix a.
+	"""
+	return np.conjugate(np.transpose(a))
+
+def aDaggerAProduct(a, np = np):
+	"""
+	Calculate the product of transpose conjugate of a matrix and the matrix itself.
+
+	Parameters
+	----------
+	a : 2-D ndarray, shape of (h, w)
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	2-D ndarray, shape of (w, w)
+		a^{dagger} @ a
+	"""
+	return np.matmul(transposeConjugate(a, np = np), a)
+
+def aADaggerProduct(a, np = np):
+	"""
+	Calculate the product of a matrix and its transpose conjugate.
+
+	Parameters
+	----------
+	a : 2-D ndarray, shape of (h, w)
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	2-D ndarray, shape of (h, h)
+		a @ a^{dagger}
+	"""
+	return np.matmul(a, transposeConjugate(a, np = np))
+
+def projectorError(a, np = np):
+	"""
+	Calculate how much a is like a projector.
+
+	Parameters
+	----------
+	a : 2-D ndarray, shape of (h, w).
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		The distance of a^{dagger} @ a to identity.
+	"""
+	return identityError(aDaggerAProduct(a, np = np))
+
+def getDiffError(a, b, np = np):
+	"""
+	(Deprecated)Calculate the distance square between a and b.
+
+	Parameters
+	----------
+	a, b : ndarray of float, in the same shape
+		The two matrices to be compared
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		The sum of element-wise distance square between a and b.
+	"""
+	deprecatedFuncWarning(funcName = 'getDiffError', fileName = 'CTL.funcs.funcs')
 	return np.linalg.norm(a ** 2) + np.linalg.norm(b ** 2) - np.linalg.norm(a * b) * 2
 
-def matDiffError(a, b):
+def matDiffError(a, b, np = np):
+	"""
+	Calculate the relative distance between a and b.
+
+	Parameters
+	----------
+	a, b : ndarray of float, in the same shape
+		The two matrices to be compared
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	float
+		Norm(a - b) / Norm(a)
+	"""
 	return np.linalg.norm(a - b) / np.linalg.norm(a)
 
-def randomArray(shape):
+def randomArray(shape, np = np):
+	"""
+	Generate a random array with given shape, each element is uniformly chosen in [-1, 1)
+
+	Parameters
+	----------
+	shape : int or tuple of ints
+		The shape of required random array.
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	ndarray of floats, shape as given shape
+		A random array uniformly in [-1, 1)
+	"""
 	return 2.0 * np.random.random(shape) - 1.0
 
-def print_array(a, eps = 1e-15):
-	deprecatedFuncWarning(funcName = 'print_array', fileName = 'funcs/funcs')
-	a_copy = a.copy()
-	a_non_zero = a_copy[np.abs(a_copy) > eps]
-	return a_non_zero
+# def print_array(a, eps = 1e-15):
+# 	deprecatedFuncWarning(funcName = 'print_array', fileName = 'funcs/funcs')
+# 	a_copy = a.copy()
+# 	a_non_zero = a_copy[np.abs(a_copy) > eps]
+# 	return a_non_zero
 
 def assertInSet(x, xSet, name):
+	"""
+	Make an assertion that an element is in some set, if not, generating standard error message.
+	Parameters
+	----------
+	x : any
+		The element that should be in some set.
+	xSet : set of any
+		The set that should contain x.
+	name : str
+		The name of the element, used to generate error message
+	"""
 	assert (x in xSet), 'Error: {} should be one of {}, but {} gotten.'.format(name, xSet, x)
 
-def dealParams(paramsDict, paramsNeed, paramsPassed):
-	for key in paramsPassed:
-		if (key in paramsDict):
-			paramsDict[key] = paramsPassed[key]
+# def dealParams(paramsDict, paramsNeed, paramsPassed):
+# 	"""
 
-	for key in paramsNeed:
-		if (paramsDict[key] is None):
-			return False, key
+# 	"""
+# 	for key in paramsPassed:
+# 		if (key in paramsDict):
+# 			paramsDict[key] = paramsPassed[key]
 
-	return True, None
+# 	for key in paramsNeed:
+# 		if (paramsDict[key] is None):
+# 			return False, key
 
-def paramsFuncMaker(paramsDict, paramsNeed, initialFuncs, initialFuncsName):
+# 	return True, None
 
-	paramsDictLocal = deepcopy(paramsDict)
-	paramsNeedLocal = deepcopy(paramsNeed)
+# def paramsFuncMaker(paramsDict, paramsNeed, initialFuncs, initialFuncsName):
 
-	def paramsFunc(paramsPassed):
-		# print('paramsDict = {}'.format(paramsDictLocal))
-		paramsDictCopy = deepcopy(paramsDictLocal)
-		paramsNeedCopy = deepcopy(paramsNeedLocal)
-		paramsOk, errorMessage = dealParams(paramsDict = paramsDictCopy, paramsNeed = paramsNeedCopy, paramsPassed = paramsPassed)
+# 	paramsDictLocal = deepcopy(paramsDict)
+# 	paramsNeedLocal = deepcopy(paramsNeed)
 
-		assert (paramsOk), 'Error: parameter {} is needed in function {} but not passed.\ndefault parameters = {}\nparameters needed = {}.'.format(errorMessage, initialFuncsName, paramsDictLocal, paramsNeedLocal)
-		return initialFuncs(**paramsDictCopy)
+# 	def paramsFunc(paramsPassed):
+# 		# print('paramsDict = {}'.format(paramsDictLocal))
+# 		paramsDictCopy = deepcopy(paramsDictLocal)
+# 		paramsNeedCopy = deepcopy(paramsNeedLocal)
+# 		paramsOk, errorMessage = dealParams(paramsDict = paramsDictCopy, paramsNeed = paramsNeedCopy, paramsPassed = paramsPassed)
 
-	return paramsFunc
+# 		assert (paramsOk), 'Error: parameter {} is needed in function {} but not passed.\ndefault parameters = {}\nparameters needed = {}.'.format(errorMessage, initialFuncsName, paramsDictLocal, paramsNeedLocal)
+# 		return initialFuncs(**paramsDictCopy)
 
-def paramsFuncPackager(paramsDict, paramsNeed, initialFuncs, initialFuncsName, paramsName = 'params'):
+# 	return paramsFunc
 
-	# work for methods with parameters, and a parameter called params
-	# initialFuncs needs all params in the paramsDict as params
-	# however, we want to set a "default" params, that should be done by this packager
+# def paramsFuncPackager(paramsDict, paramsNeed, initialFuncs, initialFuncsName, paramsName = 'params'):
 
-	# return a function which takes just the same parameters as initialFuncs, including a "params"
-	# however, when taking small set of params, we should still generate the whole paramsDict with default values here
+# 	# work for methods with parameters, and a parameter called params
+# 	# initialFuncs needs all params in the paramsDict as params
+# 	# however, we want to set a "default" params, that should be done by this packager
 
-	paramsDictLocal = deepcopy(paramsDict)
-	paramsNeedLocal = deepcopy(paramsNeed)
+# 	# return a function which takes just the same parameters as initialFuncs, including a "params"
+# 	# however, when taking small set of params, we should still generate the whole paramsDict with default values here
 
-	def paramsFunc(**kwargs):
-		# print('paramsDict = {}'.format(paramsDictLocal))
-		paramsDictCopy = deepcopy(paramsDictLocal)
-		paramsNeedCopy = deepcopy(paramsNeedLocal)
-		if (paramsName in kwargs) and (not (kwargs[paramsName] is None)):
-			paramsOk, errorMessage = dealParams(paramsDict = paramsDictCopy, paramsNeed = paramsNeedCopy, paramsPassed = kwargs[paramsName])
-			assert (paramsOk), 'Error: parameter {} is needed in function {} but not passed.\ndefault parameters = {}\nparameters needed = {}.'.format(errorMessage, initialFuncsName, paramsDictLocal, paramsNeedLocal)
+# 	paramsDictLocal = deepcopy(paramsDict)
+# 	paramsNeedLocal = deepcopy(paramsNeed)
 
-		kwargs[paramsName] = paramsDictCopy
-		return initialFuncs(**kwargs)
+# 	def paramsFunc(**kwargs):
+# 		# print('paramsDict = {}'.format(paramsDictLocal))
+# 		paramsDictCopy = deepcopy(paramsDictLocal)
+# 		paramsNeedCopy = deepcopy(paramsNeedLocal)
+# 		if (paramsName in kwargs) and (not (kwargs[paramsName] is None)):
+# 			paramsOk, errorMessage = dealParams(paramsDict = paramsDictCopy, paramsNeed = paramsNeedCopy, paramsPassed = kwargs[paramsName])
+# 			assert (paramsOk), 'Error: parameter {} is needed in function {} but not passed.\ndefault parameters = {}\nparameters needed = {}.'.format(errorMessage, initialFuncsName, paramsDictLocal, paramsNeedLocal)
 
-	return paramsFunc
+# 		kwargs[paramsName] = paramsDictCopy
+# 		return initialFuncs(**kwargs)
+
+# 	return paramsFunc
 
 def getIndexDict(idx, labels, shape):
+	"""
+	Get the index tuple of an index in given shape, with the labels.
+
+	Parameters
+	----------
+	idx : int
+		The index that will be decomposed.
+	labels : list of str
+		The labels corresponding to each dimension.
+	shape : tuple of int
+		The shape of given object.
+
+	Returns
+	-------
+	dict of (str, int)
+		The index for each dimension, labelled by the corresponding labels.
+	"""
 	res = dict([])
 	for i in range(len(shape) - 1, -1, -1):
 		res[labels[i]] = idx % shape[i]
 		idx //= shape[i]
 	return res
 
-def getNewString(knownSet):
-	res = randomString()
+def getNewString(knownSet, n = 10):
+	"""
+	Generate a random string that does not appear in a given set.
+
+	Parameters
+	----------
+	knownSet : set of str
+		The set that the generated string should not be in.
+	n : int, optional.
+		The length of the string to be generated. By default, 10.
+
+	Returns
+	-------
+	str
+		A random string of length n, does not appear in knownSet.
+
+	"""
+	res = randomString(n = n)
 	while (res in knownSet):
-		res = randomString()
+		res = randomString(n = n)
 	return res
 
 def divideIntoKParts(n, k):
+	"""
+	An iterator of the divisions of n to k parts, each element can be in [0, n].
+
+	Parameters
+	----------
+	n : int
+		The number to be divided.
+	k: int
+		The number of parts that n should be divided into.
+
+	Returns
+	-------
+	iterable
+		An iterable of all different lists, each of length k, and the sum is n.
+	"""
 	if (k == 1):
 		yield [n]
 		return 
@@ -227,6 +680,19 @@ def divideIntoKParts(n, k):
 	return
 
 def myComb(n, p):
+	"""
+	C(n, p), polyfill for python < 3.7. For higher python version, math.comb should be better.
+
+	Parameters
+	----------
+	n, p : int
+
+	Returns
+	-------
+	int
+		C(n, p)
+
+	"""
 	res = 1
 	for i in range(p):
 		res *= (n - i)
@@ -235,6 +701,18 @@ def myComb(n, p):
 	return res
 
 def calculateDivisionTimes(division):
+	"""
+	For a division of n, calculate how many ways n different elements can be divided into this division.
+
+	Parameters
+	----------
+	division : list of int
+	
+	Returns
+	-------
+	int
+		The number of ways that we can divide sum(division) elements into such a division.
+	"""
 	res = 1
 	n = sum(division)
 	for p in division:
@@ -243,18 +721,68 @@ def calculateDivisionTimes(division):
 	return res
 
 def getValidValues(values, threshold = 1e10):
+	"""
+	Get the valid values in a list. Valid means the absolute value is lower than some threshold. For numpy arrays, consider values[np.abs(values) < threshold]
+
+	Parameters
+	----------
+	values : list of floats
+
+	threshold : float, optional.
+		The absolute value threshold of values. By default, 1e10.
+	
+	Returns
+	-------
+	resX : list of int
+		The indices of valid elements.
+	resY : list of floats
+		The values of valid elements.
+	"""
 	resX = []
 	resY = []
 	for i, value in enumerate(values):
-		if (np.abs(value) < threshold):
+		if (abs(value) < threshold):
 			resX.append(i)
 			resY.append(value)
 	return resX, resY
 
-def normalizeInfinity(a):
+def normalizeInfinity(a, np = np):
+	"""
+	Normalize array a so that the maximum absolute value is 1.
+
+	Parameters
+	----------
+	a : ndarray of float
+		The array to be normalized.
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	-------
+	ndarray of float, same shape as a
+		The normalized array.
+	"""
 	return a / np.max(np.abs(a))
 
 def binarySearch(left, right, largeEnough, eps):
+	"""
+	Binary search on a real number region.
+
+	Parameters
+	----------
+	left, right : float
+		The range [left, right] that will be searched. It is recommended that make sure the dividing point is between [left, right], or the result may not be the answer wanted.
+	largeEnough : callable
+		A callable(function) that accepts one float number, and decide whether it is large enough or not for the search. It is required that it should be monotonic: over some number it should be True, while below the number it returns False.
+	eps : float
+		The required accuracy of the binary search.
+
+	Returns
+	-------
+	float
+		The value just over which can make largeEnough return True, and below which it returns False.
+	"""
 	assert (left < right), "binary search must start from where (left < right), but get left = {} and right = {}.".format(left, right)
 	l = left 
 	r = right
@@ -268,6 +796,21 @@ def binarySearch(left, right, largeEnough, eps):
 	return mid
 
 def getCombineSet(listDict, names):
+	"""
+	Calculate the union of a dict of lists.
+
+	Parameters
+	----------
+	listDict : dict of list of any
+		The dict of lists to be combined.
+	names : list of str
+		The keys of lists to be combined.
+
+	Returns
+	-------
+	list of any
+		The union of lists in listDict whose key is in names.
+	"""
 	res = []
 	for name in names:
 		assert (name in listDict), 'Error: name asked {} does not exist in listDict with keys {}.'.format(name, list(listDict.keys()))
@@ -275,24 +818,79 @@ def getCombineSet(listDict, names):
 	return set(res)
 
 def getCutoff(s, threshold):
+	"""
+	Calculate the first index in a sorted list that is lower than given threshold.
+
+	Parameters
+	----------
+	s : list of float
+		Sorted list.
+	threshold : float
+	
+	Returns 
+	-------
+	int
+		The first index that s[i] < threshold. If s[i] > threshold for all i, return len(s).
+	"""
 	for i in range(len(s)):
 		if (s[i] < threshold):
 			return i
 	return len(s)
 
 def partialInverse(s, cutoff):
+	"""
+	Calculate the partial inverse of an array.
+
+	Parameters
+	----------
+	s: list of float
+
+	cutoff : float
+		Value below the cutoff will be considered as zero and not inversed.
+
+	Returns
+	-------
+	list of float
+		1.0 / s for all non-zero elements, and 0 for zero(< threshold) elements.
+	"""
 	res = np.zeros(len(s))
 	for i in range(cutoff):
 		res[i] = 1.0 / s[i]
 	return res
 
 def oppositeDirection(x):
+	"""
+	Get the opposite direction of given string.
+
+	Parameters
+	----------
+	x : str
+		Consisting of 'l', 'r', 'u', 'd'.
+
+	Returns 
+	-------
+	str
+		Consisting of 'l', 'r', 'u', 'd'. Char-wise opposite of x.
+	"""
 	res = ""
 	for i in range(len(x)):
 		res = res + oppositeSingleDirection(x[i])
 	return res
 
 def oppositeSingleDirection(x):
+	"""
+	Get the opposite direction of given direction.
+
+	Parameters
+	----------
+	x : str
+		One of 'l', 'r', 'u', 'd'.
+
+	Returns 
+	-------
+	str
+		One of 'l', 'r', 'u', 'd'. Opposite of x.
+	"""
 	assertInSet(x, ['l', 'r', 'u', 'd'], 'direction')
 	if (x == 'l'):
 		return 'r'
@@ -304,56 +902,172 @@ def oppositeSingleDirection(x):
 		return 'u'
 
 def getInRangeFunc(low, high):
+	"""
+	Return a callable that decides whether a float number is in (low, high)
+
+	Parameters 
+	----------
+	low, high : float
+	
+	Returns
+	-------
+	callable :: float -> bool
+		When apply res to a float number, return whether the number is in (low, high) or not.
+	"""
 	return lambda x: (x > low and x < high)
 
 def mapToDict(dictShape, x):
+	"""
+	Make a dict over two lists.
+
+	Parameters
+	----------
+	dictShape : list of any
+		The labels of the returned dict.
+	x : list of any
+		The values of the returned dict.
+
+	Returns
+	-------
+	dict
+		Each key in dictShape corresponds to the value in x.
+	"""
 	res = dict([])
 	for key in dictShape:
 		res[key] = x
 	return res
 
-class LinearRegressionModel:
+# class LinearRegressionModel:
 
-	def __init__(self, x, y):
-		self.fit(x, y)
+# 	def __init__(self, x, y):
+# 		self.fit(x, y)
 
-	def fit(self, x, y):
-		self.x = np.array(deepcopy(x))
-		self.y = np.array(deepcopy(y))
+# 	def fit(self, x, y):
+# 		self.x = np.array(deepcopy(x))
+# 		self.y = np.array(deepcopy(y))
 
-		averageX = np.average(self.x)
-		averageY = np.average(self.y)
-		averageXX = np.average(self.x ** 2)
-		averageYY = np.average(self.y ** 2)
-		averageXY = np.average(self.x * self.y)
+# 		averageX = np.average(self.x)
+# 		averageY = np.average(self.y)
+# 		averageXX = np.average(self.x ** 2)
+# 		averageYY = np.average(self.y ** 2)
+# 		averageXY = np.average(self.x * self.y)
 
-		self.k = (averageXY - averageX * averageY) / (averageXX - averageX ** 2)
-		self.b = averageY - self.k * averageX 
-		self.r = (averageXY - averageX * averageY) / np.sqrt((averageXX - averageX ** 2) * (averageYY - averageY ** 2))
+# 		self.k = (averageXY - averageX * averageY) / (averageXX - averageX ** 2)
+# 		self.b = averageY - self.k * averageX 
+# 		self.r = (averageXY - averageX * averageY) / np.sqrt((averageXX - averageX ** 2) * (averageYY - averageY ** 2))
 
-	def predict(self, x):
-		return self.k * x + self.b
+# 	def predict(self, x):
+# 		return self.k * x + self.b
 
 def tupleSwap(tp):
+	"""
+	Swap two elements of a tuple.
+
+	Parameters
+	----------
+	tp : tuple of any
+		Denoted by (a, b).
+
+	Returns
+	-------
+	tuple of any
+		(b, a).
+
+	"""
 	a, b = tp
 	return (b, a)
 
 def floatEqual(a, b, eps = 1e-7):
-	return np.abs(a - b) < eps
+	"""
+	Decide whether two float numbers are equal up to a small distance.
+
+	Parameters
+	----------
+	a, b : float
+		The two numbers to be compared.
+	eps : float, default 1e-7
+		The maximum error below which we can consider two numbers as equal.
+
+	Returns
+	-------
+	bool
+		Whether the two numbers are equal.
+	"""
+	return abs(a - b) < eps
+
 def floatRelativeEqual(a, b, eps = 1e-7):
-	return np.abs(a - b) < eps * 0.5 * (a + b)
-def floatArrayEqual(a, b, eps = 1e-7):
-    if (a.shape != b.shape):
-        return False
-    return floatEqual(np.ravel(a), np.ravel(b), eps).all()
+	"""
+	Decide whether two float numbers are equal up to a small distance, relatively.
+
+	Parameters
+	----------
+	a, b : float
+		The two numbers to be compared.
+	eps : float, default 1e-7
+		The maximum relative error below which we can consider two numbers as equal.
+
+	Returns
+	-------
+	bool
+		Whether the two numbers are equal.
+	"""
+	return abs(a - b) < eps * 0.5 * (a + b)
+
+def floatArrayEqual(a, b, eps = 1e-7, np = np):
+	"""
+	Decide whether two float arrays are equal up to a small distance.
+
+	Parameters
+	----------
+	a, b : ndarray
+		The two arrays to be compared.
+	eps : float, default 1e-7
+		The maximum error below which we can consider two numbers as equal.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+
+	Returns
+	-------
+	bool
+		Whether the two arrays are equal.
+	"""
+	if (a.shape != b.shape):
+		return False
+	return floatEqual(np.ravel(a), np.ravel(b), eps).all()
 
 def identicalTensorDict(tensor, names):
+	"""
+	Crete a dict, keys of which are names, and values are all given element(tensor).
+
+	Parameters
+	----------
+	tensor : any
+		The element to be the value for all keys.
+	names : list of any
+		The keys of returned dict.
+
+	Returns
+	-------
+	dict
+		The dict that has names as keys, and tensor as values for all keys.
+	"""
 	res = dict()
 	for name in names:
 		res[name] = tensor
 	return res
 
 def checkAllEqual(tp):
+	"""
+	Check if all the elements in a tuple is the same.
+
+	Parameters
+	----------
+	tp : tuple of any
+
+	Returns 
+	bool
+		Whether the values in tp are all the same.
+	"""
 	if (len(tp) == 0):
 		return True
 	for x in list(tp):
@@ -362,17 +1076,66 @@ def checkAllEqual(tp):
 	return True
 
 def errorMessage(err, location = None):
+	"""
+	Generate a standard error message.
+
+	Parameters
+	----------
+	err : str
+		The error message.
+	location : str, optional
+		Where the error happens. E.g. CTL.funcs.funcs.errorMessage
+	
+	Returns
+	-------
+	str
+		The generated error message.
+	"""
 	if (location is None):
 		return "Error: {}".format(err)
 	else:
 		return "Error in {}: {}".format(location, err)
+
 def warningMessage(warn, location = None):
+	"""
+	Generate a standard warning message.
+
+	Parameters
+	----------
+	warn : str
+		The warning message.
+	location : str, optional
+		Where the warning happens. E.g. CTL.funcs.funcs.warningMessage
+	
+	Returns
+	-------
+	str
+		The generated warning message.
+	"""
 	if (location is None):
 		return "Warning: {}".format(warn)
 	else:
 		return "Warning in {}: {}".format(location, warn)
 
-def diagonalMatrix(a, dim):
+def diagonalNDTensor(a, dim, np = np):
+	"""
+	Create a diagonal N-dimensional tensor.
+
+	Parameters
+	----------
+	a : array of floats
+		The values that will be on the diagonal of the tensor.
+	dim : int
+		The dimension of the output tensor.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+
+	Returns
+	-------
+	ndarray
+		A diagonal tensor of dim dimension, and contains the values of a in order on its diagonal.
+
+	"""
 	l = a.shape[0]
 	res = np.zeros(tuple([l] * dim))
 	res[np.diag_indices(l, dim)] = a
@@ -381,6 +1144,19 @@ def diagonalMatrix(a, dim):
 	return res
 
 def indexTupleToStr(idx):
+	"""
+	Generate a string contains all the lowercase letters corresponding to given index list.
+
+	Parameters
+	----------
+	idx : list of int
+		A list of indices, each should be in [0, 26).
+	
+	Returns
+	-------
+	str
+		A string that corresponding to the indices in idx. E.g. if input [1, 3, 5], then return "ace"
+	"""
 	labelList = 'abcdefghijklmnopqrstuvwxyz'
 	if (not isinstance(idx, tuple)):
 		raise ValueError(errorMessage('indexTupleToStr requires a tuple as idx, {} gotten.'.format(idx)))
@@ -391,7 +1167,23 @@ def indexTupleToStr(idx):
 	
 	return ''.join([labelList[x] for x in idx])
 
-def ndEye(n, l):
+def ndEye(n, l, np = np):
+	"""
+	Create a n-dimensional eye tensor.
+
+	Parameters
+	----------
+	n : int
+		The dimension of the returned tensor.
+	l : int
+		The size of each dimension of the returned tensor.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+	
+	Returns
+	ndarray
+		A tensor of shape (l, l, ... l), all values on the main diagonal is 1.
+	"""
 	res = np.zeros(tuple([l] * n))
 	if (n == 1):
 		res[0] = 1.0
@@ -399,27 +1191,109 @@ def ndEye(n, l):
 		res[np.diag_indices(l, n)] = 1
 	return res
 
-def nonZeroElementN(s, eps = 1e-10):
-	return np.count_nonzero(s > eps)
+def nonZeroElementN(s, eps = 1e-10, np = np):
+	"""
+	Check the number of elements in an array.
+
+	Parameters
+	----------
+	s : array of float
+	
+	eps : float, default 1e-10
+		The threshold over which we will decide a value as non-zero.
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+
+	Returns
+	-------
+	int
+		The number of elements whose absolute value is over eps.
+	"""
+	return np.count_nonzero(np.abs(s) > eps)
 
 def rightDiagonalProduct(a, diag):
+	"""
+	Calculate the product of a matrix and a diagonal matrix, with broadcast.
+
+	Parameters
+	----------
+	a : 2D ndarray of float
+	
+	diag : array of float
+		The diagonal elements of the diagonal matrix.
+
+	Returns
+	2D ndarray of float
+		Matrix (a @ diag).
+	"""
 	return a * diag 
 def leftDiagonalProduct(a, diag):
+	"""
+	Calculate the product of a diagonal matrix and a matrix, with broadcast.
+
+	Parameters
+	----------
+	a : 2D ndarray of float
+	
+	diag : array of float
+		The diagonal elements of the diagonal matrix.
+
+	Returns
+	-------
+	2D ndarray of float
+		Matrix (diag @ a).
+	"""
 	return (a.T * diag).T
 
 def combineName(namesList, givenName = None):
+	"""
+	Generate a name from a set of names, and an optional pre-given name.
+
+	Parameters
+	----------
+	namesList : list of str
+		The list of names to be combined.
+	givenName : str, optional
+		A pre-given name. If not given, then we combine the names in namesList.
+
+	Returns
+	-------
+	str
+		The combined name if givenName is None, or just the pre-given name.
+	"""
 	if (givenName is None):
 		return '|'.join(namesList)
 	else:
 		return givenName
 
 def isNumber(a):
+	"""
+	Decide whether a is a number.
+
+	Parameters
+	----------
+	a : any
+
+	Returns
+	-------
+	bool
+		Whether a is a number(int, float) or not.
+	"""
 	return (type(a) == int) or (type(a) == float)
 
 def pairIterator(a):
-	'''
-	generate the (x, y) pair in a, index(x) < index(y)
-	'''
+	"""
+	Generate pairs (a[i], a[j]) of values in a, i < j.
+
+	Parameters
+	----------
+	a : list of any
+
+	Returns
+	-------
+	iterable of tuple of any
+		Tuples (a[i], a[j]) where (i, j) in order.
+	"""
 	n = len(a)
 	for i in range(n):
 		for j in range(i + 1, n):

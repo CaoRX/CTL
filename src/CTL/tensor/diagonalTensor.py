@@ -374,7 +374,7 @@ class DiagonalTensor(Tensor):
         colTotalSize = funcs.tupleProduct(colShape)
         rowTotalSize = funcs.tupleProduct(rowShape)
 
-        data = funcs.diagonalMatrix(self.a, self.dim)
+        data = funcs.diagonalNDTensor(self.a, self.dim)
         data = self.xp.reshape(data, (rowTotalSize, colTotalSize))
         return data
 
@@ -430,7 +430,7 @@ class DiagonalTensor(Tensor):
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to tensor since no data contained.', 'DiagonalTensor.toTensor')
         if (labels is not None):
             self.reArrange(labels)
-        return funcs.diagonalMatrix(self.a, self.dim)
+        return funcs.diagonalNDTensor(self.a, self.dim)
 
     def typeName(self):
         if (self.tensorLikeFlag):
