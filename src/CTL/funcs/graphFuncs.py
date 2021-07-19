@@ -2,6 +2,23 @@ from CTL.funcs.graph import UndirectedGraph
 import CTL.funcs.funcs as funcs
 
 def squareLatticePBC(n, m = None, weight = 0.0):
+    """
+    Create a graph of square lattice, periodic boundary condition.
+
+    Parameters
+    ----------
+    n : int
+        The number of rows of the lattice.
+    m : int, optional
+        The number of columns of the lattice. By default, the same as n.
+    weight : float or tuple of float, optional
+        The weight of edges between vertices. If a tuple is given, then the first for vertical edges and the second for horizontal edges. By default, both weights are 0.0. This will be used in models like Ising model, where the weight can represent interactions.
+    
+    Returns
+    -------
+    UndirectedGraph
+        A graph representing the lattice. 
+    """
     funcName = 'CTL.funcs.graphFuncs.squareLatticePBC'
     assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
 
@@ -29,6 +46,23 @@ def squareLatticePBC(n, m = None, weight = 0.0):
     return g 
 
 def squareLatticeFBC(n, m = None, weight = 0.0):
+    """
+    Create a graph of square lattice, free boundary condition.
+
+    Parameters
+    ----------
+    n : int
+        The number of rows of the lattice.
+    m : int, optional
+        The number of columns of the lattice. By default, the same as n.
+    weight : float or tuple of float, optional
+        The weight of edges between vertices. If a tuple is given, then the first for vertical edges and the second for horizontal edges. By default, both weights are 0.0. This will be used in models like Ising model, where the weight can represent interactions.
+    
+    Returns
+    -------
+    UndirectedGraph
+        A graph representing the lattice. 
+    """
     funcName = 'CTL.funcs.graphFuncs.squareLatticeFBC'
     assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
 
@@ -57,6 +91,21 @@ def squareLatticeFBC(n, m = None, weight = 0.0):
     return g 
 
 def completeGraph(n, weight = 0.0):
+    """
+    Create a complete graph.
+
+    Parameters
+    ----------
+    n : int
+        The number of vertices.
+    weight : float, optional
+        The weight of edges between vertices. By default, both weights are 0.0. This will be used in models like Ising model, where the weight can represent interactions.
+    
+    Returns
+    -------
+    UndirectedGraph
+        A complete graph of n vertices. 
+    """
     funcName = 'CTL.funcs.graphFuncs.completeGraph'
     assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
 

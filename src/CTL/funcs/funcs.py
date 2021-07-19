@@ -665,10 +665,10 @@ def divideIntoKParts(n, k):
 	k: int
 		The number of parts that n should be divided into.
 
-	Returns
+	Yields
 	-------
-	iterable
-		An iterable of all different lists, each of length k, and the sum is n.
+	list of int
+		All different lists, each of length k, and the sum is n.
 	"""
 	if (k == 1):
 		yield [n]
@@ -1181,6 +1181,7 @@ def ndEye(n, l, np = np):
 		The numpy-like library for numeric functions.
 	
 	Returns
+	-------
 	ndarray
 		A tensor of shape (l, l, ... l), all values on the main diagonal is 1.
 	"""
@@ -1289,9 +1290,9 @@ def pairIterator(a):
 	----------
 	a : list of any
 
-	Returns
+	Yields
 	-------
-	iterable of tuple of any
+	tuple of any
 		Tuples (a[i], a[j]) where (i, j) in order.
 	"""
 	n = len(a)
