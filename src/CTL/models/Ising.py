@@ -103,6 +103,11 @@ def infiniteIsingExactM(T, V = 1.0):
         The temperature.
     V : float, default 1.0
         The interaction in Ising model. Only V / T matters.
+    
+    Returns
+    -------
+    float
+        The exact M at temperature T, when interaction is V. For T higher than T_c, it will return 0, otherwise from the exact solution of square lattice Ising model.
     """
     criticalT = 2.0 / np.log(1.0 + np.sqrt(2))
     if (T / V > criticalT):
@@ -111,15 +116,41 @@ def infiniteIsingExactM(T, V = 1.0):
         return (1.0 - np.sinh(2 * V / T) ** (-4)) ** (0.125)
 
 def IsingEdgeMatrix(betaJ):
-    '''
-    edge matrix of Ising model
-    when combined with diagonal tensor at sites: tensor network of Ising model
-    '''
+    """
+    The edge tensor for site-based tensor network of Ising model.
+
+    Parameters
+    ----------
+    betaJ : float
+        The interaction combined with inverse temperature, namely, J / T.
+    
+    Returns
+    -------
+    ndarray of (2, 2)
+        The local edge tensor for one site (diagonal) tensor to absorb.
+    """
     diag = np.sqrt(np.cosh(betaJ) * 0.5) + np.sqrt(np.sinh(betaJ) * 0.5)
     offDiag = np.sqrt(np.cosh(betaJ) * 0.5) - np.sqrt(np.sinh(betaJ) * 0.5)
     return np.array([[diag, offDiag], [offDiag, diag]])
 
 def IsingSiteTensor(betaJ, dim = 4, labels = None):
+    """
+    The site tensor that can be connected to form Ising tensor network.
+
+    Parameters
+    ----------
+    betaJ : float or list of float
+        The interaction combined with inverse temperature, namely, J / T. When a list is given, the length should be dim, and each for one different edge.
+    dim : int, default 4
+        The degree of sites(the number of edges it is linked to). By default, square lattice value 4.
+    labels : list of str, optional
+        The labels of the result tensor on each leg. If betaJ is a number, since the legs are the same, the order of labels do not matter. Otherwise please be carefully about the order of labels since it corresponds to the order of betaJ.
+    
+    Returns
+    -------
+    Tensor
+        The tensor of dim legs, labelled with labels, and representing the local interaction around a site(a diagonal site tensor with multiple edge tensors).
+    """
     assert (funcs.isNumber(betaJ) or (len(betaJ) == dim)), funcs.errorMessage("betaJ {} do not have required dim {}.".format(betaJ, dim))
     assert ((labels is None) or (len(labels) == dim)), funcs.errorMessage("labels {} do not have required dim {}.".format(labels, dim))
 
@@ -135,10 +166,19 @@ def IsingSiteTensor(betaJ, dim = 4, labels = None):
     return Tensor(data = a, labels = labels)
 
 def IsingTNFromUndirectedGraph(g):
-    '''
-    create a tensor network of Ising model, from an CTL.funcs.graph.UndirectedGraph
-    the betaJ is set to be the weight on the edge
-    '''
+    """
+    Create a tensor network of Ising model basing on an undirected graph.
+
+    Parameters
+    ----------
+    g : UndirectedGraph
+        The site-graph to add interaction. The weights represent the betaJ on each edge.
+    
+    Returns
+    -------
+    list of Tensor
+        A tensor network, each of the tensors represents one site, and the contraction of this tensor network will give the exact partition function Z.
+    """
 
     funcName = 'CTL.models.Ising.IsingTNFromUndirectedGraph'
     assert (isinstance(g, UndirectedGraph)), funcs.errorMessage(err = "only UndirectedGraph can be trasferred to Ising tensor network, {} obtained.".format(g), location = funcName)
@@ -165,6 +205,22 @@ def IsingTNFromUndirectedGraph(g):
     return tensors
 
 def getIsingWeight(g, S):
+    """
+    Calculate the weight of Ising model for a graph and given spins.
+
+    Parameters
+    ----------
+    g : UndirectedGraph
+        The site-graph to add interaction. The weights represent the betaJ on each edge.
+    S : int
+        The bitmask of the Ising spin states.
+    
+    Returns
+    -------
+    float
+        The Boltzmann weight for this configuration.
+
+    """
     funcName = 'CTL.models.Ising.getIsingWeight'
     assert (isinstance(g, UndirectedGraph)), funcs.errorMessage(err = "only UndirectedGraph can be trasferred to Ising tensor network, {} obtained.".format(g), location = funcName)
 
@@ -181,10 +237,19 @@ def getIsingWeight(g, S):
     return np.exp(-E)
 
 def exactZFromGraphIsing(g):
-    '''
-    calculate the partition function Z Ising model, from an CTL.funcs.graph.UndirectedGraph
-    the betaJ is set to be the weight on the edge
-    '''
+    """
+    Calculate the exact partition function by enumerating configurations of Ising model.
+
+    Parameters
+    ----------
+    g : UndirectedGraph
+        The site-graph to add interaction. The weights represent the betaJ on each edge.
+
+    Returns
+    -------
+    float
+        The exact Z.
+    """
 
     funcName = 'CTL.models.Ising.exactZFromGraphIsing'
     assert (isinstance(g, UndirectedGraph)), funcs.errorMessage(err = "only UndirectedGraph can be trasferred to Ising tensor network, {} obtained.".format(g), location = funcName)

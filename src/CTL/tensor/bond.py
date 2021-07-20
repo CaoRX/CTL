@@ -3,8 +3,26 @@ from CTL.tensor.leg import Leg
 from CTL.funcs.funcs import errorMessage
 
 class Bond:
+    """
+    The bond object linking two legs.
+
+    Parameters
+    ----------
+    leg1, leg2 : Leg
+        Two legs to be connected.
+    name : str, optional
+        The name of the bond.
+
+    Attributes
+    ----------
+    name : str
+
+    legs : tuple of Leg
+        Two legs that has been connected.
+    """
     # bondNameSet = set([])
     # bondNameSet = StringSet()
+
 
     def __init__(self, leg1, leg2, name = None):
         assert (isinstance(leg1, Leg) and (isinstance(leg2, Leg))), errorMessage(err = "Bond must be initialized with 2 Leg elements.", location = 'Bond.__init__')
@@ -18,6 +36,24 @@ class Bond:
         return "Bond(name = {}, leg1 = {}, leg2 = {})".format(self.name, self.legs[0], self.legs[1])
 
     def anotherSide(self, leg):
+        """
+        Given one side of leg, return the other side.
+
+        Parameters
+        ----------
+        leg : Leg
+            One side of the bond.
+
+        Returns
+        -------
+        Leg
+            The other side of the given leg.
+        
+        Raises
+        ------
+        AssertionError
+            Raised if the given leg is not one of the two legs of this bond.
+        """
         leg1, leg2 = self.legs 
         if (leg1 == leg):
             return leg2
@@ -28,6 +64,24 @@ class Bond:
             return None
 
     def sideLeg(self, tensor):
+        """
+        Given tensor on one side, return the corresponding leg. If both legs are from that tensor, return the first.
+
+        Parameters
+        ----------
+        tensor : Tensor
+            Tensor on one side.
+
+        Returns
+        -------
+        Leg
+            The leg in the given tensor.
+        
+        Raises
+        ------
+        AssertionError
+            Raised if the both legs are not in given tensor.
+        """
         if (self.legs[0] in tensor.legs):
             return self.legs[0]
         elif (self.legs[1] in tensor.legs):

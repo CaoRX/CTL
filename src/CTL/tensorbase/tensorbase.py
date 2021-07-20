@@ -4,6 +4,28 @@ from copy import deepcopy
 import warnings
 
 class TensorBase:
+    """
+    The base class for tensors.
+
+    Parameters
+    ----------
+    data : None or ndarray
+        The data saved in the tensor.
+        For TensorLike case, only None is needed.
+        For DiagonalTensor case, will be 1-D tensor representing the main diagonal.
+    
+    Attributes
+    ----------
+    a : None or ndarray
+        The data.
+
+    Properties
+    ----------
+    dim : int
+        The number of legs the tensor have.
+    shape : tuple of int
+    
+    """
     # attributes: xp, a
 
     def __init__(self, data = None):
