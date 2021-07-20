@@ -8,6 +8,23 @@ from CTL.tensor.contract.link import makeLink
 import numpy as np 
 
 def squareTensorMeasure(idx, obs = None):
+    """
+    Local measurement on a square of four Ising spins.
+
+    Parameters
+    ----------
+    idx : (4, ) tuple of {0, 1}
+        The local spins on the square.
+    obs : str, {'M', 'E'}, optional
+        The observable to be measured. If None, then return 1.0.
+
+    Returns
+    -------
+    float
+        If obs is 'M': return the local magnetization(since each site is shared by two squares if we divide the system into such squares, only 0.5 counted for one spin).
+        If obs is 'E': return the local energy(if neighbor spin is equal, then -1, else +1)
+        If obs is None: considering partition function, return 1.0
+    """
     if (obs is None):
         return 1.0 
     funcs.assertInSet(obs, ['M', 'E'], 'Ising obervables')
@@ -32,6 +49,23 @@ def squareTensorMeasure(idx, obs = None):
     return 1.0
 
 def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
+    """
+    Tensor for square lattice Ising model, based on square decomposition.
+
+    Parameters
+    ----------
+    beta : float
+        The inverse temperature(suppose J = 1).
+    obs : str, {'M', 'E'}, optional
+        The observable to be measured. If None, then measuring Z.
+    symmetryBroken : float, default 0.0
+        A small value corresponding to the symmetry broken, used for calculating magnetization.
+
+    Returns
+    -------
+    Tensor
+        A tensor with four legs corresponding to four spins, and contain local weight or measurement(depending on obs).
+    """
     # tensor for square Ising model
     # use the simplest way to build on plaquettes, and linked with domain wall
     data = np.zeros((2, 2, 2, 2), dtype = np.float64)
@@ -60,8 +94,18 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
     return Tensor(labels = ['u', 'l', 'd', 'r'], data = data, degreeOfFreedom = 2)
 
 def infiniteIsingExactM(T, V = 1.0):
+    """
+    Exact Magnetization of Ising model to the thermodynamical limit.
+
+    Parameters
+    ----------
+    T : float
+        The temperature.
+    V : float, default 1.0
+        The interaction in Ising model. Only V / T matters.
+    """
     criticalT = 2.0 / np.log(1.0 + np.sqrt(2))
-    if (T > criticalT):
+    if (T / V > criticalT):
         return 0.0
     else:
         return (1.0 - np.sinh(2 * V / T) ** (-4)) ** (0.125)

@@ -1,1 +1,42 @@
-numpy==1.20.2
+astroid @ file:///Users/runner/miniforge3/conda-bld/astroid_1619355134263/work
+bleach==3.3.0
+build==0.4.0
+certifi==2021.5.30
+chardet==4.0.0
+check-pypi-name==0.4.0
+colorama==0.4.4
+cycler==0.10.0
+docutils==0.17.1
+idna==2.10
+importlib-metadata @ file:///Users/runner/miniforge3/conda-bld/importlib-metadata_1619012232815/work
+isort @ file:///home/conda/feedstock_root/build_artifacts/isort_1616314750031/work
+keyring==23.0.1
+kiwisolver @ file:///Users/runner/miniforge3/conda-bld/kiwisolver_1610099793141/work
+lazy-object-proxy @ file:///Users/runner/miniforge3/conda-bld/lazy-object-proxy_1616507102310/work
+matplotlib @ file:///Users/runner/miniforge3/conda-bld/matplotlib-suite_1620506066343/work
+mccabe==0.6.1
+ncon==1.0.0
+numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1616933189959/work
+olefile @ file:///home/conda/feedstock_root/build_artifacts/olefile_1602866521163/work
+packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1612459636436/work
+pep517 @ file:///Users/runner/miniforge3/conda-bld/pep517_1615495146876/work
+Pillow @ file:///Users/runner/miniforge3/conda-bld/pillow_1621288026676/work
+pkginfo==1.7.0
+Pygments==2.9.0
+pylint @ file:///Users/runner/miniforge3/conda-bld/pylint_1614725365741/work
+pyparsing==2.4.7
+python-dateutil==2.8.1
+readme-renderer==29.0
+requests==2.25.1
+requests-toolbelt==0.9.1
+rfc3986==1.5.0
+scipy @ file:///Users/runner/miniforge3/conda-bld/scipy_1619561960917/work
+six @ file:///home/conda/feedstock_root/build_artifacts/six_1620240208055/work
+toml @ file:///home/conda/feedstock_root/build_artifacts/toml_1604308577558/work
+tornado @ file:///Users/runner/miniforge3/conda-bld/tornado_1610094711612/work
+tqdm==4.61.1
+twine==3.4.1
+urllib3==1.26.5
+webencodings==0.5.1
+wrapt @ file:///Users/runner/miniforge3/conda-bld/wrapt_1610094933900/work
+zipp @ file:///home/conda/feedstock_root/build_artifacts/zipp_1614945704755/work
