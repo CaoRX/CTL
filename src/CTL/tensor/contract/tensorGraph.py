@@ -4,6 +4,37 @@ import numpy as np
 import warnings
 
 class TensorGraph(UndirectedGraph):
+    """
+    An undirected graph generated from a set of tensors. Inheriting from CTL.funcs.graph.UndirectedGraph
+
+    The vertices are tensors, while edges are just the bonds between tensors. Free edges are for outgoing bonds.
+
+    With the tensor graph we can obtain the best or near-best sequence for contraction.
+
+    Parameters
+    ----------
+    n : int 
+        Number of tensors(vertices).
+    diagonalFlags : None or list of bool
+        Whether the input tensors are diagonal: if some tensor is diagonal, then use a different method to calculate the cost for contraction.
+
+    Attributes
+    ----------
+    indexed : bool
+        Whether the indices have been added to edges.
+    diagonalFlags : list of bool
+        Whether the tensors are considered as diagonal or not.
+    contractRes : list of tuples of ([int], (int, ), bool)
+        ContractRes[mask] is the result of contraction of tensors according to the bit-mask. Result contains (edge-list, shape, is-diagonal).
+    optimalCost : list of int
+        OptimalCost[mask] is the cost for contraction of tensors accoring to the bit-mask.
+    optimalSeq : list of list of length-2 tuple of ints
+        OptimalSeq[mask] is the sequence for contraction of tensors according to the bit-mask.
+    greedyCost : int
+        The cost of the greedy order.
+    greedySeq : list of length-2 tuple of ints
+        The sequence of the greedy order.
+    """
     def __init__(self, n, diagonalFlags = None):
         super().__init__(n)
         self.indexed = False
@@ -13,9 +44,22 @@ class TensorGraph(UndirectedGraph):
             self.diagonalFlags = diagonalFlags
 
     def addFreeEdge(self, idx, weight = None):
+        """
+        Add a free edge to a vertex.
+
+        Parameters
+        ----------
+        idx : int
+            The index of the vertex.
+        weight : None or int
+            If int, then added to the added edge as weight, used for cost calculation.
+        """
         self.v[idx].addEdge(None, weight = weight)
 
     def addEdgeIndex(self):
+        """
+        Add an index to each edge.
+        """
         if (self.indexed):
             return
         edges = self.getEdges()
@@ -25,11 +69,38 @@ class TensorGraph(UndirectedGraph):
         self.indexed = True
 
     def optimalCostResult(self):
+        """
+        Answer the query of cost for optimal contraction.
+
+        Returns
+        -------
+        int
+            The exact cost for contraction of all tensors in the graph.
+        """
         if (self.optimalCost is None):
             self.optimalContractSequence()
         return self.optimalCost[(1 << self.n) - 1]
     
     def optimalContractSequence(self, bf = False, greedy = False, typicalDim = 10):
+        """
+        Generate an order for contraction of tensors in the graph.
+
+        Parameters
+        ----------
+        bf : bool, default False
+            Whether to calculate the order by brute-force.
+        greedy : bool, default False
+            Whether to calculate the order by greedy algorithm, so the order may not be optimal. If both bf and greedy is False, then calculate with ncon technique. Priority is greedy > bf.
+        typicalDim : int or None
+            The typical bond dimension for cost calculation. If None, then calculate with exact dimensions.
+        
+        Returns
+        -------
+        list of length-2 tuple of ints
+            Length of the returned list should be $n - 1$, where $n$ is the length of tensorList.
+            Every element contains two integers a < b, means we contract a-th and b-th tensors in tensorList, and save the new tensor into a-th location.
+
+        """
 
         if (greedy and (typicalDim is not None)):
             warnings.warn(funcs.warningMessage(warn = 'greedy search of contract sequence, typicalDim {} has been ignored.'.format(typicalDim), location = 'TensorGraph.optimalContractSequence'))

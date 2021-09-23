@@ -7,14 +7,51 @@ from CTL.tensor.contract.contract import contractTwoTensors
 import CTL.funcs.funcs as funcs
 
 def makeTriangleTensorDict(a):
+    """
+    Make a tensor dict of a triangle, from a single tensor.
+    
+    Parameters
+    ----------
+    a : Tensor
+        The tensor to be put on the three corners of the triangle.
+
+    Returns
+    -------
+    dict
+        A dict with 3 keys, representing a triangle.
+    """
     return TensorDict({'u': a, 'l': a, 'r': a})
 
 def makeSquareTensorDict(a, b = None):
+    """
+    Make a tensor dict of a square, from one or two tensor.
+    
+    Parameters
+    ----------
+    a : Tensor
+
+    b : Tensor, optional
+        If given, then the square will be [ab, ba], otherwise [aa, aa]
+    
+    Returns
+    -------
+    dict
+        A dict with 4 keys, representing a square.
+    """
     if (b is None):
         b = a 
     return TensorDict({'ul': a, 'ur': b, 'dr': a, 'dl': b})
 
 def triangleContractFTN():
+    """
+    Make a finite tensor network for triangle tensor contraction.
+
+    Returns
+    -------
+    FTN : FiniteTensorNetwork
+        A FiniteTensorNetwork that, takes three tensors(in form of makeTriangleTensorDict), legs of which are named as ["1", "2", "3"], contract them.
+    
+    """
     FTN = FiniteTensorNetwork(tensorNames = ['u', 'l', 'r'])
     FTN.addLink('u', '2', 'l', '3')
     FTN.addLink('u', '3', 'r', '2')
@@ -27,6 +64,15 @@ def triangleContractFTN():
     return FTN
 
 def squareContractFTN():
+    """
+    Make a finite tensor network for square tensor contraction.
+
+    Returns
+    -------
+    FTN : FiniteTensorNetwork
+        A FiniteTensorNetwork that, takes 4 tensors(in form of makeSquareTensorDict), legs of which are named as ['u', 'd', 'l', 'r'], contract them.
+    
+    """
     FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
     FTN.addLink('ul', 'd', 'dl', 'u')
     FTN.addLink('ul', 'r', 'ur', 'l')
@@ -41,6 +87,15 @@ def squareContractFTN():
     return FTN
 
 def squareContractOutFTN():
+    """
+    Make a finite tensor network for square tensor contraction, where tensors are having inner legs and outer legs named "o".
+
+    Returns
+    -------
+    FTN : FiniteTensorNetwork
+        A FiniteTensorNetwork that, takes 4 tensors(in form of makeSquareTensorDict), legs of which are named as ['u'/'d', 'l'/'r', 'o'], contract them.
+    
+    """
     FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])
     
     FTN.addLink('ul', 'd', 'dl', 'u')
@@ -56,13 +111,28 @@ def squareContractOutFTN():
     return FTN
 
 def triangleTensorTrace(a, b):
+    """
+    Take the trace of two triangle tensors, usually work for the end of the RG of triangular lattice.
+
+    Parameters
+    ----------
+    a, b : Tensor
+        Two tensors of the triangular shape(namely, 3 legs ['1', '2', '3']).
+    
+    Returns
+    -------
+    Tensor
+        The trace tensor of the two tensors. If a and b only have legs ['1', '2', '3'], then shapeless(so the value can be obtained as res.single()), otherwise the tensor of the remaining legs.
+    """
     tensorA = a.copy()
     tensorB = b.copy()
+
+    bonds = []
     
     for label in ['1', '2', '3']:
-        makeLink(label, label, tensorA = tensorA, tensorB = tensorB)
+        bonds += makeLink(label, label, tensorA = tensorA, tensorB = tensorB)
     
-    res = contractTwoTensors(tensorA, tensorB)
+    res = contractTwoTensors(tensorA, tensorB, bonds = bonds)
     return res
 
 def squareHorizontalContractFTN(d):

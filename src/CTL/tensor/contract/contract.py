@@ -7,6 +7,18 @@ from CTL.tensor.contract.link import makeLink, mergeLink
 import warnings
 
 def shareBonds(ta, tb):
+	"""
+	Find all shared bonds between two tensors ta and tb.
+
+	Parameters
+	----------
+	ta, tb : Tensor
+	
+	Returns
+	-------
+	bonds : list of Bond
+
+	"""
 	bonds = []
 	for leg in ta.legs:
 		anotherLeg = leg.anotherSide()
@@ -23,6 +35,23 @@ def shareBonds(ta, tb):
 # so the complexity is just the shape of output tensor
 
 def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
+	"""
+	Calculate the result of contraction of two tensors.
+
+	Parameters
+	----------
+	ta, tb : Tensor
+
+	bonds : list of Bond, optional
+		If given, then contract only over the given bonds but not all bonds shared.
+	outProductWarning : bool, default True
+		Whether to make a warning message of outer product, used for debug.
+
+	Returns
+	-------
+	Tensor
+		The contraction result of ta and tb.
+	"""
 	# contract between bonds(if not, then find the shared legs)
 	# this requires that: tensor contraction happens in-place
 	# after we prepare some tensor, we must create tensors to make links
@@ -148,14 +177,26 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 	return Tensor(shape = newShape, data = newData, legs = newLegs)
 
 def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
-	'''
-	input two tensors, connected with each other
-	(if not connected: error)
-	merge the bonds between two tensors to one bond
-	if chi is None: only merge but no approximation needed, otherwise truncate to at max chi
-	if bondName given: rename the legs of the bond to bondName
-	otherwise: name1|name2|... for all merged names for both side
-	'''
+	"""
+	Merge the shared bonds of two tensors. If not connected, make a warning and do nothing.
+
+	Parameters
+	----------
+	ta, tb : Tensor
+	
+	chi : int, optional
+		The upper-bound of the bond dimension of the bond after merged. If None, then no truncation.
+	bondName : str, optional
+		The name of bond after merging. If None, then for a list of [name1, name2, ... nameN], the name will be "{name1}|{name2}| .... |{nameN}".
+	renameWarning : bool, default True
+		If only one bond is shared, then the two
+
+	Returns
+	-------
+	ta, tb : Tensor
+		The two tensors after merging all the common bonds to one bond.
+
+	"""
 	funcName = "CTL.tensor.contract.contract.truncate"
 
 	assert (ta.xp == tb.xp), funcs.errorMessage("Truncation cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
@@ -184,9 +225,10 @@ def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
 	# else:
 	# 	bondNameA, bondNameB = bondName # tuple/list
 
+	# if (renameFlag):
 	if (len(sb) == 0):
 		if (renameWarning):
-			warnings.warn(funcs.warningMessage(warn = 'mergeLink cannot merge links between two tensors {} and {} sharing one bond, only rename'.format(ta, tb), location = funcName), RuntimeWarning)
+			warnings.warn(funcs.warningMessage(warn = 'mergeLink cannot merge links between two tensors {} and {} not sharing any bond'.format(ta, tb), location = funcName), RuntimeWarning)
 		return ta, tb
 
 	assert (len(sb) == 1), funcs.errorMessage("There should only be one common leg between ta and tb after mergeLink, {} obtained.".format(sb), location = funcName)

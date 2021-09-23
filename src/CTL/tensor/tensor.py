@@ -3,8 +3,97 @@ import CTL.funcs.funcs as funcs
 import numpy as np 
 from copy import deepcopy
 from CTL.tensor.leg import Leg
+import warnings
 
 class Tensor(TensorBase):
+    """
+    The main class of Tensor. The class is organized as:
+    1. A data tensor as ndarray;
+    2. A set of legs, corresponding to each dimension of the tensor.
+    3. Other information(degree of freedom, total element number, ...)
+
+    This class is also used for TensorLike, an object that behaves almost the same as Tensor, but without data.
+
+    Parameters
+    ----------
+    shape : None or tuple of int, optional
+        The expected shape of the tensor.
+    labels : None or tuple of str, optional
+        The labels to be put for each dimension, if None then automatically generated from lower case letters.
+    data : None or ndarray of float, optional
+        The data in the tensor. 
+        If None and the data is needed(not TensorLike), then generated as np.random.random_sample. 
+        If shape is given, data does not need to have the same shape as "shape", but the number of elements should be the same.
+    degreeOfFreedom : None or int, optional
+        Local degree of freedom for this tensor.
+    name : None or str, optional
+        The name of the tensor to create.
+    legs : None or list of Leg, optional
+        The legs of this tensor. If None, then automatically generated.
+    diagonalFlag : bool, default False
+        Whether this tensor is diagonal tensor or not. Diagonal tensors can behave better in efficiency for tensor contractions, so we deal with them with child class DiagonalTensor, check the details in CTL.tensor.diagonalTensor.
+    tensorLikeFlag : bool, default False
+        If True, then the tensor is a "TensorLike": will not contain any data, but behave just like a tensor.
+    xp : object, default numpy
+		The numpy-like library for numeric functions.
+
+    Attributes
+    ----------
+    tensorLikeFlag : bool
+        Whether the tensor is a "TensorLike".
+    xp : object
+        The numpy-like library for numeric functions.
+    diagonalFlag : bool
+        Whether the tensor is a "DiagonalTensor"
+    totalSize : int
+        Total number of components in this tensor. Redundant with funcs.tupleProduct(self.shape).
+    degreeOfFreedom : int
+        Number of local degree of freedom. E.g. for Ising Tensor around one spin, it can be 1. 
+    name : None or str
+        The name of the tensor.
+    legs : list of Leg
+        The legs from this tensor, can be "attracted" to another leg to form a bond. If not so, then it is a free leg.
+    a : ndarray of float
+        The data of the tensor.
+
+    Notes
+    -----
+    Please note shape, labels, data and legs: although they are all optional, they need to contain enough(and not contradictory) information for deduce the shape, labels, data and legs for the tensor, the deduction strategy is described below:
+
+    For labels: priority is legs = labels, default: auto-generated in order from lowercase letters.
+
+    For shape: priority is legs = shape > data.
+
+    For legs: priority is legs, default: auto-generated with labels and shape.
+
+    For data: priority is data.reshape(shape), default: np.random.random_sample(shape).
+
+    ("For property A, priority is B > C = D > E, default: F" means, A can be deduced from B, C, D, E, so we consider from high priority to low priority. If B exist, then we take the deduced value from B, and change C, D, E if they in some sense compatible with B. Otherwise consider C & D. For values of the same priority, if both of them are provided, then they should be the same. If none of B, C, D, E can deduce A, then generate A with F.)
+
+    "checkXXXYYYCompatible" functions will do the above checkings to make the information in the same priority compatible with each other.
+    """
+
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False, xp = np):
+        super().__init__(None)
+
+        # only data needs a copy
+        # labels and shape: they are virtual, will be saved in legs
+        self.tensorLikeFlag = tensorLikeFlag
+        self.xp = xp
+        if (diagonalFlag):
+            self.diagonalFlag = True 
+            return 
+        else:
+            self.diagonalFlag = False
+
+        legs, shape, labels, data = self.deduction(legs = legs, shape = shape, labels = labels, data = data, isTensorLike = tensorLikeFlag)
+        
+        self.totalSize = funcs.tupleProduct(shape)
+        self.degreeOfFreedom = degreeOfFreedom
+        self.name = name
+
+        self.legs = legs 
+        self.a = data
 
     # def __init__(self):
     #     pass
@@ -39,6 +128,21 @@ class Tensor(TensorBase):
     # we still deduce the legs, shape, labels, data, but without real data
 
     def checkLegsLabelsCompatible(self, legs, labels):
+        """
+        Check whether labels is compatible with legs. For more information, check "Notes" of comments for Tensor.
+
+        Parameters
+        ----------
+        legs : list of Leg
+            Legs of the tensor that already existed before creating the tensor.
+        labels : None or list of str
+            The labels to be added to the legs of this tensor.
+        
+        Returns
+        -------
+        bool
+            Whether the legs and labels are compatible.
+        """
         # we know that legs is not None
         # so labels should be either None, or a list that corresponding to legs
         if (labels is None):
@@ -55,6 +159,21 @@ class Tensor(TensorBase):
             return False
 
     def checkLegsShapeCompatible(self, legs, shape):
+        """
+        Check whether shape is compatible with legs. For more information, check "Notes" of comments for Tensor.
+
+        Parameters
+        ----------
+        legs : list of Leg
+            Legs of the tensor that already existed before creating the tensor.
+        shape : None or tuple of int
+            The expected shape of the tensor.
+        
+        Returns
+        -------
+        bool
+            Whether the legs and shape are compatible.
+        """
         if (shape is None):
             return True 
         if (isinstance(shape, list) or isinstance(shape, tuple)):
@@ -69,18 +188,67 @@ class Tensor(TensorBase):
             return False
     
     def checkShapeDataCompatible(self, shape, data):
+        """
+        Check whether data is compatible with shape. For more information, check "Notes" of comments for Tensor.
+
+        Parameters
+        ----------
+        shape : tuple of int
+            The expected shape of the tensor.
+        data : None or ndarray of float
+            The data to be put into the tensor.
+        
+        Returns
+        -------
+        bool
+            Whether the shape and data are compatible.
+        """
         # we know shape, and want to see if data is ok
         if (data is None):
             return True 
         return (funcs.tupleProduct(data.shape) == funcs.tupleProduct(shape))
 
     def checkShapeLabelsCompatible(self, shape, labels):
-        # we know shape(is not None), and we want to see if labels is ok
+        """
+        Check whether labels is compatible with shape. For more information, check "Notes" of comments for Tensor.
+
+        Parameters
+        ----------
+        shape : tuple of int
+            The expected shape of the tensor.
+        labels : None or list of str
+            The labels to be added to the legs of this tensor.
+        
+        Returns
+        -------
+        bool
+            Whether the shape and labels are compatible.
+        """
         if (labels is None):
             return True 
         return len(labels) == len(shape)
 
     def generateData(self, shape, data, isTensorLike):
+        """
+        Generate the data for this tensor. None for TensorLike, if data is None then randomly generated, otherwise, reshape to the given shape and return a copy.
+
+        Parameters
+        ----------
+        shape : tuple of int
+            Expected shape for the tensor.
+        data : None or ndarray of float
+            The data to be put in the tensor, None for randomly generated.
+        isTensorLike : bool
+            Whether we are working for a TensorLike object: if True, then data is None.
+        
+        Returns
+        -------
+        None or ndarray of float
+            For TensorLike, return None.
+            If data exists, then reshape it to shape, and return its copy.
+            If data is None, then randomly generate a tensor of shape.
+            Note that modifying the data used as parameter will not affect the returned array, since it will be a copy if data is not None.
+        """
         if (isTensorLike):
             return None
         if (data is None):
@@ -93,6 +261,38 @@ class Tensor(TensorBase):
             
     def deduction(self, legs, shape, labels, data, isTensorLike = False):
         # print('deduction(legs = {}, shape = {}, labels = {}, data = {}, isTensorLike = {})'.format(legs, shape, labels, data, isTensorLike))
+        """
+        Deduce the legs, shape, labels and data from the input of user. Guess the missing information if not provided.
+        For details, check "Notes" of comments for Tensor.
+
+        Parameters
+        ----------
+        legs : None or list of Leg
+            Legs of the tensor that already existed before creating the tensor. If None, then automatically generated.
+        shape: None or tuple of int
+            Expected shape for the tensor.
+        labels : None or list of str
+            The labels to be added to the legs of this tensor.
+        data : None or ndarray of float
+            The data to be put in the tensor, None for randomly generated.
+        isTensorLike : bool, default False
+            Whether we are working for a TensorLike object: if True, then data is None.
+
+        Returns
+        ------- 
+        legs : list of Leg
+
+        shape: tuple of int
+
+        labels : list of str
+            The labels to be added to the legs of this tensor.
+        data : None or ndarray of float
+            The data to be put in the tensor. None for isTensorLike = True case.
+        
+        Notes
+        -----
+        Although each of the first 4 parameters can be None by default, user must provide enough information for the deduction of the real shape, labels, legs and data(if not TensorLike).
+        """
         funcName = "Tensor.deduction"
         if (legs is not None):
 
@@ -141,28 +341,6 @@ class Tensor(TensorBase):
                 leg.tensor = self
 
         return legs, shape, labels, data
-
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False):
-        super().__init__(None)
-
-        # only data needs a copy
-        # labels and shape: they are virtual, will be saved in legs
-        self.tensorLikeFlag = tensorLikeFlag
-        self.xp = np
-        if (diagonalFlag):
-            self.diagonalFlag = True 
-            return 
-        else:
-            self.diagonalFlag = False
-
-        legs, shape, labels, data = self.deduction(legs = legs, shape = shape, labels = labels, data = data, isTensorLike = tensorLikeFlag)
-        
-        self.totalSize = funcs.tupleProduct(shape)
-        self.degreeOfFreedom = degreeOfFreedom
-        self.name = name
-
-        self.legs = legs 
-        self.a = data
 
     @property 
     def labels(self):
@@ -220,14 +398,54 @@ class Tensor(TensorBase):
         return '{}({}shape = {}, labels = {}{})\n'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
+        """
+        Bond dimension of the tensor. Work for the case when all dimensions are the same, otherwise, generate a warning message and return the first dimension.
+
+        Returns
+        -------
+        int
+            The bond dimension of this tensor.
+        """
+
+        if (not funcs.checkAllEqual(self.shape)):
+            warnings.warn(funcs.warningMessage(warn = "shape of tensor does not contain the same dimesion for all legs: {}".format(self.shape), location = "Tensor.bondDimension"))
         return self.shape[0]
 
     def generateLabels(self, n):
-        assert (n <= 26), "Too many dimensions for input shape"
+        """
+        Automatically generate labels for legs when labels are not provided. Generated in order of alphabeta.
+
+        Parameters
+        ----------
+        n : int
+            The number of legs to be generated.
+        
+        Returns
+        -------
+        list of str
+            The list of labels, in the form ['a', 'b', 'c', 'd', ...]
+        """
+
+        assert (n <= 26), funcs.errorMessage(err = "Too many dimensions for input shape: {}".format(n), location = "Tensor.generateLabels")
         labelList = 'abcdefghijklmnopqrstuvwxyz'
         return [labelList[i] for i in range(n)]
     
     def indexOfLabel(self, lab, backward = False):
+        """
+        Index of a given label.
+        TODO : warning message for usage of this?
+
+        Parameters
+        ----------
+        lab : str
+            The label of which the index is asked.
+        backward : bool, default False
+            Whether to search from backward when two or more same labels exist. Used when self inner product is wanted, and obtain the two indices by indexOfLabel(lab) and indexOfLabel(backward = True).
+
+        Returns
+        int
+            The index of lab. Search from backward if asked.
+        """
         labels = self.labels
         if not (lab in labels):
             return -1
@@ -239,21 +457,75 @@ class Tensor(TensorBase):
             ret = labels.index(lab)
         return ret
 
-    def getLegIndex(self, leg):
+    def indexOfLeg(self, leg):
+        """
+        Index of a given leg. More stable since each leg is unique.
+
+        Parameters
+        ----------
+        leg : Leg
+            The leg of which the index is asked.
+        
+        Returns
+        -------
+        int
+            The index of the leg
+        """
         return self.legs.index(leg)
     def getLegIndices(self, legs):
-        return [self.getLegIndex(leg) for leg in legs]
-    def getLeg(self, label):
-        res = None 
-        for leg in self.legs:
-            if (leg.name == label):
-                res = leg 
-                break 
-        assert (res is not None), "Error: {} not in tensor labels {}.".format(label, self.labels)
+        """
+        Index of a given set of legs. For details, check the docstring in indexOfLeg.
+
+        Parameters
+        ----------
+        leg : list of Leg
+            The set of legs of which the index is asked.
         
-        return res
+        Returns
+        -------
+        list of int
+            The indices of legs.
+        """
+        return [self.indexOfLeg(leg) for leg in legs]
+    def getLeg(self, label, backward = False):
+        """
+        Obtain the leg from the label, by finding the index of given label. For more details, check indexOfLabel.
+
+        Parameters
+        ----------
+        lab : str
+            The label of which the index is asked.
+        backward : bool, default False
+            Whether to search from backward when two or more same labels exist. Used when self inner product is wanted, and obtain the two indices by indexOfLabel(lab) and indexOfLabel(backward = True).
+
+        Returns
+        None or Leg
+            The leg corresponding to given label. If the given label does not appear, return None.
+        """
+
+        index = self.indexOfLabel(label, backward = backward)
+        if (index == -1):
+            return None
+        return self.legs[index]
+        # res = None 
+        # for leg in self.legs:
+        #     if (leg.name == label):
+        #         res = leg 
+        #         break 
+        # assert (res is not None), "Error: {} not in tensor labels {}.".format(label, self.labels)
+        
+        # return res
 
     def moveLegsToFront(self, legs):
+        """
+        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use self.xp.moveaxis to modify the data if this is not a TensorLike object.
+
+        Parameters
+        ----------
+        legs : list of Leg
+            The set of legs to be put at front.
+
+        """
         moveFrom = []
         moveTo = []
         currIdx = 0
@@ -277,10 +549,35 @@ class Tensor(TensorBase):
             self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
+        """
+        Flatten the data contained to a 1D-vector.
+
+        Returns
+        -------
+        1D ndarray of float
+            A vector contains the data in this tensor, following the current order of labels.
+        
+        """
+
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
         return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows = None, cols = None):
+        """
+        Make a matrix of the data of this tensor, given the labels or legs of rows and cols.
+
+        Parameters
+        ----------
+        rows : None or list of str or list of Leg
+            The legs for the rows of the matrix. If None, deducted from cols.
+        cols : None or list of str or list of Leg
+            The legs for the cols of the matrix. If None, deducted from rows.
+
+        Returns
+        -------
+        2D ndarray of float
+            The data of this tensor, in the form of (rows, cols).
+        """
         # print(rows, cols)
         # print(self.labels)
         # input two set of legs
@@ -312,22 +609,75 @@ class Tensor(TensorBase):
         return data
 
     def complementLegs(self, legs):
+        """
+        Search for the legs that are not in the set of given legs.
+
+        Parameters
+        ----------
+        legs : list of Leg
+
+        Returns
+        -------
+        list of Leg
+            The leg list after removing given legs.
+        """
         return funcs.listDifference(self.legs, legs)
 
     def copy(self):
+        """
+        Make a copy of current tensor, without copy the legs. Note that we do not need to pass copy of data, since generateData will always make a copy.
+
+        Legs cannot be connected once: so if we copy the legs, contract the copied tensor and the tensor connected to the original tensor will make the bond invalid. So we do not copy the legs. However, we can make the copy of legs in CTL.tensor.contract.optimalContract.copyTensorList, please check the docs there for more details.
+
+        Returns
+        -------
+        Tensor
+            A copy of the current tensor, all the information can be copied is contained.
+        """
         return Tensor(data = self.a, shape = self.shape, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, diagonalFlag = self.diagonalFlag, tensorLikeFlag = self.tensorLikeFlag)
         # no copy of tensor legs, which may contain connection information
         # the data will be copied in the new tensor, since all data is generated by "generateData"
     def toTensorLike(self):
+        """
+        Make a copy of current tensor, without copying the legs. This function works almost like self.copy(), but without copying the data.
+
+        Returns
+        -------
+        Tensor
+            A TensorLike of the current tensor, all the information can be copied is contained except legs and data.
+        """
         if (self.tensorLikeFlag):
             return self.copy()
         else:
             return Tensor(data = None, degreeOfFreedom = self.degreeOfFreedom, shape = self.shape, name = self.name, labels = self.labels, diagonalFlag = self.diagonalFlag, tensorLikeFlag = True)
     
     def copyN(self, n):
+        """
+        Make a set of n copies of the current tensor.
+
+        Returns
+        -------
+        list of Tensor
+            A length-n list of copies of current tensor.
+        """
         return [self.copy() for _ in range(n)]
     
     def getLabelIndices(self, labs, backward = False):
+        """
+        Index of a given set of lablels. For details, check the docstring in indexOfLabel. If two same labels have been used, then the first will be searched in given direction and another will be searched in the opposite direction(by default, first from front, the other from backward).
+
+        Parameters
+        ----------
+        leg : list of str
+            The set of labels of which the index is asked.
+        backward : bool, default False
+            Whether to search from backward.
+        
+        Returns
+        -------
+        list of int
+            The indices of labels.
+        """
         ret = []
         for i, lab in enumerate(labs):
             if (labs[:i].count(lab) > 0):
@@ -340,64 +690,166 @@ class Tensor(TensorBase):
         return ret
 
     def renameLabel(self, changeFrom, changeTo):
+        """
+        Rename a given label to a new name.
+
+        Parameters
+        ----------
+        changeFrom, changeTo : str
+
+        """
         self.legs[self.indexOfLabel(changeFrom)].name = changeTo
         # self.legs[changeTo] = self.legs[changeFrom]
         # if (changeFrom != changeTo):
         #     del self.legs[changeFrom]
 
     def renameLabels(self, changefrom, changeto):
+        """
+        Rename a set of labels to new names.
+
+        Parameters
+        ----------
+        changeFrom, changeTo : list of str
+
+        """
         assert (len(changefrom) == len(changeto)), "Error: renameLabels need two list with equal number of labels, gotten {} and {}".format(changefrom, changeto)
         for cf, ct in zip(changefrom, changeto):
             self.renameLabel(cf, ct)
 
-    def shapeOfLabel(self, label):
-        for leg in self.legs:
-            if leg.name == label:
-                return leg.dim 
+    def shapeOfLabel(self, label, backward = False):
+        """
+        Find the shape of a given label. For how to search the leg of the label, check self.getLeg.
+
+        Parameters
+        ----------
+        label : str
+
+        backward : bool, default False
+
+        Returns
+        -------
+        int
+            The dimension of the leg of given label. If the label does not exist, return -1.
+        """
+        leg = self.getLeg(label, backward = backward)
+        if (leg is None):
+            return -1
+        return leg.dim
+        # for leg in self.legs:
+        #     if leg.name == label:
+        #         return leg.dim 
         
-        return -1
-    def shapeOfLabels(self, labs):
-        return self.shapeOfIndices(self.getLabelIndices(labs))
+        # return -1
+    def shapeOfLabels(self, labs, backward = False):
+        """
+        Find the shape of a given set of labels. For details, check self.getLabelIndices.
+
+        Parameters
+        ----------
+        labs : list of str
+
+        backward : bool, default False
+
+        Returns
+        -------
+        int
+            The dimension of the legs of given labels.
+        """
+        return self.shapeOfIndices(self.getLabelIndices(labs, backward = backward))
 
     def shapeOfIndex(self, index):
+        """
+        Shape of a given index of legs. This should be used internally, since the order of legs is not fixed.
+
+        Parameters
+        ----------
+        index : int
+
+        Returns
+        -------
+        int
+            The dimension of leg with index as index.
+        """
         return self.shape[index]
     def shapeOfIndices(self, indices):
+        """
+        Shape of given indices of legs. This should be used internally, since the order of legs is not fixed.
+
+        Parameters
+        ----------
+        indices : list of int
+
+        Returns
+        -------
+        tuple of int
+            The dimension of legs with indices as indices.
+        """
         return tuple([self.shape[x] for x in indices])
 
     def addTensorTag(self, name):
+        """
+        Add a tag to all legs of the current tensor, so we can recover the leg structure after contraction of a tensor network.
+
+        For this usage, please not use "-" explicitly in the name of tensors, or it will be considered as a tag. 
+
+        TODO : make a internal / external flag for creating tensors, so it can give a warning if user is creating tensors with labels containing '-'?
+
+        Parameters
+        ----------
+        name : str
+            The tag to be attached to legs.
+        
+        """
         for leg in self.legs:
             assert (leg.name.find('-') == -1), "Error: leg name {} already has a tensor tag.".format(leg.name)
             leg.name = name + '-' + leg.name 
     
     def removeTensorTag(self):
+        """
+        Remove the tags of legs. If a leg does not contain a tag, then give a warning message.
+        """
         for leg in self.legs:
             divLoc = leg.name.find('-')
-            assert (divLoc != -1), "Error: leg name {} does not contain a tensor tag.".format(leg.name)
-            leg.name = leg.name[(divLoc + 1):]
+            if (divLoc == -1):
+                warnings.warn(funcs.warningMessage(warn = "leg name {} of tensor {} does not contain a tensor tag.".format(leg.name, self), location = "Tensor.removeTensorTag"))
+            # assert (divLoc != -1), "Error: leg name {} does not contain a tensor tag.".format(leg.name)
+            if (divLoc != -1):
+                leg.name = leg.name[(divLoc + 1):]    
 
     def moveLabelsToFront(self, labelList):
-        moveFrom = []
-        moveTo = []
-        currIdx = 0
-        movedLegs = []
-        for label in labelList:
-            for i, leg in enumerate(self.legs):
-                if (leg.name == label):
-                    moveFrom.append(i)
-                    moveTo.append(currIdx)
-                    currIdx += 1
-                    movedLegs.append(leg)
-                    break
+        """
+        Change the orders of legs: move a given set of labels to the front. For details, check "self.moveLegsToFront".
 
-        for leg in movedLegs:
-            self.legs.remove(leg)
+        Parameters
+        ----------
+        labelList : list of str
+            The set of labels to be put at front.
+
+        """
+        legs = [self.getLeg(label) for label in labelList]
+        self.moveLegsToFront(legs)
+        # moveFrom = []
+        # moveTo = []
+        # currIdx = 0
+        # movedLegs = []
+        # for label in labelList:
+        #     for i, leg in enumerate(self.legs):
+        #         if (leg.name == label):
+        #             moveFrom.append(i)
+        #             moveTo.append(currIdx)
+        #             currIdx += 1
+        #             movedLegs.append(leg)
+        #             break
+
+        # for leg in movedLegs:
+        #     self.legs.remove(leg)
         
-        # print(moveFrom, moveTo)
-        # print(labelList)
-        # print(self.labels)
-        self.legs = movedLegs + self.legs 
-        if (not self.tensorLikeFlag):
-            self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        # # print(moveFrom, moveTo)
+        # # print(labelList)
+        # # print(self.labels)
+        # self.legs = movedLegs + self.legs 
+        # if (not self.tensorLikeFlag):
+        #     self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     # def outProduct(self, labelList, newLabel):
     #     self.moveLabelsToFront(labelList)
@@ -416,9 +868,27 @@ class Tensor(TensorBase):
     #     return self.legs[0]
 
     def outProduct(self, legList, newLabel):
+        """
+        Do an out product to combine a set of legs to a single leg. 
+        Parameters
+        ----------
+        legList : list of str or list of str
+            The legs to be combined, or labels or the legs.
+        newLabel : str
+            The new label for the combined leg.
+
+        Returns
+        -------
+        Leg
+            The new leg of all legs to be combined.
+        """
         assert (isinstance(legList, list) and (len(legList) > 0)), funcs.errorMessage(err = "outProduct cannot work on leg list of zero legs or non-list, {} obtained.".format(legList), location = 'Tensor.outProduct')
         if (isinstance(legList[0], str)):
             return self.outProduct([self.getLeg(label) for label in legList], newLabel)
+
+        # connectedLegs = [leg for leg in legList if (leg.bond is not None)]
+        # if (len(connectedLegs) > 0):
+        #     warnings.warn(funcs.warningMessage(warn = "out producting legs {} that has been connected: remove the connection.".format(connectedLegs), location = 'Tensor.outProduct'))
 
         self.moveLegsToFront(legList)
         n = len(legList)
@@ -436,20 +906,60 @@ class Tensor(TensorBase):
         return self.legs[0]
 
     def reArrange(self, labels):
+        """
+        Rearrange the legs to a given order according to labels.
+
+        Parameters
+        ----------
+        labels : list of str
+            The order of labels after rearranging.
+        """
         assert (funcs.compareLists(self.labels, labels)), "Error: tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
         self.moveLabelsToFront(labels)
 
     def norm(self):
+        """
+        Norm of the current tensor.
+
+        Returns
+        -------
+        float
+            The norm of data.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have norm since no data contained.', 'Tensor.norm')
         return self.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
+        """
+        Trace of the current tensor after making a matrix according to rows and cols. For details, check Tensor.toMatrix
+
+        Parameters
+        ----------
+        rows : None or list of str or list of Leg
+            The legs for the rows of the matrix. If None, deducted from cols.
+        cols : None or list of str or list of Leg
+            The legs for the cols of the matrix. If None, deducted from rows.
+        
+        Returns
+        -------
+        float
+            The trace of the matrix generated by given cols and rows.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have trace since no data contained.', 'Tensor.trace')
         mat = self.toMatrix(rows = rows, cols = cols)
         assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
         return self.xp.trace(mat)
 
     def single(self):
+        """
+        Generate a single value from a shapeless tensor.
+
+        Returns
+        -------
+        float
+            A single value of this tensor.
+
+        """
         # return the single value of this tensor
         # only works if shape == (,)
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to single value since no data contained.', 'Tensor.single')
@@ -457,259 +967,74 @@ class Tensor(TensorBase):
         return self.a
 
     def toTensor(self, labels = None):
+        """
+        Return a ndarray of this tensor.
+
+        Parameters
+        ----------
+        labels : None or list of str
+            The order of labels for the output tensor. Note that if labels is None, the order of legs is not fixed, may differ from time to time.
+        
+        Returns
+        -------
+        ndarray of float
+            The data of the tensor, order of legs are given by the labels.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to tensor since no data contained.', 'Tensor.toTensor')
         if (labels is not None):
             self.reArrange(labels)
         return self.a
 
     def typeName(self):
+        """
+        The type of the current class.
+
+        Returns
+        -------
+        {"Tensor", "TensorLike"}
+        """
         if (self.tensorLikeFlag):
             return "TensorLike"
         else:
             return "Tensor"
 
     def labelInTensor(self, label):
+        """
+        Whether the given label is one label of the current tensor.
+        
+        Parameters
+        ----------
+        label : str
+
+        Returns
+        -------
+        bool
+            Whether the label is of this tensor.
+        """
         return label in self.labels 
     def labelsInTensor(self, labels):
+        """
+        Whether the given labels are all labels of the current tensor.
+        
+        Parameters
+        ----------
+        labels : list of str
+
+        Returns
+        -------
+        bool
+            Whether the labels are of this tensor.
+        """
         for label in labels:
             if not (label in self.labels):
                 return False
 
         return True
-    # def complementIndices(self, labs):
-    #     return funcs.listDifference(self.labels, labs)
-
-    # def shapeOfRowColumn(self, rows, cols = None):
-    #     if (cols == None):
-    #         cols = funcs.listDifference(self.labels, rows)
-
-    #     colIndices = self.getLabelIndices(cols)
-    #     rowIndices = self.getLabelIndices(rows)
-
-    #     colShape = tuple([self.shape[x] for x in colIndices])
-    #     rowShape = tuple([self.shape[x] for x in rowIndices])
-    #     return rowShape, colShape
-
-    # def toMatrix(self, rows, cols = None):
-    #     if (cols == None):
-    #         cols = funcs.listDifference(self.labels, rows)
-
-    #     colIndices = self.getLabelIndices(cols)
-    #     rowIndices = self.getLabelIndices(rows, backward = True)
-
-    #     colShape = tuple([self.shape[x] for x in colIndices])
-    #     rowShape = tuple([self.shape[x] for x in rowIndices])
-
-    #     colTotalSize = funcs.tupleProduct(colShape)
-    #     rowTotalSize = funcs.tupleProduct(rowShape)
-
-    #     moveFrom = rowIndices + colIndices
-    #     moveTo = list(range(len(moveFrom)))
-    #     #print('row label = {}, col label = {}'.format(rows, cols))
-    #     #print('row = {}, col = {}'.format(row_index, col_index))
-    #     #print('move from {}, to {}'.format(moveFrom, moveTo))
-    #     data = self.xp.moveaxis(self.xp.copy(self.a),  moveFrom, moveTo)
-    #     data = self.xp.reshape(data, (rowTotalSize, colTotalSize))
-    #     return data
-
-    # def toTensor(self, labels):
-    #     assert (len(labels) == len(self.labels)), "Error: number of tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
-
-    #     moveFrom = self.getLabelIndices(labels)
-    #     moveTo = list(range(len(moveFrom)))
-    #     data = self.xp.moveaxis(self.xp.copy(self.a),  moveFrom, moveTo)
-    #     return data
-
-    # # def moveContractLabels(self, moveFrom, moveTo):
-    # #     contractLabels = [''] * self.dim 
-    # #     for mf, mt in zip(moveFrom, moveTo):
-    # #         contractLabels[mt] = self.contractLabels[mf]
-    # #     self.contractLabels = contractLabels
-
-    # def reArrange(self, labels):
-    #     assert (len(labels) == len(self.labels)), "Error: number of tensor labels must be the same with original labels: get {} but {} needed".format(len(labels), len(self.labels))
-    #     idx = self.getLabelIndices(labels)
-    #     moveFrom = idx
-    #     moveTo = list(range(len(moveFrom)))
-
-    #     # self.moveContractLabels(moveFrom, moveTo)
-    #     # if not self.lock:
-    #     newLegs = [''] * self.dim
-    #     for i in range(self.dim):
-    #         newLegs[i] = self.legs[moveFrom[i]]
-    #     self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
-    #     self.shape = self.a.shape
-    #     self.legs = newLegs
-    #     # self.labels = deepcopy(labels)
-
-    # def moveLabelsToFront(self, labs):
-    #     #print('move label {}'.format(labs))
-    #     #print('before move: {}'.format(self.labels))
-    #     labelIndices = self.getLabelIndices(labs)
-    #     # labelShape = self.shapeOfIndices(labelIndices)
-    #     moveFrom = labelIndices
-    #     moveTo = list(range(len(moveFrom)))
-    #     # self.moveContractLabels(moveFrom, moveTo)
-    #     #print('move from {} to {}'.format(moveFrom, moveTo))
-    #     self.a = np.moveaxis(self.a, moveFrom, moveTo)
-    #     # for lab in labs:
-    #     #     self.labels.remove(lab)
-    #     # self.labels = labs + self.labels
-    #     newLegs = []
-    #     for i in range(len(moveFrom)):
-    #         newLegs.append(self.legs[moveFrom[i]])
-    #     for leg in newLegs:
-    #         self.legs.remove(leg)
-    #     self.legs = newLegs + self.legs
-    #     self.shape = self.a.shape
-    #     #print('after move: {}'.format(self.labels))
-
-    # # def selfContract(self, rows = None, cols = None):
-    # #     if (rows is None):
-    # #         rows = self.replicateLabels()
-    # #     if (cols is None):
-    # #         cols = self.replicateLabels()
-    # #     data = self.toMatrix(rows = rows, cols = cols)
-    # #     return np.trace(data)
-
-    # # def selfSpectrum(self, rows = None, cols = None, d = None):
-    # #     if (rows is None):
-    # #         rows = self.replicateLabels()
-    # #     if (cols is None):
-    # #         cols = self.replicateLabels()
-    # #     if (d is None):
-    # #         d = (self.shape[0] ** 2)
-    # #     data = self.toMatrix(rows = rows, cols = cols)
-    # #     _, s, _ = np.linalg.svd(data)
-    # #     #return np.trace(data)
-    # #     return s[:d]
-    # # def selfDiag(self, rows = None, cols = None):
-    # #     if (rows is None):
-    # #         rows = self.replicateLabels()
-    # #     if (cols is None):
-    # #         cols = self.replicateLabels()
-    # #     data = self.toMatrix(rows = rows, cols = cols)
-    # #     ret = sorted(np.diagonal(data), key = lambda x: np.abs(x))
-    # #     ret.reverse()
-    # #     return ret
-
-    # def replicateLabels(self):
-    #     labelSet = set(self.labels)
-    #     return [lab for lab in labelSet if self.labels.count(lab) > 1]
-
-    # # def selfContractLabels(self, lab):
-    # #     assert (self.labels.count(lab) == 2), 'The label contracted should appear exactly twice in the tensor {}.\n'.format(self)
-    # #     indicesForward = self.indexOfLabel(lab)
-    # #     indicesBackward = self.indexOfLabel(lab, backward = True)
-    # #     if (lab in Tensor.bondNameSet):
-    # #         Tensor.bondNameSet.remove(lab)
-    # #     return np.trace(self.a, axis1 = indicesForward, axis2 = indicesBackward), funcs.tupleRemoveByIndex(self.shape, [indicesForward, indicesBackward])
     
-    # def copy(self):
-    #     return Tensor(data = deepcopy(self.a), shape = deepcopy(self.shape), labels = deepcopy(self.labels), degreeOfFreedom = self.degreeOfFreedom)
+def TensorLike(shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
+    """
+    Make a TensorLike, in the form like creating a tensor. For the details, check __init__ of Tensor
+    """
     
-    # def copyN(self, n):
-    #     return tuple([self.copy() for i in range(n)])
-
-    # # def toNDArray(self, labs):
-    # #     labelIndices = self.getLabelIndices(labs)
-    # #     initIndices = list(range(self.dim))
-    # #     assert (set(labelIndices) == set(initIndices)), "Input label for toNDArray must have exactly same labels as tensor: input {} but have {}".format(labs, self.labels)
-    # #     return np.copy(np.moveaxis(self.a, initIndices, labelIndices))
-
-    # def outerProduct(self, labelList, newLabel):
-    #     self.moveLabelsToFront(labelList)
-    #     n = len(labelList)
-    #     newShape = (-1, ) + self.shape[n:]
-    #     self.a = np.reshape(self.a, newShape)
-    #     self.shape = self.a.shape
-
-    #     newDim = self.shape[0]
-    #     self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
-        # for label in self.labels[:n]:
-        #     del self.legs[label]
-        # self.legs[newLabel] = Leg(self, newDim, newLabel)
-        # self.labels = [newLabel] + self.labels[n:]
-        # self.contractLabels = [''] + self.contractLabels[n:]
-
-    # def swapLabel(self, lab1, lab2):
-    #     idx = self.getLabelIndices([lab1, lab2])
-    #     idx1, idx2 = tuple(idx)
-
-    #     # self.contractLabels[idx2], self.contractLabels[idx1] = self.contractLabels[idx1], self.contractLabels[idx2]
-    #     self.legs[idx2].name = lab1
-    #     self.legs[idx1].name = lab2
-
-    #     # self.legs[lab1], self.legs[lab2] = self.legs[lab2], self.legs[lab1]
-    #     # if (self.legs[lab1].name == lab2):
-    #     #     self.legs[lab1].name = lab1 
-    #     # if (self.legs[lab2].name == lab1):
-    #     #     self.legs[lab2].name = lab2
-
-    # def normalize(self):
-    #     normalFactor = np.sqrt(np.sum(np.abs(self.a) ** 2))
-    #     self.a /= normalFactor
-    #     return normalFactor
-
-    # def sizeOfLabel(self, lab):
-    #     # idx = self.indexOfLabel(lab)
-    #     # return self.shape[idx]
-    #     return self.getLeg(lab).dim
-
-    # # def updateTensorData(self, data, labels):
-    # #     idx = self.getLabelIndices(labels)
-    # #     sp = tuple([self.shape[i] for i in idx])
-    # #     self.a = np.reshape(data, sp)
-    # #     self.labels = deepcopy(labels)
-    # #     self.shape = sp
-
-    # #     self.legs = dict([])
-    # #     for label, dim in zip(self.labels, list(self.shape)):
-    # #         self.legs = Leg(self, dim, label)
-
-    # def norm(self):
-    #     normalFactor = np.sqrt(np.sum(np.abs(self.a) ** 2))
-    #     return normalFactor
-
-    # # def lock(self):
-    # #     self.locked = True
-    # # def unlock(self):
-    # #     self.locked = False
-
-    # def getElementByNo(self, No):
-    #     indexList = []
-    #     for i in range(len(self.shape) - 1, -1, -1):
-    #         indexList.append(No % self.shape[i])
-    #         No //= self.shape[i]
-
-    #     indexList.reverse()
-    #     # print(tuple(indexList))
-    #     # print('index = {}'.format(indexList))
-    #     return self.a[tuple(indexList)]
-
-    # def isSquareTensor(self):
-    #     return funcs.compareLists(self.labels, ['l', 'u', 'r', 'd'])
-
-    # def gaugeTransform(self, gauge):
-    #     assert self.isSquareTensor(), "TensorBase.Transform only works for square tensors, but labels {} gotten.".format(self.labels)
-    #     for contractLabel in ['l', 'u', 'r', 'd']:
-    #         if not (contractLabel in gauge):
-    #             continue
-    #         self.moveLabelsToFront([contractLabel])
-    #         self.a = np.tensordot(gauge[contractLabel], self.a, axes = ([1], [0]))
-    #         self.shape = self.a.shape
-
-    # def tensorTransform(self, mat, label):
-    #     self.moveLabelsToFront([label])
-    #     self.a = np.tensordot(mat.T, self.a, axes = ([1], [0]))
-    #     self.shape = self.a.shape
-
-    # def selfTrace(self):
-    #     assert (self.isSquareTensor), 'Error: square tracing a tensor {} which is not a standard square tensor.'.format(self)
-    #     return self.selfContract(rows = ['l', 'u'], cols = ['r', 'd'])
-
-    # def getOriginalLabels(self, cLabels):
-    #     return [self.labels[self.contractLabels.index(cLabel)] for cLabel in cLabels]
-    # def addLink(self, linkTensor):
-    #     self.linkedTensor.append(linkTensor)
+    return Tensor(shape = shape, labels = labels, data = data, degreeOfFreedom = degreeOfFreedom, name = name, legs = legs, diagonalFlag = diagonalFlag, tensorLikeFlag = True)
 

@@ -5,6 +5,18 @@ import warnings
 import CTL.funcs.funcs as funcs
 
 def getLeg(tensor, leg):
+    """
+    Get the leg asked from a Tensor.
+
+    Parameters
+    ----------
+    leg : str or Leg
+    
+    Returns
+    -------
+    Leg
+        If leg itself is a Leg object, then it is fine. Otherwise, find the leg from the tensor with leg str as a label.
+    """
     if (isinstance(leg, str)):
         assert (tensor is not None), "Error: ask leg {} by leg name but tensor is None in getLeg(tensor, leg).".format(leg)
         return tensor.getLeg(leg)
@@ -12,6 +24,24 @@ def getLeg(tensor, leg):
         return leg
 
 def makeLink(legA, legB, tensorA = None, tensorB = None):
+    """
+    Make links between two legs.
+
+    Parameters
+    ----------
+    legA, legB : str or Leg or list of Leg/str
+        If str or Leg: then considered as 1-element list
+        Each str represents a leg obtained from tensorA & tensorB
+        Each leg can be taken as an independent object, without considering the Tensor.
+    tensorA, tensorB : None or Tensor
+        If None, then corresponding leg list must contain only Leg objects but not str.
+        If Tensor, then the str's in leg lists can be transformed to Leg objects according the the corresponding Tensor.
+
+    Returns
+    -------
+    bonds : list of Bond
+        The bonds generated between the given legs.
+    """
     if (isinstance(legA, Leg) or isinstance(legA, str)):
         legA = [legA]
     if (isinstance(legB, Leg) or isinstance(legB, str)):
@@ -30,12 +60,23 @@ def makeLink(legA, legB, tensorA = None, tensorB = None):
     return bonds
 
 def mergeLink(ta, tb, bondName = None, renameWarning = True):
-    '''
-    merge the links between ta and tb
-    if no links: warning
-    if one link: warning(rename if bondName is not None)
-    if two or more links: take the outProduct of each side, and merge the result
-    '''
+    """
+    Merge the links between two tensors to make a larger bond
+
+    Parameters
+    ----------
+    ta, tb : Tensor
+        Two tensors, bonds between which will be merged.
+    bondName : None or str
+        If not None, then the new bond(and two legs) will be named with bondName. Otherwise, each side should be renamed as A|B|C|...|Z, where A, B, C... are the names of merged legs.
+    renameWarning : bool
+        If true, and only one bond is between ta and tb, then raise a warning since we do not merge any bonds but only rename the bond.
+
+    Returns
+    -------
+    ta, tb : Tensor
+        The two tensors with only one bond shared.
+    """
     
     funcName = 'CTL.tensor.contract.link.mergeLink'
     mergeLegA = []

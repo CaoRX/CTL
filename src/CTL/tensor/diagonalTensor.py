@@ -6,8 +6,96 @@ from CTL.tensor.leg import Leg
 from CTL.tensor.tensor import Tensor
 
 class DiagonalTensor(Tensor):
+    """
+    The class for diagonal tensors, inheriting from Tensor
+    1. A data tensor as 1D-array: the elements on the main diagonal;
+    2. A set of legs, corresponding to each dimension of the tensor.
+    3. Other information(degree of freedom, total element number, ...)
+
+    Diagonal Tensors: a tensor with only non-zero elements on its main diagonal, e.g., for a 3-dimensional diagonal tensor A, only A_{iii} is non-zero, while A_{123} must be zero.
+
+    This class is also used for DiagonalTensorLike, an object that behaves almost the same as DiagonalTensor, but without data.
+
+    In the following docstrings we will take the number of elements as $n$, the dimension as $d$, and then make some statements on the time efficiency for some functions.
+
+    In other part of docstrings, we will not talk about Tensor and DiagonalTensor separately except for special cases.
+
+    Parameters
+    ----------
+    shape : None or tuple of int, optional
+        The expected shape of the tensor.
+    labels : None or tuple of str, optional
+        The labels to be put for each dimension, if None then automatically generated from lower case letters.
+    data : None or ndarray or 1D-array of float, optional
+        The data in the tensor. 
+        If None and the data is needed(not TensorLike), then generated as np.random.random_sample. 
+        If shape is given, data does not need to have the same shape as "shape", but the number of elements should be the same.
+        If 1D-array, then taken as the diagonal elements, can be used for diagonal tensors of any rank.
+    degreeOfFreedom : None or int, optional
+        Local degree of freedom for this tensor.
+    name : None or str, optional
+        The name of the tensor to create.
+    legs : None or list of Leg, optional
+        The legs of this tensor. If None, then automatically generated.
+    diagonalFlag : bool, default False
+        Whether this tensor is diagonal tensor or not. Diagonal tensors can behave better in efficiency for tensor contractions, so we deal with them with child class DiagonalTensor, check the details in CTL.tensor.diagonalTensor.
+    tensorLikeFlag : bool, default False
+        If True, then the tensor is a "TensorLike": will not contain any data, but behave just like a tensor.
+    xp : object, default numpy
+		The numpy-like library for numeric functions.
+
+    Attributes
+    ----------
+    tensorLikeFlag : bool
+        Whether the tensor is a "TensorLike".
+    xp : object
+        The numpy-like library for numeric functions.
+    diagonalFlag : bool
+        Whether the tensor is a "DiagonalTensor"
+    totalSize : int
+        Total number of components in this tensor. Redundant with funcs.tupleProduct(self.shape).
+    degreeOfFreedom : int
+        Number of local degree of freedom. E.g. for Ising Tensor around one spin, it can be 1. 
+    name : None or str
+        The name of the tensor.
+    legs : list of Leg
+        The legs from this tensor, can be "attracted" to another leg to form a bond. If not so, then it is a free leg.
+    a : ndarray of float
+        The data of the tensor.
+
+    Notes
+    -----
+    Please note shape, labels, data and legs: although they are all optional, they need to contain enough(and not contradictory) information for deduce the shape, labels, data and legs for the tensor, the deduction strategy is described below:
+
+    For labels: priority is legs = labels, default: auto-generated in order from lowercase letters.
+
+    For shape: priority is legs = shape > data.
+
+    For legs: priority is legs, default: auto-generated with labels and shape.
+
+    For data: priority is data.reshape(shape), default: np.random.random_sample(shape).
+
+    ("For property A, priority is B > C = D > E, default: F" means, A can be deduced from B, C, D, E, so we consider from high priority to low priority. If B exist, then we take the deduced value from B, and change C, D, E if they in some sense compatible with B. Otherwise consider C & D. For values of the same priority, if both of them are provided, then they should be the same. If none of B, C, D, E can deduce A, then generate A with F.)
+
+    "checkXXXYYYCompatible" functions will do the above checkings to make the information in the same priority compatible with each other.
+    """
 
     def deduceDimension(self, data, labels):
+        """
+        Deduce the dimension of current diagonal tensor from data and labels. 
+
+        Parameters
+        ----------
+        data : None or 1D array or ndarray
+            The data to be put in the diagonal tensor.
+        labels : None or list of Leg
+            The labels to be added to the legs of this tensor.
+        
+        Returns
+        -------
+        int
+            The dimension of the current tensor.
+        """
         # if the labels is given: then use labels
         # otherwise, if data is given(as an ndarray), then we return then len(data.shape)
         # otherwise, error
@@ -53,6 +141,19 @@ class DiagonalTensor(Tensor):
     # 3. labels not exist: check data for (dim, length)
 
     def checkLegsDiagonalCompatible(self, legs):
+        """
+        Check whether the shape from legs can form a diagonal tensor, with all the indices have the same dimension.
+
+        Parameters
+        ----------
+        legs : list of Leg
+            Legs of the tensor that already existed before creating the tensor.
+
+        Returns
+        -------
+        bool
+            Whether the legs can form a diagonal tensor.
+        """
         if (len(legs) == 0):
             return True 
         l = legs[0].dim 
@@ -61,6 +162,19 @@ class DiagonalTensor(Tensor):
                 return False 
         return True
     def checkShapeDiagonalCompatible(self, shape):
+        """
+        Check whether the shape can form a diagonal tensor, with all the indices have the same dimension.
+
+        Parameters
+        ----------
+        shape : tuple of int
+            Shape of the tensor that already existed before creating the tensor.
+
+        Returns
+        -------
+        bool
+            Whether the legs can form a diagonal tensor.
+        """
         if (len(shape) == 0):
             return True 
         l = shape[0]
@@ -70,6 +184,9 @@ class DiagonalTensor(Tensor):
         return True
 
     def checkLegsShapeCompatible(self, legs, shape):
+        """
+        For information, check Tensor.checkLegsShapeCompatible.
+        """
         if (shape is None):
             return True 
         if (isinstance(shape, int)):
@@ -86,6 +203,9 @@ class DiagonalTensor(Tensor):
             return False
     
     def checkShapeDataCompatible(self, shape, data):
+        """
+        For information, check Tensor.checkShapeDataCompatible.
+        """
         # we know shape, and want to see if data is ok
         if (data is None):
             return True 
@@ -94,6 +214,14 @@ class DiagonalTensor(Tensor):
         return ((len(data.shape) == 1) and (len(shape) > 0) and (len(data) == shape[0])) or (funcs.tupleProduct(data.shape) == funcs.tupleProduct(shape))
 
     def generateData(self, shape, data, isTensorLike):
+        """
+        For information, check Tensor.generateData.
+
+        Returns
+        -------
+        1D-array of float
+            The data to be saved in this diagonal tensor.
+        """
         if (isTensorLike):
             return None
         # print('generating data for data = {}'.format(data))
@@ -110,6 +238,9 @@ class DiagonalTensor(Tensor):
         return data
 
     def deduction(self, legs, data, labels, shape, isTensorLike = False):
+        """
+        For more information, check Tensor.deduction
+        """
         # in Tensor: the "shape" has the highest priority
         # so if the shape is given here, it should be taken
         # however, if the shape is given as an integer: then we need to deduce the dimension
@@ -255,8 +386,8 @@ class DiagonalTensor(Tensor):
         
             
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False):
-        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag)
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False, xp = np):
+        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag, xp = xp)
 
         legs, data, labels, shape = self.deduction(legs = legs, data = data, labels = labels, shape = shape, isTensorLike = tensorLikeFlag)
 
@@ -320,9 +451,28 @@ class DiagonalTensor(Tensor):
         return '{}({}shape = {}, labels = {}{})'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
     def bondDimension(self):
+        """
+        The bond dimension of the current diagonal tensor: it is the same over all dimensions.
+
+        Returns
+        -------
+        int
+            The dimension for each index.
+        """
         return self._length
 
     def moveLegsToFront(self, legs):
+        """
+        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use self.xp.moveaxis to modify the data if this is not a TensorLike object.
+
+        In fact make nothing difference for diagonal tensor: for Tensor this function will change the order of indices of data, but for diagonal tensor it is only a virtual change of legs.
+
+        Parameters
+        ----------
+        legs : list of Leg
+            The set of legs to be put at front.
+
+        """
         moveFrom = []
         moveTo = []
         currIdx = 0
@@ -345,11 +495,45 @@ class DiagonalTensor(Tensor):
         # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
+        """
+        Deprecated
+
+        Make a vector according to the diagonal elements.
+
+        Deprecated since this behavior is different from Tensor, which will return a flattened data of ndarray. However, if we return the ndarray, this is usually useless for diagonal tensor and may generate an issue of CPU time. 
+
+        To obtain the data, DiagonalTensor.a is enough.
+
+        Returns
+        -------
+        1D ndarray of float
+            A vector contains diagonal elements of the diagonal tensor.
+
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to vector since no data contained.', 'DiagonalTensor.toVector')
         funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector", deprecateMessage = "This will return a vector corresponding to the diagonal of tensor instead of the complete tensor.")
         return self.xp.copy(self.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
+        """
+        Deprecated
+
+        Make a matrix of the data of this diagonal tensor, given the labels or legs of rows and cols. 
+
+        Deprecated since this function is time comsuming(O(n^d)), and for most of the cases there are much better ways to use the data rather than making a matrix. For details, see CTL.tensor.contract for more information.
+
+        Parameters
+        ----------
+        rows : None or list of str or list of Leg
+            The legs for the rows of the matrix. If None, deducted from cols.
+        cols : None or list of str or list of Leg
+            The legs for the cols of the matrix. If None, deducted from rows.
+
+        Returns
+        -------
+        2D ndarray of float
+            The data of this tensor, in the form of (rows, cols).
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to matrix since no data contained.', 'DiagonalTensor.toMatrix')
         # print(rows, cols)
         # print(self.labels)
@@ -379,60 +563,147 @@ class DiagonalTensor(Tensor):
         return data
 
     def copy(self):
+        """
+        Make a copy of current diagonal tensor, without copy the legs. For more information, refere to Tensor.copy
+
+        Returns
+        -------
+        DiagonalTensor
+            A copy of the current diagonal tensor, all the information can be copied is contained.
+        """
         return DiagonalTensor(data = self.a, shape = self.shape, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, tensorLikeFlag = self.tensorLikeFlag)
         # no copy of tensor legs, which may contain connection information
     def toTensorLike(self):
+        """
+        Make a copy of current tensor, without copying the legs. This function works almost like self.copy(), but without copying the data.
+
+        Returns
+        -------
+        DiagonalTensor
+            A DiagonalTensorLike of the current tensor, all the information can be copied is contained except legs and data.
+        """
         if (self.tensorLikeFlag):
             return self.copy()
         else:
             return DiagonalTensor(data = None, degreeOfFreedom = self.degreeOfFreedom, name = self.name, labels = self.labels, shape = self.shape, tensorLikeFlag = True)
 
     def moveLabelsToFront(self, labelList):
-        moveFrom = []
-        moveTo = []
-        currIdx = 0
-        movedLegs = []
-        for label in labelList:
-            for i, leg in enumerate(self.legs):
-                if (leg.name == label):
-                    moveFrom.append(i)
-                    moveTo.append(currIdx)
-                    currIdx += 1
-                    movedLegs.append(leg)
-                    break
+        """
+        Change the orders of legs: move a given set of labels to the front. For details, check "self.moveLegsToFront".
 
-        for leg in movedLegs:
-            self.legs.remove(leg)
+        Parameters
+        ----------
+        labelList : list of str
+            The set of labels to be put at front.
 
-        self.legs = movedLegs + self.legs 
+        """
+        legs = [self.getLeg(label) for label in labelList]
+        self.moveLegsToFront(legs)
+
+        # moveFrom = []
+        # moveTo = []
+        # currIdx = 0
+        # movedLegs = []
+        # for label in labelList:
+        #     for i, leg in enumerate(self.legs):
+        #         if (leg.name == label):
+        #             moveFrom.append(i)
+        #             moveTo.append(currIdx)
+        #             currIdx += 1
+        #             movedLegs.append(leg)
+        #             break
+
+        # for leg in movedLegs:
+        #     self.legs.remove(leg)
+
+        # self.legs = movedLegs + self.legs 
         # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def outProduct(self, labelList, newLabel):
+        """
+        Deprecated
+
+        Comment
+        -------
+        The outer product will destroy the shape of diagonal tensor: we cannot easily combine several legs if it is a full diagonal tensor, so a TypeError will be raised.
+        """
         raise TypeError(funcs.errorMessage(location = "DiagonalTensor.outProduct", err = "DiagonalTensor cannot perform outProduct, since the diagonal nature will be destroyed."))
 
     def norm(self):
+        """
+        Norm of the current tensor. O(n).
+
+        Returns
+        -------
+        float
+            The norm of data.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have norm since no data contained.', 'DiagonalTensor.norm')
         return self.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
+        """
+        Trace of the current diagonal tensor. To not destroy the property for the diagonal tensors, this function can only be used to calculate the global trace on the main diagonal.
+
+        Parameters
+        ----------
+        rows, cols: None
+            Only set to be compatible with the usage for Tensor
+        
+        Returns
+        -------
+        float
+            The trace of the matrix generated by given cols and rows.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have trace since no data contained.', 'DiagonalTensor.trace')
         return self.xp.sum(self.a)
 
     def single(self):
-        # return the single value of this tensor
-        # only works if shape == (,)
-        # assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        """
+        Generate a single value from a tensor. 
+
+        Note the difference between this and Tensor.single(): in Tensor object, the data are saved as ndarray, so for single value it must be a 0-d array, in other words, a single number. 
+
+        However, for DiagonalTensor: in all cases the data are saved as 1D-array, so we need to first decide whether it can be transferred to a single number, and then return the lowest index.
+
+        Returns
+        -------
+        float
+            A single value of this tensor.
+
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to single value since no data contained.', 'DiagonalTensor.single')
         assert self._length == 1, "Error: cannot get single value from diagTensor whose length is not (1,)."
-        return self.a
+        assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
+        return self.a[0]
 
     def toTensor(self, labels = None):
+        """
+        Return a ndarray of this tensor. Since the current tensor object only saves the main diagonal, the tensor itself may be much larger, so this is not recommended and not used in any of the internal functions.
+
+        Parameters
+        ----------
+        labels : None or list of str
+            The order of labels for the output tensor. Note that if labels is None, the order of legs is not fixed, may differ from time to time.
+        
+        Returns
+        -------
+        ndarray of float
+            The data of the tensor, order of legs are given by the labels.
+        """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to tensor since no data contained.', 'DiagonalTensor.toTensor')
         if (labels is not None):
             self.reArrange(labels)
         return funcs.diagonalNDTensor(self.a, self.dim)
 
     def typeName(self):
+        """
+        The type of the current class.
+
+        Returns
+        -------
+        {"DiagonalTensor", "DiagonalTensorLike"}
+        """
         if (self.tensorLikeFlag):
             return "DiagonalTensorLike"
         else:
