@@ -178,6 +178,7 @@ class SquareTRG:
         dl = Tensor(shape = (vDim, hDim, uB.shape[1]), labels = ['u', 'r', 'o'], data = uB)
         ur = Tensor(shape = (vDim, hDim, vB.shape[1]), labels = ['d', 'l', 'o'], data = vB)
 
+        # print(ul, ur, dl, dr)
         self.a = self.iterateFTN.contract(TensorDict({'ul': ul, 'ur': ur, 'dl': dl, 'dr': dr}))
         self.a.degreeOfFreedom = dof * 2
         self.b = self.a 

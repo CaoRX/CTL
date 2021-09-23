@@ -282,6 +282,7 @@ class TensorGraph(UndirectedGraph):
                 chi_min = min([min(x) for x in shapes])
             else:
                 chi_min = typicalDim
+            chi_min = max(chi_min, 2)
             # mu_cap = 1
             mu_old = 0
             mu_new = 1
