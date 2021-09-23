@@ -198,11 +198,11 @@ def HOTRGVerticalContractFTN():
     return FTN 
 
 def iTEBDEvoluteFTN():
-    FTN = FiniteTensorNetwork(tensorNames = ['lambdaABl', 'gammaA', 'lambdaBA', 'gammaB', 'lambdaABr', 'u'])
-    FTN.addLink('lambdaABl', 'r', 'gammaA', 'l')
+    FTN = FiniteTensorNetwork(tensorNames = ['lambdaBAl', 'gammaA', 'lambdaAB', 'gammaB', 'lambdaBAr', 'u'])
+    FTN.addLink('lambdaBAl', 'r', 'gammaA', 'l')
     FTN.addLink('gammaA', 'r', 'lambdaBA', 'l')
-    FTN.addLink('lambdaBA', 'r', 'gammaB', 'l')
-    FTN.addLink('gammaB', 'r', 'lambdaABr', 'l')
+    FTN.addLink('lambdaAB', 'r', 'gammaB', 'l')
+    FTN.addLink('gammaB', 'r', 'lambdaBAr', 'l')
 
     FTN.addLink('gammaA', 'o', 'u', 'li')
     FTN.addLink('gammaB', 'o', 'u', 'ri')
