@@ -19,6 +19,19 @@ class TestTensor(PackedTest):
         self.assertTrue(tensor.labelInTensor('a'))
         self.assertTrue(tensor.labelsInTensor(['b', 'a']))
         self.assertFalse(tensor.labelsInTensor(['c', 'a']))
+        self.assertTrue(tensor.isFloatTensor())
+
+        data = np.zeros((3, 4), dtype = np.complex128)
+        tensor = Tensor(data = data, dtype = np.complex128)
+        self.assertFalse(tensor.isFloatTensor())
+
+        tensor = Tensor(shape = (3, 4), dtype = np.complex128)
+        self.assertEqual(tensor.a.dtype, np.complex128)
+
+        data = np.zeros((3, 4), dtype = np.float64)
+        tensor = Tensor(data = data, dtype = np.complex128)
+        self.assertEqual(tensor.dtype, np.float64)
+        # data.dtype > dtype
 
     def test_TensorLabels(self):
         tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])

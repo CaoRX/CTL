@@ -1267,7 +1267,7 @@ def combineName(namesList, givenName = None):
 	else:
 		return givenName
 
-def isNumber(a):
+def isRealNumber(a):
 	"""
 	Decide whether a is a number.
 
@@ -1301,3 +1301,58 @@ def pairIterator(a):
 			yield a[i], a[j]
 
 	return
+
+def priorDataType(dtype1, dtype2, np = np):
+	"""
+	Decide the data type of the output of two input types.
+
+	Parameters
+	----------
+	dtype1, dtype2 : np.dtype
+
+	np : object, default numpy
+		The numpy-like library for numeric functions.
+
+	Returns
+	-------
+	np.dtype
+		The output type with the highest accuracy of dtype1 and dtype2, and is complex if any of them is complex.
+	"""
+
+	location = 'CTL.funcs.funcs.priorDataType'
+	isFloat1 = np.issubdtype(dtype1, np.floating)
+	isFloat2 = np.issubdtype(dtype2, np.floating)
+
+	length1 = dtype1.itemsize
+	length2 = dtype2.itemsize
+
+	acc1, acc2 = length1, length2 
+	if not isFloat1:
+		acc1 = acc1 // 2
+	if not isFloat2:
+		acc2 = acc2 // 2
+	
+	isFloat = isFloat1 and isFloat2
+	acc = max(acc1, acc2)
+
+	if isFloat:
+		if acc == 2:
+			return np.float16
+		elif acc == 4:
+			return np.float32
+		elif acc == 8:
+			return np.float64
+		elif acc == 16:
+			return np.float128
+		else:
+			raise ValueError(errorMessage(err = 'accuracy {}(byte) is not compatible with float types of numpy(need [2, 4, 8, 16]).'.format(acc), location = location))
+	
+	else:
+		if acc == 4:
+			return np.complex64
+		elif acc == 8:
+			return np.complex128
+		elif acc == 16:
+			return np.complex256
+		else:
+			raise ValueError(errorMessage(err = 'accuracy {}(byte) is not compatible with complex types of numpy(need [4, 8, 16]).'.format(acc), location = location))

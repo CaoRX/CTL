@@ -55,6 +55,8 @@ class Tensor(TensorBase):
         The legs from this tensor, can be "attracted" to another leg to form a bond. If not so, then it is a free leg.
     a : ndarray of float
         The data of the tensor.
+    dtype : type, default numpy.float64
+        The type of data elements in tensors.
 
     Notes
     -----
@@ -68,16 +70,36 @@ class Tensor(TensorBase):
 
     For data: priority is data.reshape(shape), default: np.random.random_sample(shape).
 
+    For data type(dtype): data.dtype > self.dtype
+
     ("For property A, priority is B > C = D > E, default: F" means, A can be deduced from B, C, D, E, so we consider from high priority to low priority. If B exist, then we take the deduced value from B, and change C, D, E if they in some sense compatible with B. Otherwise consider C & D. For values of the same priority, if both of them are provided, then they should be the same. If none of B, C, D, E can deduce A, then generate A with F.)
 
     "checkXXXYYYCompatible" functions will do the above checkings to make the information in the same priority compatible with each other.
     """
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False, xp = np):
+    def isFloatTensor(self):
+        """
+        Decide whether the base data type of the tensor is float
+
+        Returns
+        -------
+        bool
+            Whether the dtype of the tensor is float(float16, float32, float64, ...) or not.
+        """
+        return self.xp.issubdtype(self.dtype, self.xp.floating)
+    
+    def deduceDataType(self, data, dtype):
+        if data is None:
+            return dtype 
+        else:
+            return data.dtype
+
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False, xp = np, dtype = np.float64):
         super().__init__(None)
 
         # only data needs a copy
         # labels and shape: they are virtual, will be saved in legs
+        self.dtype = self.deduceDataType(data = data, dtype = dtype)
         self.tensorLikeFlag = tensorLikeFlag
         self.xp = xp
         if (diagonalFlag):
@@ -252,7 +274,10 @@ class Tensor(TensorBase):
         if (isTensorLike):
             return None
         if (data is None):
-            data = self.xp.random.random_sample(shape)
+            if self.isFloatTensor():
+                data = self.xp.random.random_sample(shape)
+            else:
+                data = self.xp.random.random_sample(shape) + self.xp.random.random_sample(shape) * 1.0j
         elif (data.shape != shape):
             data = self.xp.copy(data.reshape(shape))
         else:
