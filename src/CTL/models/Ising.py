@@ -151,12 +151,12 @@ def IsingSiteTensor(betaJ, dim = 4, labels = None):
     Tensor
         The tensor of dim legs, labelled with labels, and representing the local interaction around a site(a diagonal site tensor with multiple edge tensors).
     """
-    assert (funcs.isNumber(betaJ) or (len(betaJ) == dim)), funcs.errorMessage("betaJ {} do not have required dim {}.".format(betaJ, dim))
+    assert (funcs.isRealNumber(betaJ) or (len(betaJ) == dim)), funcs.errorMessage("betaJ {} do not have required dim {}.".format(betaJ, dim))
     assert ((labels is None) or (len(labels) == dim)), funcs.errorMessage("labels {} do not have required dim {}.".format(labels, dim))
 
     a = np.array([1.0, 1.0])
     a = funcs.diagonalNDTensor(a, dim = dim)
-    if (funcs.isNumber(betaJ)):
+    if (funcs.isRealNumber(betaJ)):
         betaJ = [betaJ] * dim
     # edgeMat = IsingEdgeMatrix(betaJ)
     for i in range(dim):

@@ -386,8 +386,8 @@ class DiagonalTensor(Tensor):
         
             
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False, xp = np):
-        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag, xp = xp)
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False, xp = np, dtype = np.float64):
+        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag, xp = xp, dtype = dtype)
 
         legs, data, labels, shape = self.deduction(legs = legs, data = data, labels = labels, shape = shape, isTensorLike = tensorLikeFlag)
 

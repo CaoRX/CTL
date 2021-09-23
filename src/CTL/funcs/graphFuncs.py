@@ -22,7 +22,7 @@ def squareLatticePBC(n, m = None, weight = 0.0):
     funcName = 'CTL.funcs.graphFuncs.squareLatticePBC'
     assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
 
-    if funcs.isNumber(weight):
+    if funcs.isRealNumber(weight):
         weight = (weight, weight)
 
     weightV, weightH = weight
@@ -66,7 +66,7 @@ def squareLatticeFBC(n, m = None, weight = 0.0):
     funcName = 'CTL.funcs.graphFuncs.squareLatticeFBC'
     assert isinstance(n, int), funcs.errorMessage('n must be int, {} obtained.'.format(n), location = funcName)
 
-    if funcs.isNumber(weight):
+    if funcs.isRealNumber(weight):
         weight = (weight, weight)
 
     weightV, weightH = weight
