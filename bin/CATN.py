@@ -12,6 +12,11 @@
 
 # "A Practical Introduction to Tensor Networks: MPS and PEPS"
 
+import os, sys
+currentdir = os.path.dirname(os.path.realpath(__file__))
+parentdir = os.path.dirname(currentdir)
+sys.path.append(os.path.join(parentdir, 'src'))
+
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractAndCostWithSequence
