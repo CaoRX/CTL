@@ -41,6 +41,16 @@ class TestTensor(PackedTest):
 
         self.assertEqual(tensor.shapeOfLabels(['abc', 'def']), (3, 4))
 
+    def test_TensorRenameWarning(self):
+        tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])
+        with self.assertWarns(RuntimeWarning) as cm:
+            tensor.renameLabel('ade', 'bcf')
+        self.assertIn('tensor.py', cm.filename)
+        message = cm.warning.__str__()
+        self.assertIn('leg name ade does not exist', message)
+        self.assertIn('no rename happened', message)
+
+
     def test_TensorDeduction(self):
         # test the deduction of Tensor
 

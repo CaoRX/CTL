@@ -723,14 +723,17 @@ class Tensor(TensorBase):
         changeFrom, changeTo : str
 
         """
-        i = self.indexOfLabel(changeFrom)
-        assert (i >= 0), "Error: leg name {} does exist".format(changefrom)
-        self.legs[i].name = changeTo
+        legIndex = self.indexOfLabel(changeFrom)
+        if (legIndex == -1):
+            warnings.warn(funcs.warningMessage(warn = 'leg name {} does not exist, no rename happened'.format(changeFrom), location = 'Tensor.renameLabel'), RuntimeWarning)
+            return
+
+        self.legs[legIndex].name = changeTo
         # self.legs[changeTo] = self.legs[changeFrom]
         # if (changeFrom != changeTo):
         #     del self.legs[changeFrom]
 
-    def renameLabels(self, changefrom, changeto):
+    def renameLabels(self, changeFrom, changeTo):
         """
         Rename a set of labels to new names.
 
@@ -739,8 +742,8 @@ class Tensor(TensorBase):
         changeFrom, changeTo : list of str
 
         """
-        assert (len(changefrom) == len(changeto)), "Error: renameLabels need two list with equal number of labels, gotten {} and {}".format(changefrom, changeto)
-        for cf, ct in zip(changefrom, changeto):
+        assert (len(changeFrom) == len(changeTo)), "Error: renameLabels need two list with equal number of labels, gotten {} and {}".format(changeFrom, changeTo)
+        for cf, ct in zip(changeFrom, changeTo):
             self.renameLabel(cf, ct)
 
     def shapeOfLabel(self, label, backward = False):
