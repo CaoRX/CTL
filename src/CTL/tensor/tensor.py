@@ -723,7 +723,9 @@ class Tensor(TensorBase):
         changeFrom, changeTo : str
 
         """
-        self.legs[self.indexOfLabel(changeFrom)].name = changeTo
+        i = self.indexOfLabel(changeFrom)
+        assert (i >= 0), "Error: leg name {} does exist".format(changefrom)
+        self.legs[i].name = changeTo
         # self.legs[changeTo] = self.legs[changeFrom]
         # if (changeFrom != changeTo):
         #     del self.legs[changeFrom]
