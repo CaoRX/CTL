@@ -1356,3 +1356,35 @@ def priorDataType(dtype1, dtype2, np = np):
 			return np.complex256
 		else:
 			raise ValueError(errorMessage(err = 'accuracy {}(byte) is not compatible with complex types of numpy(need [4, 8, 16]).'.format(acc), location = location))
+
+def generateIndices(elemList, elems):
+	"""
+	Generate the indices of label according to labelList. If some element appears more than once, then take indices in order
+
+	Parameters
+	----------
+	elemList : list of any
+		Index of which is asked.
+	elems : list of any
+		For each element in elems, return its index in elemList.
+	
+	Returns
+	-------
+	list of int or None
+		Indices for all elements in elems. None for elements not found. 
+		We do not take -1 for elements not found, since this may be misread as the last element of list.
+	"""
+
+	currentIndex = dict()
+	res = []
+	for elem in elems:
+		startIndex = currentIndex.get(elem, -1) + 1
+		if elem not in elemList[startIndex:]:
+			res.append(None) 
+		else:
+			index = elemList[startIndex:].index(elem) + startIndex
+			res.append(index)
+			currentIndex[elem] = index
+	
+	return res
+

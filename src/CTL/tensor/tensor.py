@@ -845,6 +845,13 @@ class Tensor(TensorBase):
             # assert (divLoc != -1), "Error: leg name {} does not contain a tensor tag.".format(leg.name)
             if (divLoc != -1):
                 leg.name = leg.name[(divLoc + 1):]    
+    
+    def getLegsByLabel(self, labelList):
+        indices = funcs.generateIndices(self.labels, labelList)
+        for index, label in zip(indices, labelList):
+            if (index is None):
+                raise ValueError(funcs.errorMessage('{} is not in tensor {}'.format(label, self), location = 'Tensor.getLegsByLabel'))
+        return [self.legs[index] for index in indices]
 
     def moveLabelsToFront(self, labelList):
         """
@@ -856,7 +863,8 @@ class Tensor(TensorBase):
             The set of labels to be put at front.
 
         """
-        legs = [self.getLeg(label) for label in labelList]
+        # legs = [self.getLeg(label) for label in labelList]
+        legs = self.getLegsByLabel(labelList)
         self.moveLegsToFront(legs)
         # moveFrom = []
         # moveTo = []
@@ -1060,6 +1068,43 @@ class Tensor(TensorBase):
                 return False
 
         return True
+
+    def sumOutLeg(self, leg):
+        """
+        Sum out one leg to make a (D - 1)-dimensional tensor. Give a warning(and do nothing) if leg is not one of the current tensor, and give a warning if leg is connected to some bond(not free).
+
+        Parameters
+        ----------
+        leg : Leg
+            The leg to be summed out.
+
+        """
+        if not (leg in self.legs):
+            warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(leg, self), location = 'Tensor.sumOutLeg'), RuntimeWarning)
+            return
+        if leg.bond is not None:
+            warnings.warn(funcs.warningMessage("leg {} to be summed out is connected to bond {}.".format(leg, leg.bond), location = 'Tensor.sumOutLeg'), RuntimeWarning)
+        
+        idx = self.legs.index(leg)
+        self.a = self.xp.sum(self.a, axis = idx)
+        self.legs = self.legs[:idx] + self.legs[(idx + 1):]
+    
+    def sumOutLegByLabel(self, label, backward = False):
+        """
+        Sum out one leg to make a (D - 1)-dimensional tensor via the label of leg. Give a warning(and do nothing) if label is not one of the current tensor.
+
+        Parameters
+        ----------
+        label : str
+            The label of the leg to be summed out.
+        backward : bool, default False
+            Whether to search from backward of legs.
+
+        """
+        leg = self.getLeg(label, backward = backward)
+        if leg is None:
+            warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(label, self), location = 'Tensor.sumOutLegByLabel'), RuntimeWarning)
+        self.sumOutLeg(leg)
     
 def TensorLike(shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
     """

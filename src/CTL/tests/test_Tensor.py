@@ -4,6 +4,7 @@ import numpy as np
 from CTL.tests.packedTest import PackedTest
 from CTL.tensor.leg import Leg
 import CTL.funcs.funcs as funcs
+from CTL.tensor.contract.link import makeLink
 
 class TestTensor(PackedTest):
     def test_Tensor(self):
@@ -50,6 +51,34 @@ class TestTensor(PackedTest):
         self.assertIn('leg name ade does not exist', message)
         self.assertIn('no rename happened', message)
 
+    def test_TensorSumOutLeg(self):
+        tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])
+        tensor.sumOutLegByLabel('abc')
+        tensor.reArrange(['def', 'abc'])
+        self.assertTupleEqual(tensor.shape, (4, 5))
+
+        tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])
+        tensor.sumOutLegByLabel('abc', backward = True)
+        tensor.reArrange(['def', 'abc'])
+        self.assertTupleEqual(tensor.shape, (4, 3))
+
+        tensor = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['abc', 'def', 'abc'])
+        with self.assertWarns(RuntimeWarning):
+            tensor.sumOutLegByLabel('abd')
+        tensor.reArrange(['abc', 'abc', 'def'])
+        self.assertTupleEqual(tensor.shape, (3, 5, 4))
+
+        a = Tensor(data = np.zeros((3, 4, 5), dtype = np.float64), labels = ['a3', 'a4', 'a5'])
+        b = Tensor(data = np.zeros((4, 5, 6), dtype = np.float64), labels = ['b4', 'b5', 'b6'])
+        makeLink('a4', 'b4', a, b)
+        with self.assertWarns(RuntimeWarning):
+            a.sumOutLegByLabel('a4')
+        a.reArrange(['a5', 'a3'])
+        self.assertEqual(a.shape, (5, 3))
+
+        bLeg = b.getLeg('b4')
+        with self.assertWarns(RuntimeWarning):
+            a.sumOutLeg(bLeg)
 
     def test_TensorDeduction(self):
         # test the deduction of Tensor
