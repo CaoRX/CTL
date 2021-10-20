@@ -221,6 +221,7 @@ def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim =
         tensorList = copyTensorList(tensorList)
 
     for s, t in seq:
+        # print(tensorList[s], tensorList[t])
         cost, costLevel = contractCost(tensorList[s], tensorList[t])
         totalCost += cost 
         totalLevel = max(totalLevel, costLevel)

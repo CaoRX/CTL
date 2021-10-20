@@ -79,7 +79,7 @@ class TestDiagonalTensor(PackedTest):
         makeLink('a', 'x', a, b)
         makeLink('b', 'y', a, c)
 
-        res1, cost1 = contractAndCostWithSequence([a, b, c])
+        res1, _ = contractAndCostWithSequence([a, b, c])
         # print('seq = {}'.format(generateOptimalSequence([a, b, c])))
 
         a = Tensor(data = aData, labels = ['a', 'b', 'c'])
@@ -89,7 +89,7 @@ class TestDiagonalTensor(PackedTest):
         makeLink('a', 'x', a, b)
         makeLink('b', 'y', a, c)
 
-        res2, cost2 = contractAndCostWithSequence([a, b, c])
+        res2, _ = contractAndCostWithSequence([a, b, c])
         # self.assertListEqual(list(res1.a), list(res2.a))
         self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
 
@@ -486,6 +486,17 @@ class TestDiagonalTensorLike(PackedTest):
         self.assertTrue(aLike.tensorLikeFlag)
         self.assertTupleEqual(aLike.shape, (3, 3))
         self.assertListEqual(aLike.labels, ['a', 'b'])
+
+    def test_diagonalRename(self):
+
+        a = DiagonalTensor(shape = (3, 3, 3), labels = ['abc', 'def', 'abc'])
+        a.renameLabels(['abc', 'abc'], ['abc1', 'abc2'])
+        self.assertTrue(funcs.compareLists(a.labels, ['abc1', 'abc2', 'def']))
+
+    def test_diagonalSumOut(self):
+        a = DiagonalTensor(shape = (3, 3, 3), labels = ['abc', 'def', 'abc'])
+        a.sumOutLegByLabel(['abc', 'abc'])
+        self.assertTrue(funcs.compareLists(a.labels, ['def']))
 
 
 
