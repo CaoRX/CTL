@@ -110,6 +110,47 @@ def squareContractOutFTN():
 
     return FTN
 
+def CTMRGHEdgeExtendFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['p', 'w'])
+
+    FTN.addLink('p', 'u', 'w', 'd')
+
+    FTN.addPostOutProduct(['p-l', 'w-l'], 'l')
+    FTN.addPostOutProduct(['p-r', 'w-r'], 'r')
+    # FTN.addPostNameChange('p', 'l', 'ld')
+    # FTN.addPostNameChange('p', 'r', 'rd')
+    # FTN.addPostNameChange('w', 'l', 'lu')
+    # FTN.addPostNameChange('w', 'r', 'ru')
+
+    return FTN
+
+def CTMRGVEdgeExtendFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['p', 'w'])
+
+    FTN.addLink('p', 'r', 'w', 'l')
+    
+    FTN.addPostOutProduct(['p-u', 'w-u'], 'u')
+    FTN.addPostOutProduct(['p-d', 'w-d'], 'd')
+    # FTN.addPostNameChange('p', 'u', 'ul')
+    # FTN.addPostNameChange('p', 'd', 'dl')
+    # FTN.addPostNameChange('w', 'u', 'ur')
+    # FTN.addPostNameChange('w', 'd', 'dr')
+
+    return FTN
+
+def CTMRGCornerExtendFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['c', 'ph', 'pv', 'w'])
+
+    FTN.addLink('c', 'u', 'pv', 'd')
+    FTN.addLink('c', 'r', 'ph', 'l')
+    FTN.addLink('pv', 'r', 'w', 'l')
+    FTN.addLink('ph', 'u', 'w', 'd')
+
+    FTN.addPostOutProduct(['pv-u', 'w-u'], 'u')
+    FTN.addPostOutProduct(['ph-r', 'w-r'], 'r')
+
+    return FTN
+
 def triangleTensorTrace(a, b):
     """
     Take the trace of two triangle tensors, usually work for the end of the RG of triangular lattice.
@@ -136,6 +177,7 @@ def triangleTensorTrace(a, b):
     return res
 
 def squareHorizontalContractFTN(d):
+    # TODO: add docstrings for following functions
     funcs.assertInSet(d, ['l', 'r'], 'horizontal direction')
     opd = funcs.oppositeSingleDirection(d)
     FTN = FiniteTensorNetwork(tensorNames = ['ul', 'ur', 'dr', 'dl'])

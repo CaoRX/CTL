@@ -1095,12 +1095,16 @@ class Tensor(TensorBase):
 
         Parameters
         ----------
-        label : str
-            The label of the leg to be summed out.
+        label : str or list of str
+            The label of the leg(s) to be summed out.
         backward : bool, default False
             Whether to search from backward of legs.
 
         """
+        if isinstance(label, list):
+            for l in label:
+                self.sumOutLegByLabel(l, backward)
+            return 
         leg = self.getLeg(label, backward = backward)
         if leg is None:
             warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(label, self), location = 'Tensor.sumOutLegByLabel'), RuntimeWarning)
