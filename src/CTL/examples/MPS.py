@@ -300,6 +300,7 @@ def contractMPS(mpsA, mpsB):
     funcName = 'CTL.examples.MPS.contractMPS'
     indexA, indexB = commonLegs(mpsA, mpsB)
     # print('indexA = {}, indexB = {}'.format(indexA, indexB))
+    # print('mpsA = {}, mpsB = {}'.format(mpsA, mpsB))
     assert (len(indexA) == 1), funcs.errorMessage("contractMPS can only work on two MPSes sharing one bond, {} obtained.".format((indexA, indexB)), location = funcName)
     if (mpsA.chi != mpsB.chi):
         warnings.warn(funcs.warningMessage(warn = "chi for two MPSes are not equal: {} and {}, choose minimum for new chi.".format(mpsA.chi, mpsB.chi), location = funcName))
@@ -472,7 +473,7 @@ def createMPSFromTensor(tensor, chi = 16):
     return FreeBoundaryMPS(tensorList = tensors, chi = chi)
 
 def contractWithMPS(tensorList, chi = 16, seq = None, greedyFlag = True):
-    # TODO: change optimal sequence to greedy sequence
+    # DONE: change optimal sequence to greedy sequence
     if (seq is None):
         if (greedyFlag):
             seq = generateGreedySequence(tensorList)
@@ -490,12 +491,17 @@ def contractWithMPS(tensorList, chi = 16, seq = None, greedyFlag = True):
     for s, t in seq:
         # print('mpses = {}'.format(mpses))
         # print('contracting ({}, {})'.format(s, t))
+        # if (len(mpses) > 1) and (mpses[0] is not None) and (mpses[1] is not None):
+        #     indexA, indexB = commonLegs(mpses[0], mpses[1])
+        #     print('common legs: {}, {}'.format(indexA, indexB))
         loc = min(s, t)
         mpses[loc] = contractMPS(mpses[s], mpses[t])
         mpses[s + t - loc] = None 
         for i in range(n):
             if (i != loc) and (mpses[i] is not None):
                 mergeMPS(mpses[loc], mpses[i], beginFlag = False)
+
+        # indexA, indexB = commonLegs(mpses[0], mpses[1])
 
     if (isinstance(mpses[0], FreeBoundaryMPS)):
         return mpses[0].toTensor()

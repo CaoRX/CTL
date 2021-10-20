@@ -6,7 +6,7 @@ from CTL.examples.MPS import contractWithMPS
 
 import numpy as np 
 
-from CTL.funcs.graphFuncs import squareLatticePBC, squareLatticeFBC, completeGraph
+from CTL.funcs.graphFuncs import squareLatticePBC, squareLatticeFBC, doubleSquareLatticeFBC, completeGraph
 # from ncon import ncon
 
 class TestIsing(PackedTest):
@@ -61,6 +61,42 @@ class TestIsing(PackedTest):
         self.assertTrue(funcs.floatEqual(Z.single(), exactZ, eps = 1e-6))
         self.assertTrue(funcs.floatEqual(ZMPS.single(), exactZ, eps = 1e-6))
 
+        doubleLatticeFBC = doubleSquareLatticeFBC(n = 2, m = 2, weight = 0.5) # 12 tensors
+        tensorNetwork = IsingTNFromUndirectedGraph(doubleLatticeFBC)
+
+        # seq = [(1, 8), (4, 9), (5, 11), (10, 5), (4, 5), (3, 4), (1, 3), (7, 1), (2, 1), (6, 1), (0, 1)] # calculate on-the-fly is ok
+        Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork)
+        print('Z = {}, cost = {}'.format(Z.single(), cost))
+
+        exactZ = exactZFromGraphIsing(doubleLatticeFBC)
+        print('exact Z = {}'.format(exactZ))
+
+        ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        print('Z from MPS = {}'.format(ZMPS.single()))
+
+        self.assertTrue(funcs.floatRelativeEqual(Z.single(), exactZ, eps = 1e-10))
+        self.assertTrue(funcs.floatRelativeEqual(ZMPS.single(), exactZ, eps = 1e-10))
+
+        # print(tensorNetwork)
+
+        doubleLatticeFBC = doubleSquareLatticeFBC(n = 3, m = 3, weight = 0.5) # 24 tensors
+        tensorNetwork = IsingTNFromUndirectedGraph(doubleLatticeFBC)
+
+        seq = [(2, 15), (14, 2), (5, 2), (9, 20), (21, 9), (6, 9), (16, 6), (11, 23), (22, 11), (8, 11), (19, 8), (10, 8), (6, 8), (7, 6), (18, 6), (2, 6), (17, 2), (4, 2), (1, 2), (13, 1), (3, 1), (12, 1), (0, 1)]
+        Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork, seq = seq)
+        print('Z = {}, cost = {}'.format(Z.single(), cost))
+
+        # exactZ = exactZFromGraphIsing(doubleLatticeFBC)
+        # print('exact Z = {}'.format(exactZ))
+        exactZ = 2694263494.5463686 # pre-calculated
+        print('exact Z = {}'.format(exactZ))
+
+        ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        print('Z from MPS = {}'.format(ZMPS.single()))
+
+        self.assertTrue(funcs.floatRelativeEqual(Z.single(), exactZ, eps = 1e-10))
+        self.assertTrue(funcs.floatRelativeEqual(ZMPS.single(), exactZ, eps = 1e-10))
+
     def test_largerIsing(self):
         print('begin testing larger Ising model')
 
@@ -81,7 +117,7 @@ class TestIsing(PackedTest):
         tensorNetwork = IsingTNFromUndirectedGraph(latticePBC)
         ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
         # self.assertTrue(funcs.floatEqual(ZMPS.single(), 2 ** 25, eps = 1e-5))
-        print('ZMPS for (5, 5) = {}'.format(ZMPS.single()))
+        print('ZMPS for J = 0.5 (5, 5) = {}'.format(ZMPS.single()))
 
         # exactZ = exactZFromGraphIsing(latticePBC) (10 minutes needed)
         exactZ = 274435114113.4535

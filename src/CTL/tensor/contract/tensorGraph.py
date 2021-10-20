@@ -182,6 +182,17 @@ class TensorGraph(UndirectedGraph):
                     costOrder = len(edgesA) + len(edgesB) - len(clb)
             return typicalDim ** costOrder
 
+        def isSharingBond(tsA, tsB):
+            if (isinstance(tsA, int)):
+                tsA = self.contractRes[tsA]
+            if (isinstance(tsB, int)):
+                tsB = self.contractRes[tsB]
+            edgesA, _, _ = tsA
+            edgesB, _, _ = tsB
+
+            commonEdges = funcs.commonElements(edgesA, edgesB)
+            return len(commonEdges) > 0
+
         def calculateContractRes(tsA, tsB):
             if (isinstance(tsA, int)):
                 tsA = self.contractRes[tsA]
@@ -262,6 +273,8 @@ class TensorGraph(UndirectedGraph):
                 minTSB = -1
 
                 for tsA, tsB in funcs.pairIterator(tensorSet):
+                    if (not isSharingBond(tsA, tsB)):
+                        continue
                     newSize = getSize(tsA, tsB)
                     if (minSize == -1) or (newSize < minSize):
                         minSize = newSize 
