@@ -39,3 +39,6 @@ def squareIsingTest(L = 4):
 if __name__ == '__main__':
     squareIsingTest(L = 4)
     squareIsingTest(L = 6)
+    # squareIsingTest(L = 10) # 24.87s 
+    # CTMRG Z ~ 1.070630789194164e+93
+    # MPS Z ~ 1.0689916932604937e+93
