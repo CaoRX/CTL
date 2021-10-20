@@ -116,7 +116,7 @@ def doubleSquareLatticeFBC(n, m = None, weight = 0.0):
     if funcs.isRealNumber(weight):
         weight = (weight, weight)
 
-    weightUTB, weightBTU = weight
+    weightTTB, weightBTT = weight
 
     if (m is None):
         m = n 
@@ -139,10 +139,10 @@ def doubleSquareLatticeFBC(n, m = None, weight = 0.0):
     for x in range(n):
         for y in range(m):
             # add edges for square (x, y)
-            g.addEdge(idx1 = getIndex(1, x, y), idx2 = getIndex(0, x, y), weight = weightBTU)
-            g.addEdge(idx1 = getIndex(1, x, y), idx2 = getIndex(0, x + 1, y), weight = weightUTB)
-            g.addEdge(idx1 = getIndex(1, x, y + 1), idx2 = getIndex(0, x, y), weight = weightUTB)
-            g.addEdge(idx1 = getIndex(1, x, y + 1), idx2 = getIndex(0, x + 1, y), weight = weightBTU)
+            g.addEdge(idx1 = getIndex(1, x, y), idx2 = getIndex(0, x, y), weight = weightBTT)
+            g.addEdge(idx1 = getIndex(1, x, y), idx2 = getIndex(0, x + 1, y), weight = weightTTB)
+            g.addEdge(idx1 = getIndex(1, x, y + 1), idx2 = getIndex(0, x, y), weight = weightTTB)
+            g.addEdge(idx1 = getIndex(1, x, y + 1), idx2 = getIndex(0, x + 1, y), weight = weightBTT)
             # if (y < m - 1):
             #     g.addEdge(idx1 = getIndex(x, y), idx2 = getIndex(x, y + 1), weight = weightH)
             # if (x < n - 1):

@@ -93,6 +93,50 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
 
     return Tensor(labels = ['u', 'l', 'd', 'r'], data = data, degreeOfFreedom = 2)
 
+def plaquetteIsingTensor(weight, diamondForm = False):
+    """
+    A local tensor of Ising model, based on plaquette. Including the interactions on four edges.
+
+    Parameters
+    ----------
+    weight : float or length-2 tuple of float
+        The weights(J) of Ising model. If a length-2 tuple, then two values represent (J_vertical, J_horizontal)
+    diamondForm : bool, default False
+        If True, then instead of usual ['lu', 'ru', 'rd', 'ld'] tensor, the tensor will be rotated 45 degrees clockwise, so that the ['lu', 'ru', 'rd', 'ld'] will be ['u', 'r', 'd', 'l'], so vertical weight will become the weight from left-bottom to right-top
+
+    Returns
+    -------
+    Tensor
+        Plaquette tensor of labels ['lu', 'ru', 'rd', 'ld'] or ['l', 'd', 'r', 'u']
+    """
+
+    funcName = 'CTL.models.Ising.plaquetteIsingTensor'
+    if isinstance(weight, float):
+        weight = [weight, weight]
+    else:
+        assert len(weight) == 2, funcs.errorMessage('Only float or (float, float) is accepted by {}, {} obtained.'.format(funcName, weight), location = funcName)
+        weight = list(weight)
+
+    data = np.zeros((2, 2, 2, 2), dtype = np.float64)
+    # ru, rd, ld, lu
+    for s in range(16):
+        idx = funcs.intToBitTuple(s, 4)
+        localE = 0.0
+
+        for i in range(4):
+            if (idx[i] == idx[(i + 1) % 4]):
+                localE -= weight[i % 2]
+                # e.g. ru & rd will share a bond of weight[0](J_vertical)
+            else:
+                localE += weight[i % 2]
+        
+        data[idx] = np.exp(-localE)
+
+    labels = ['ru', 'rd', 'ld', 'lu']
+    if diamondForm:
+        labels = ['r', 'd', 'l', 'u']
+    return Tensor(labels = labels, data = data, degreeOfFreedom = 2)
+
 def infiniteIsingExactM(T, V = 1.0):
     """
     Exact Magnetization of Ising model to the thermodynamical limit.

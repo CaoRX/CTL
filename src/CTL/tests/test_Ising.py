@@ -97,6 +97,24 @@ class TestIsing(PackedTest):
         self.assertTrue(funcs.floatRelativeEqual(Z.single(), exactZ, eps = 1e-10))
         self.assertTrue(funcs.floatRelativeEqual(ZMPS.single(), exactZ, eps = 1e-10))
 
+        doubleLatticeFBC = doubleSquareLatticeFBC(n = 3, m = 3, weight = (0.5, 1.0)) # 24 tensors
+        tensorNetwork = IsingTNFromUndirectedGraph(doubleLatticeFBC)
+
+        seq = [(2, 15), (14, 2), (5, 2), (9, 20), (21, 9), (6, 9), (16, 6), (11, 23), (22, 11), (8, 11), (19, 8), (10, 8), (6, 8), (7, 6), (18, 6), (2, 6), (17, 2), (4, 2), (1, 2), (13, 1), (3, 1), (12, 1), (0, 1)]
+        Z, cost = contractAndCostWithSequence(tensorList = tensorNetwork, seq = seq)
+        print('Z = {}, cost = {}'.format(Z.single(), cost))
+
+        # exactZ = exactZFromGraphIsing(doubleLatticeFBC)
+        # print('exact Z = {}'.format(exactZ))
+        # exactZ = 2694263494.5463686 # pre-calculated
+        # print('exact Z = {}'.format(exactZ))
+
+        ZMPS = contractWithMPS(tensorList = tensorNetwork, chi = 16)
+        print('Z from MPS = {}'.format(ZMPS.single()))
+
+        self.assertTrue(funcs.floatRelativeEqual(Z.single(), ZMPS.single(), eps = 1e-10))
+        # self.assertTrue(funcs.floatRelativeEqual(ZMPS.single(), exactZ, eps = 1e-10))
+
     def test_largerIsing(self):
         print('begin testing larger Ising model')
 
