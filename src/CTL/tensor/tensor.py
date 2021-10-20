@@ -46,7 +46,7 @@ class Tensor(TensorBase):
     diagonalFlag : bool
         Whether the tensor is a "DiagonalTensor"
     totalSize : int
-        Total number of components in this tensor. Redundant with funcs.tupleProduct(self.shape).
+        Total number of components in this tensor.
     degreeOfFreedom : int
         Number of local degree of freedom. E.g. for Ising Tensor around one spin, it can be 1. 
     name : None or str
@@ -110,7 +110,7 @@ class Tensor(TensorBase):
 
         legs, shape, labels, data = self.deduction(legs = legs, shape = shape, labels = labels, data = data, isTensorLike = tensorLikeFlag)
         
-        self.totalSize = funcs.tupleProduct(shape)
+        # self.totalSize = funcs.tupleProduct(shape)
         self.degreeOfFreedom = degreeOfFreedom
         self.name = name
 
@@ -390,6 +390,10 @@ class Tensor(TensorBase):
             return tuple([leg.dim for leg in self.legs])
         else:
             return self.a.shape
+
+    @property
+    def totalSize(self):
+        return funcs.tupleProduct(self.shape)
 
 
     def __str__(self):

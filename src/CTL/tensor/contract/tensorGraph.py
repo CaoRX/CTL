@@ -192,6 +192,9 @@ class TensorGraph(UndirectedGraph):
 
             commonEdges = funcs.commonElements(edgesA, edgesB)
             return len(commonEdges) > 0
+        
+        def isDiagonalOuterProduct(tsA, tsB):
+            return tsA[2] and tsB[2] and (not isSharingBond(tsA, tsB))
 
         def calculateContractRes(tsA, tsB):
             if (isinstance(tsA, int)):
@@ -339,6 +342,9 @@ class TensorGraph(UndirectedGraph):
                             #print('t1 = {}, t2 = {}'.format(t1, t2))
                             if ((t1 & t2) != 0):
                                 continue 
+                            if (isDiagonalOuterProduct(self.contractRes[t1], self.contractRes[t2])):
+                                # diagonal outer product is banned
+                                continue
                             tt = t1 | t2
                             if (self.contractRes[tt] is None):
                                 self.contractRes[tt] = calculateContractRes(t1, t2)

@@ -151,6 +151,53 @@ def CTMRGCornerExtendFTN():
 
     return FTN
 
+def CTMRGHEdgeBuildFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['p', 'al', 'ar'])
+    # our a[l, r] is only for left part; for right part of a, we need to still point "r" to p
+    FTN.addLink('al', 'r', 'p', 'l')
+    FTN.addLink('ar', 'r', 'p', 'r')
+
+    FTN.addPostNameChange('ar', 'l', 'r')
+    return FTN
+
+def CTMRGVEdgeBuildFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['p', 'au', 'ad'])
+    # our a[u, d] is only for down part; for up part of a, we need to still point "u" to p
+    FTN.addLink('ad', 'u', 'p', 'd')
+    FTN.addLink('au', 'u', 'p', 'u')
+
+    FTN.addPostNameChange('au', 'd', 'u')
+    return FTN
+
+def CTMRGEvenZFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['alu', 'ald', 'aru', 'ard'])
+    FTN.addLink('alu', 'u', 'ald', 'u')
+    FTN.addLink('aru', 'u', 'ard', 'u')
+    FTN.addLink('alu', 'r', 'aru', 'r')
+    FTN.addLink('ald', 'r', 'ard', 'r')
+
+    return FTN
+
+def CTMRGOddFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['alu', 'ald', 'aru', 'ard', 'pu', 'pd', 'pl', 'pr', 'w'])
+
+    FTN.addLink('pu', 'l', 'alu', 'r')
+    FTN.addLink('pu', 'r', 'aru', 'r')
+    FTN.addLink('pd', 'l', 'ald', 'r')
+    FTN.addLink('pd', 'r', 'ard', 'r')
+
+    FTN.addLink('pl', 'u', 'alu', 'u')
+    FTN.addLink('pl', 'd', 'ald', 'u')
+    FTN.addLink('pr', 'u', 'aru', 'u')
+    FTN.addLink('pr', 'd', 'ard', 'u')
+
+    FTN.addLink('pl', 'r', 'w', 'l')
+    FTN.addLink('pr', 'r', 'w', 'r')
+    FTN.addLink('pd', 'u', 'w', 'd')
+    FTN.addLink('pu', 'u', 'w', 'u')
+    
+    return FTN
+
 def triangleTensorTrace(a, b):
     """
     Take the trace of two triangle tensors, usually work for the end of the RG of triangular lattice.

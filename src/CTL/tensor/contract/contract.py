@@ -117,7 +117,10 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 		# return a diagonal tensor
 		if (tensorLikeContract):
 			return DiagonalTensor(shape = newShape, data = None, legs = newLegs, tensorLikeFlag = True)
-		return DiagonalTensor(shape = newShape, data = ta.a * tb.a, legs = newLegs)
+		if (len(newLegs) != 0):
+			return DiagonalTensor(shape = newShape, data = ta.a * tb.a, legs = newLegs)
+		else:
+			return DiagonalTensor(data = np.array(np.sum(ta.a * tb.a)))
 	
 	if (ta.diagonalFlag):
 		if (tensorLikeContract):

@@ -4,6 +4,7 @@ import numpy as np
 from copy import deepcopy
 from CTL.tensor.leg import Leg
 from CTL.tensor.tensor import Tensor
+import warnings
 
 class DiagonalTensor(Tensor):
     """
@@ -53,7 +54,7 @@ class DiagonalTensor(Tensor):
     diagonalFlag : bool
         Whether the tensor is a "DiagonalTensor"
     totalSize : int
-        Total number of components in this tensor. Redundant with funcs.tupleProduct(self.shape).
+        Total number of components in this tensor.
     degreeOfFreedom : int
         Number of local degree of freedom. E.g. for Ising Tensor around one spin, it can be 1. 
     name : None or str
@@ -250,6 +251,13 @@ class DiagonalTensor(Tensor):
         # otherwise, both dim and l from data
         funcName = "DiagonalTensor.deduction"
 
+        # first, consider scalar case
+        if (legs is None) and (labels is None) and (shape == () or ((data is not None) and (data.shape == ()))):
+            if (data is None) and (not isTensorLike):
+                data = np.array(1.0)
+            return [], data, [], () # scalar
+            
+
         if (legs is not None):
 
             if (not self.checkLegsDiagonalCompatible(legs = legs)):
@@ -393,23 +401,27 @@ class DiagonalTensor(Tensor):
 
         self.a = data
         self.legs = legs
-        self.totalSize = funcs.tupleProduct(shape)
+        # self.totalSize = funcs.tupleProduct(shape)
 
         # functions of Tensor from here
 
         self.degreeOfFreedom = degreeOfFreedom
         self.name = name
 
-        self._dim = len(shape)
-        self._length = shape[0]
+        # self._dim = len(shape)
+        
+        if shape == ():
+            self._length = 1
+        else:
+            self._length = shape[0]
 
     @property 
     def dim(self):
-        return self._dim 
+        return len(self.legs)
     
     @property 
     def shape(self):
-        return tuple([self._length] * self._dim)
+        return tuple([self._length] * self.dim)
     
     @property 
     def labels(self):
@@ -597,8 +609,10 @@ class DiagonalTensor(Tensor):
             The set of labels to be put at front.
 
         """
-        legs = [self.getLeg(label) for label in labelList]
+        legs = self.getLegsByLabel(labelList)
         self.moveLegsToFront(legs)
+        # legs = [self.getLeg(label) for label in labelList]
+        # self.moveLegsToFront(legs)
 
         # moveFrom = []
         # moveTo = []
@@ -675,7 +689,7 @@ class DiagonalTensor(Tensor):
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to single value since no data contained.', 'DiagonalTensor.single')
         assert self._length == 1, "Error: cannot get single value from diagTensor whose length is not (1,)."
         assert self.shape == (), "Error: cannot get single value from tensor whose shape is not ()."
-        return self.a[0]
+        return self.a[()]
 
     def toTensor(self, labels = None):
         """
@@ -695,6 +709,30 @@ class DiagonalTensor(Tensor):
         if (labels is not None):
             self.reArrange(labels)
         return funcs.diagonalNDTensor(self.a, self.dim)
+
+    def sumOutLeg(self, leg):
+        """
+        Sum out one leg to make a (D - 1)-dimensional tensor. Give a warning(and do nothing) if leg is not one of the current tensor, and give a warning if leg is connected to some bond(not free).
+
+        Parameters
+        ----------
+        leg : Leg
+            The leg to be summed out.
+
+        """
+        if not (leg in self.legs):
+            warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(leg, self), location = 'Tensor.sumOutLeg'), RuntimeWarning)
+            return
+        if leg.bond is not None:
+            warnings.warn(funcs.warningMessage("leg {} to be summed out is connected to bond {}.".format(leg, leg.bond), location = 'Tensor.sumOutLeg'), RuntimeWarning)
+        
+        idx = self.legs.index(leg)
+        # self.a = self.xp.sum(self.a, axis = idx)
+        self.legs = self.legs[:idx] + self.legs[(idx + 1):]
+        if (len(self.legs) == 0):
+            # not a diagonal tensor, since the last sum will give a single value
+            self.a = np.array(np.sum(self.a))
+            self._length = 1
 
     def typeName(self):
         """
