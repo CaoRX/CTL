@@ -172,7 +172,7 @@ def generateGreedySequence(tensorList):
     tensorGraph = makeTensorGraph(tensorList)
     return tensorGraph.optimalContractSequence(greedy = True, typicalDim = None)
 
-def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True):
+def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim = 10, inplace = False, outProductWarning = True, greedy = False):
     """
     The main function for contraction of tensor lists.
 
@@ -197,6 +197,8 @@ def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim =
         Whether to raise a warning when finding outer product during contraction.
         In some cases, making outer product first can make a better order.
         However, outer product may also happen when we want to contract two set of tensors without bonds between them, usually comes from a mistake. So if you are not going to do this, turn the flag True can help debugging.
+    greedy : bool, default False
+        Whether to generate a sequence with greedy algorithm. If True, then the sequence may not be optimal. This is for large tensor networks where the optimal sequence is very time comsuming.
 
     Returns
     -------
@@ -206,7 +208,12 @@ def contractAndCostWithSequence(tensorList, seq = None, bf = False, typicalDim =
         The exact cost for this contraction process.
     """
     if (seq is None):
-        seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
+        # print('{} tensors'.format(len(tensorList)))
+        if (greedy):
+            seq = generateGreedySequence(tensorList)
+        else:
+            seq = generateOptimalSequence(tensorList, bf = bf, typicalDim = typicalDim)
+        # print(seq)
     totalCost = 0.0
     totalLevel = 0
 
