@@ -75,7 +75,7 @@
 
 #         # print('reduceDimension(corner = {}, hEdge = {}, vEdge = {})'.format(corner, hEdge, vEdge))
 
-#         decomp = tensorSVDDecomposition(corner, rows = ['u'], cols = ['r'], innerLabels = ('d', 'l'), chi = self.chi, errorOrder = 4, np = np)
+#         decomp = tensorSVDDecomposition(corner, rows = ['u'], cols = ['r'], innerLabels = ('d', 'l'), chi = self.chi, errorOrder = 4)
 
 #         # print(decomp)
 #         error = decomp['error']

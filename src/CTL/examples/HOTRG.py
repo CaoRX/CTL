@@ -1,4 +1,5 @@
-import numpy as np 
+# import numpy as np 
+import CTL.funcs.xplib as xplib
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.tensorFactory import makeSquareTensor
 from CTL.tensor.contract.contractExp import squareHorizontalContractFTN, squareVerticalContractFTN
@@ -77,11 +78,11 @@ class HOTRG:
             prjMat, error = linalgFuncs.solveEnv(squareMat, self.chiV)
             # prjTensor = Tensor(data = prjMat, shape = (chiV ** 2, prjMat.shape[1]), labels = ['i', 'o'])
 
-        # envTrace = np.trace(squareMat)
-        # envTraceApprox = np.trace(prjMat.T @ squareMat @ prjMat)
+        # envTrace = xplib.xp.trace(squareMat)
+        # envTraceApprox = xplib.xp.trace(prjMat.T @ squareMat @ prjMat)
         # error = (envTrace - envTraceApprox) / envTrace 
         # deltaTensor = (prjMat.T @ squareMat @ prjMat) - squareMat 
-        # error = np.linalg.norm(deltaTensor) / np.linalg.norm(squareMat)
+        # error = xplib.xp.linalg.norm(deltaTensor) / xplib.xp.linalg.norm(squareMat)
         return {'error': error, 'projectTensor': prjMat}
 
     def directedIterate(self, d, prjTensor, inputTensor1 = None, inputTensor2 = None):
@@ -175,12 +176,12 @@ class HOTRG:
         # print(stepN, len(self.aNorms))
         for i in range(stepN):
             dof = self.aArchive[i].degreeOfFreedom
-            accumulateLogZ += np.log(self.aNorms[i]) / dof
+            accumulateLogZ += xplib.xp.log(self.aNorms[i]) / dof
             # TNTrace = triangleTensorTrace(self.aArchive[i], self.bArchive[i])
             # TNTrace = self.aArchive[i].trace(rows = ['u', 'l'], cols = ['d', 'r'])
             TNTrace = squareTrace(self.aArchive[i])
-            currLogZ = accumulateLogZ + np.log(TNTrace) / dof
+            currLogZ = accumulateLogZ + xplib.xp.log(TNTrace) / dof
             # contraction: 1A + 1B
             res.append(currLogZ)
 
-        return np.array(res)
+        return xplib.xp.array(res)

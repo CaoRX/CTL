@@ -24,6 +24,26 @@ Tensor(shape = (3, 3), labels = ['a', 'b'])
 Tensor(shape = (3, 3), labels = ['up', 'down'])
 ```
 
+## GPU support
+**This feature may be a little unstable since we may not exclude all differences between cupy and numpy by far.**
+
+CTL supports cupy for Nvidia GPU for accelerating heavy tensor contractions. To use GPU, we need the following codes:
+```python
+import numpy as np
+import cupy as cp # cupy is not dependency of CTL, please install manually
+import CTL
+
+CTL.setXP(cp) # set the numpy-like library to cupy, and all calculations will be under cupy
+```
+And then all the calculations below will be applied with cupy. There is an example bin/heavy-example-cupy.py for cupy calculation, compared with bin/heavy-example.py for doing the same job with CPU. You can run
+```console
+time python bin/heavy-example-cupy.py
+time python bin/heavy-example.py
+```
+to see the difference on running time. The author's PC(GeForce GTX 1060 3GB, AMD® Ryzen 5 1600) shows a 10-time speedup with cupy on "user" time.
+
+Also note that, for tasks that are not heavy, use GPU may not be a good idea: the time to initialize the usage of GPU may be much longer than calculation time. So please choose proper way to run your program with CTL.
+
 ## Tensor network contraction example
 
 Run the bin/example.py for a simple example

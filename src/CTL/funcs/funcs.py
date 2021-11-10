@@ -1,5 +1,6 @@
 from collections import Counter
-import numpy as np 
+# import numpy as np 
+import CTL.funcs.xplib as xplib
 import string
 import random
 import math
@@ -266,7 +267,7 @@ def intToDBaseTuple(x, dim, D):
         x = x // D
     return tuple(res)
 
-def triangleWeight(sm, J, np = np):
+def triangleWeight(sm, J):
     """
     (Deprecated)Calculate the weight of a triangle of Ising spins, depending on the number of same spin pairs.
 
@@ -276,8 +277,6 @@ def triangleWeight(sm, J, np = np):
         The number of spin pairs that are the same on the triangle.
     J : float
         The Ising interaction parameter of H = -J sum s_i s_{i + 1}.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
@@ -289,10 +288,10 @@ def triangleWeight(sm, J, np = np):
     if (sm == 0):
         return 1
     if (sm == 2):
-        return np.exp(J)
+        return xplib.xp.exp(J)
     return 0.0
 
-def loadData(fileName, np = np):
+def loadData(fileName):
     """
     Load the data of a text file containing a float array.
 
@@ -300,8 +299,6 @@ def loadData(fileName, np = np):
     ----------
     fileName : str
         The name of file we want to load.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
@@ -309,7 +306,7 @@ def loadData(fileName, np = np):
         A 2-d array of the file, columns and rows as two dimensions.
     """
     f = open(fileName, 'r')
-    data = np.array([np.array([np.float(x) for x in line.strip().split(' ')]) for line in f])
+    data = xplib.xp.array([xplib.xp.array([xplib.xp.float(x) for x in line.strip().split(' ')]) for line in f])
     return data
 
 def randomString(n = 10):
@@ -328,43 +325,37 @@ def randomString(n = 10):
     """
     return ''.join(random.choice(string.ascii_letters) for i in range(n))
 
-def identityError(a, np = np):
+def identityError(a):
     """
     Calculate the distance of matrix a to a 2D eye matrix
 
     Parameters
     ----------
     a : 2-D ndarray.
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     float
         The norm of matrix (a - I).
     """
-    return np.linalg.norm(a - np.eye(a.shape[0], a.shape[1]))
+    return xplib.xp.linalg.norm(a - xplib.xp.eye(a.shape[0], a.shape[1]))
 
-def diagError(a, np = np):
+def diagError(a):
     """
     Calculate the error of matrix a to a 2D diagonal matrix
     
     Parameters
     ----------
     a : 2-D ndarray.
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     float
         The norm of matrix (a - a.diag).
     """
-    return np.linalg.norm(a - np.diag(np.diagonal(a))) / np.linalg.norm(a)
+    return xplib.xp.linalg.norm(a - xplib.xp.diag(xplib.xp.diagonal(a))) / xplib.xp.linalg.norm(a)
 
-def checkIdentity(a, eps = 1e-10, np = np):
+def checkIdentity(a, eps = 1e-10):
     """
     Calculate the distance of matrix a to a 2D eye matrix
 
@@ -375,107 +366,89 @@ def checkIdentity(a, eps = 1e-10, np = np):
     eps : float, optional. 
         The threshold norm of difference between which we will consider two matrices as the same. By default, 1e-10.
     
-    np : object, default numpy
-        The numpy-like library for numeric functions.
-    
     Returns
     -------
     bool
         Whether a is an identity matrix.
     """
-    return identityError(a, np = np) < eps
+    return identityError(a) < eps
 
-def symmetricError(a, np = np):
+def symmetricError(a):
     """
     Calculate the distance of matrix a to a symmetric matrix.
 
     Parameters
     ----------
     a : 2-D ndarray.
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     float
         Norm(a - a.T) / Norm(a), a measure of how symmetric a is.
     """
-    return np.linalg.norm(a - np.transpose(a)) / np.linalg.norm(a)
+    return xplib.xp.linalg.norm(a - xplib.xp.transpose(a)) / xplib.xp.linalg.norm(a)
 
-def transposeConjugate(a, np = np):
+def transposeConjugate(a):
     """
     Calculate the transpose conjugate of a matrix.
 
     Parameters
     ----------
     a : 2-D ndarray, shape of (h, w)
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     2-D ndarray, shape of (w, h)
         The transpose conjugate of matrix a.
     """
-    return np.conjugate(np.transpose(a))
+    return xplib.xp.conjugate(xplib.xp.transpose(a))
 
-def aDaggerAProduct(a, np = np):
+def aDaggerAProduct(a):
     """
     Calculate the product of transpose conjugate of a matrix and the matrix itself.
 
     Parameters
     ----------
     a : 2-D ndarray, shape of (h, w)
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     2-D ndarray, shape of (w, w)
         a^{dagger} @ a
     """
-    return np.matmul(transposeConjugate(a, np = np), a)
+    return xplib.xp.matmul(transposeConjugate(a), a)
 
-def aADaggerProduct(a, np = np):
+def aADaggerProduct(a):
     """
     Calculate the product of a matrix and its transpose conjugate.
 
     Parameters
     ----------
     a : 2-D ndarray, shape of (h, w)
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     2-D ndarray, shape of (h, h)
         a @ a^{dagger}
     """
-    return np.matmul(a, transposeConjugate(a, np = np))
+    return xplib.xp.matmul(a, transposeConjugate(a))
 
-def projectorError(a, np = np):
+def projectorError(a):
     """
     Calculate how much a is like a projector.
 
     Parameters
     ----------
     a : 2-D ndarray, shape of (h, w).
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     float
         The distance of a^{dagger} @ a to identity.
     """
-    return identityError(aDaggerAProduct(a, np = np))
+    return identityError(aDaggerAProduct(a))
 
-def getDiffError(a, b, np = np):
+def getDiffError(a, b):
     """
     (Deprecated)Calculate the distance square between a and b.
 
@@ -483,9 +456,6 @@ def getDiffError(a, b, np = np):
     ----------
     a, b : ndarray of float, in the same shape
         The two matrices to be compared
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
@@ -493,9 +463,9 @@ def getDiffError(a, b, np = np):
         The sum of element-wise distance square between a and b.
     """
     deprecatedFuncWarning(funcName = 'getDiffError', fileName = 'CTL.funcs.funcs')
-    return np.linalg.norm(a ** 2) + np.linalg.norm(b ** 2) - np.linalg.norm(a * b) * 2
+    return xplib.xp.linalg.norm(a ** 2) + xplib.xp.linalg.norm(b ** 2) - xplib.xp.linalg.norm(a * b) * 2
 
-def matDiffError(a, b, np = np):
+def matDiffError(a, b):
     """
     Calculate the relative distance between a and b.
 
@@ -503,18 +473,15 @@ def matDiffError(a, b, np = np):
     ----------
     a, b : ndarray of float, in the same shape
         The two matrices to be compared
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     float
         Norm(a - b) / Norm(a)
     """
-    return np.linalg.norm(a - b) / np.linalg.norm(a)
+    return xplib.xp.linalg.norm(a - b) / xplib.xp.linalg.norm(a)
 
-def randomArray(shape, np = np):
+def randomArray(shape):
     """
     Generate a random array with given shape, each element is uniformly chosen in [-1, 1)
 
@@ -522,21 +489,18 @@ def randomArray(shape, np = np):
     ----------
     shape : int or tuple of ints
         The shape of required random array.
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     ndarray of floats, shape as given shape
         A random array uniformly in [-1, 1)
     """
-    return 2.0 * np.random.random(shape) - 1.0
+    return 2.0 * xplib.xp.random.random(shape) - 1.0
 
 # def print_array(a, eps = 1e-15):
 # 	deprecatedFuncWarning(funcName = 'print_array', fileName = 'funcs/funcs')
 # 	a_copy = a.copy()
-# 	a_non_zero = a_copy[np.abs(a_copy) > eps]
+# 	a_non_zero = a_copy[xplib.xp.abs(a_copy) > eps]
 # 	return a_non_zero
 
 def assertInSet(x, xSet, name):
@@ -746,7 +710,7 @@ def getValidValues(values, threshold = 1e10):
             resY.append(value)
     return resX, resY
 
-def normalizeInfinity(a, np = np):
+def normalizeInfinity(a):
     """
     Normalize array a so that the maximum absolute value is 1.
 
@@ -754,16 +718,13 @@ def normalizeInfinity(a, np = np):
     ----------
     a : ndarray of float
         The array to be normalized.
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     ndarray of float, same shape as a
         The normalized array.
     """
-    return a / np.max(np.abs(a))
+    return a / xplib.xp.max(xplib.xp.abs(a))
 
 def binarySearch(left, right, largeEnough, eps):
     """
@@ -853,7 +814,7 @@ def partialInverse(s, cutoff):
     list of float
         1.0 / s for all non-zero elements, and 0 for zero(< threshold) elements.
     """
-    res = np.zeros(len(s))
+    res = xplib.xp.zeros(len(s))
     for i in range(cutoff):
         res[i] = 1.0 / s[i]
     return res
@@ -943,18 +904,18 @@ def mapToDict(dictShape, x):
 # 		self.fit(x, y)
 
 # 	def fit(self, x, y):
-# 		self.x = np.array(deepcopy(x))
-# 		self.y = np.array(deepcopy(y))
+# 		self.x = xplib.xp.array(deepcopy(x))
+# 		self.y = xplib.xp.array(deepcopy(y))
 
-# 		averageX = np.average(self.x)
-# 		averageY = np.average(self.y)
-# 		averageXX = np.average(self.x ** 2)
-# 		averageYY = np.average(self.y ** 2)
-# 		averageXY = np.average(self.x * self.y)
+# 		averageX = xplib.xp.average(self.x)
+# 		averageY = xplib.xp.average(self.y)
+# 		averageXX = xplib.xp.average(self.x ** 2)
+# 		averageYY = xplib.xp.average(self.y ** 2)
+# 		averageXY = xplib.xp.average(self.x * self.y)
 
 # 		self.k = (averageXY - averageX * averageY) / (averageXX - averageX ** 2)
 # 		self.b = averageY - self.k * averageX 
-# 		self.r = (averageXY - averageX * averageY) / np.sqrt((averageXX - averageX ** 2) * (averageYY - averageY ** 2))
+# 		self.r = (averageXY - averageX * averageY) / xplib.xp.sqrt((averageXX - averageX ** 2) * (averageYY - averageY ** 2))
 
 # 	def predict(self, x):
 # 		return self.k * x + self.b
@@ -1013,7 +974,7 @@ def floatRelativeEqual(a, b, eps = 1e-7):
     """
     return abs(a - b) < eps * 0.5 * (a + b)
 
-def floatArrayEqual(a, b, eps = 1e-7, np = np):
+def floatArrayEqual(a, b, eps = 1e-7):
     """
     Decide whether two float arrays are equal up to a small distance.
 
@@ -1023,8 +984,6 @@ def floatArrayEqual(a, b, eps = 1e-7, np = np):
         The two arrays to be compared.
     eps : float, default 1e-7
         The maximum error below which we can consider two numbers as equal.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
 
     Returns
     -------
@@ -1033,7 +992,7 @@ def floatArrayEqual(a, b, eps = 1e-7, np = np):
     """
     if (a.shape != b.shape):
         return False
-    return floatEqual(np.ravel(a), np.ravel(b), eps).all()
+    return floatEqual(xplib.xp.ravel(a), xplib.xp.ravel(b), eps).all()
 
 def identicalTensorDict(tensor, names):
     """
@@ -1117,7 +1076,7 @@ def warningMessage(warn, location = None):
     else:
         return "Warning in {}: {}".format(location, warn)
 
-def diagonalNDTensor(a, dim, np = np):
+def diagonalNDTensor(a, dim):
     """
     Create a diagonal N-dimensional tensor.
 
@@ -1127,8 +1086,6 @@ def diagonalNDTensor(a, dim, np = np):
         The values that will be on the diagonal of the tensor.
     dim : int
         The dimension of the output tensor.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
 
     Returns
     -------
@@ -1137,8 +1094,8 @@ def diagonalNDTensor(a, dim, np = np):
 
     """
     l = a.shape[0]
-    res = np.zeros(tuple([l] * dim))
-    res[np.diag_indices(l, dim)] = a
+    res = xplib.xp.zeros(tuple([l] * dim))
+    res[xplib.xp.diag_indices(l, dim)] = a
     # for i in range(l):
     # 	res[tuple([i] * dim)] = a[i]
     return res
@@ -1167,7 +1124,7 @@ def indexTupleToStr(idx):
     
     return ''.join([labelList[x] for x in idx])
 
-def ndEye(n, l, np = np):
+def ndEye(n, l):
     """
     Create a n-dimensional eye tensor.
 
@@ -1177,22 +1134,20 @@ def ndEye(n, l, np = np):
         The dimension of the returned tensor.
     l : int
         The size of each dimension of the returned tensor.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
     
     Returns
     -------
     ndarray
         A tensor of shape (l, l, ... l), all values on the main diagonal is 1.
     """
-    res = np.zeros(tuple([l] * n))
+    res = xplib.xp.zeros(tuple([l] * n))
     if (n == 1):
         res[0] = 1.0
     else:
-        res[np.diag_indices(l, n)] = 1
+        res[xplib.xp.diag_indices(l, n)] = 1
     return res
 
-def nonZeroElementN(s, eps = 1e-10, np = np):
+def nonZeroElementN(s, eps = 1e-10):
     """
     Check the number of elements in an array.
 
@@ -1202,15 +1157,18 @@ def nonZeroElementN(s, eps = 1e-10, np = np):
     
     eps : float, default 1e-10
         The threshold over which we will decide a value as non-zero.
-    np : object, default numpy
-        The numpy-like library for numeric functions.
 
     Returns
     -------
     int
         The number of elements whose absolute value is over eps.
     """
-    return np.count_nonzero(np.abs(s) > eps)
+    res = xplib.xp.count_nonzero(xplib.xp.abs(s) > eps)
+
+    # polyfill for cupy, since cupy will consider this result as 0-d scalar
+    if (type(res) != int):
+        res = int(xplib.xp.asnumpy(res)[()])
+    return res
 
 def rightDiagonalProduct(a, diag):
     """
@@ -1302,26 +1260,23 @@ def pairIterator(a):
 
     return
 
-def priorDataType(dtype1, dtype2, np = np):
+def priorDataType(dtype1, dtype2):
     """
     Decide the data type of the output of two input types.
 
     Parameters
     ----------
-    dtype1, dtype2 : np.dtype
-
-    np : object, default numpy
-        The numpy-like library for numeric functions.
+    dtype1, dtype2 : xplib.xp.dtype
 
     Returns
     -------
-    np.dtype
+    xplib.xp.dtype
         The output type with the highest accuracy of dtype1 and dtype2, and is complex if any of them is complex.
     """
 
     location = 'CTL.funcs.funcs.priorDataType'
-    isFloat1 = np.issubdtype(dtype1, np.floating)
-    isFloat2 = np.issubdtype(dtype2, np.floating)
+    isFloat1 = xplib.xp.issubdtype(dtype1, xplib.xp.floating)
+    isFloat2 = xplib.xp.issubdtype(dtype2, xplib.xp.floating)
 
     length1 = dtype1.itemsize
     length2 = dtype2.itemsize
@@ -1337,23 +1292,23 @@ def priorDataType(dtype1, dtype2, np = np):
 
     if isFloat:
         if acc == 2:
-            return np.float16
+            return xplib.xp.float16
         elif acc == 4:
-            return np.float32
+            return xplib.xp.float32
         elif acc == 8:
-            return np.float64
+            return xplib.xp.float64
         elif acc == 16:
-            return np.float128
+            return xplib.xp.float128
         else:
             raise ValueError(errorMessage(err = 'accuracy {}(byte) is not compatible with float types of numpy(need [2, 4, 8, 16]).'.format(acc), location = location))
     
     else:
         if acc == 4:
-            return np.complex64
+            return xplib.xp.complex64
         elif acc == 8:
-            return np.complex128
+            return xplib.xp.complex128
         elif acc == 16:
-            return np.complex256
+            return xplib.xp.complex256
         else:
             raise ValueError(errorMessage(err = 'accuracy {}(byte) is not compatible with complex types of numpy(need [4, 8, 16]).'.format(acc), location = location))
 

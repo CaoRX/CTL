@@ -1,13 +1,3 @@
-# a simple example about how to use the library
-
-import os, sys
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-sys.path.append(os.path.join(parentdir, 'src'))
-
-# import the functions and Classes we will use
-# the import now is a little troublesome to find where the function you want is
-# it is planned to be improved, maybe like numpy structure(so all functions can be used with CTL.xx?)
 from CTL.tensor.tensor import Tensor 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 from CTL.tensornetwork.tensordict import TensorDict
@@ -19,15 +9,19 @@ from CTL.examples.impurity import ImpurityTensorNetwork
 from CTL.examples.HOTRG import HOTRG
 
 import numpy as np  
+import CTL.funcs.xplib as xplib
 import CTL
+
+import CTL.funcs.funcs as funcs 
+from CTL.tests.packedTest import PackedTest
 
 def simplestExample():
     shapeA = (300, 4, 5)
     shapeB = (300, 6)
     shapeC = (4, 6, 5)
-    a = Tensor(labels = ['a300', 'b4', 'c5'], data = np.ones(shapeA))
-    b = Tensor(labels = ['a300', 'd6'], data = np.ones(shapeB))
-    c = Tensor(labels = ['e4', 'd6', 'c5'], data = np.ones(shapeC))
+    a = Tensor(labels = ['a300', 'b4', 'c5'], data = xplib.xp.ones(shapeA))
+    b = Tensor(labels = ['a300', 'd6'], data = xplib.xp.ones(shapeB))
+    c = Tensor(labels = ['e4', 'd6', 'c5'], data = xplib.xp.ones(shapeC))
 
     # create tensors with labels
 
@@ -57,30 +51,20 @@ def simplestExample():
 
     # for reusable inplace contraction(which is our goal), refer to the use of CTL.tensornetwork.tensornetwork.FiniteTensorNetwork
 
-def HOTRGImpurityExample(beta = 0.5):
-    print('test magnet for Ising model, beta = {}'.format(beta))
-    # beta = 0.6
+    return res
 
-    symmetryBroken = 1e-5
-    a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
-    hotrg = HOTRG(a, chiH = 16)
-    for _ in range(20):
-        hotrg.iterate()
-    
-    mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
-    impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
-    impurityTN.setRG(hotrg) 
+class TestCUPY(PackedTest):
 
-    for _ in range(20):
-        impurityTN.iterate()
-    M = impurityTN.measureObservables()
-    M = [x[1] for x in M]
-    exactM = infiniteIsingExactM(1.0 / beta)
-    print('magnet = {}'.format(M[-1] * 0.5))
-    print('exact magnet = {}'.format(exactM))
-
-if __name__ == '__main__':
-    CTL.setXP(None)
-    CTL.setXP(np)
-    simplestExample()
-    HOTRGImpurityExample(beta = 0.6)
+    def test_cupy(self):
+        # pass
+        # self.assertEqual(funcs.tupleProduct((2, 3)), 6)
+        try:
+            import cupy as cp
+        except:
+            return
+        CTL.setXP(cp)
+        res = simplestExample()
+        print('res = {}'.format(res))
+        
+    def __init__(self, methodName = 'runTest'):
+        super().__init__(methodName = methodName, name = 'cupy')

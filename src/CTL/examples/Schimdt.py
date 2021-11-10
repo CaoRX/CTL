@@ -1,12 +1,13 @@
 # do Schimdt decompostion over two tensors
-
+import CTL.funcs.xplib as xplib
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
 import CTL.funcs.funcs as funcs
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.leg import Leg
 from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.contract.link import makeLink
-import numpy as np
+# import numpy as np
+
 
 def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels = ([], []), singularValueEps = 1e-10):
     '''
@@ -41,7 +42,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     # if (sharedLabelB.startswith('b-')):
     #     raise ValueError(funcs.errorMessage(err = "shared label {} of tensor B starts with 'b-'.".format(sharedLabelB), location = funcName))
 
-    assert (ta.xp == tb.xp), funcs.errorMessage("Schimdt Decomposition cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
+    # assert (ta.xp == tb.xp), funcs.errorMessage("Schimdt Decomposition cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
 
     assert (len(swapLabels[0]) == len(swapLabels[1])), funcs.errorMessage(err = "invalid swap labels {}.".format(swapLabels), location = funcName)
     assert ta.labelsInTensor(swapLabels[0]), funcs.errorMessage(err = "{} not in tensor {}.".format(swapLabels[0], ta), location = funcName)
@@ -77,9 +78,9 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     else:
         mat = tot.toMatrix(rows = labelA, cols = labelB)
 
-        np = ta.xp # default numpy
+        # np = ta.xp # default numpy
 
-        u, s, vh = np.linalg.svd(mat)
+        u, s, vh = xplib.xp.linalg.svd(mat)
 
         chi = min([chi, totShapeA, totShapeB, funcs.nonZeroElementN(s, singularValueEps)])
         u = u[:, :chi]
@@ -91,7 +92,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
             uS = None 
             vS = None
         else:
-            sqrtS = np.sqrt(s)
+            sqrtS = xplib.xp.sqrt(s)
             uS = funcs.rightDiagonalProduct(u, sqrtS)
             vS = funcs.leftDiagonalProduct(vh, sqrtS)
 
@@ -103,8 +104,8 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
         outLegForV = Leg(None, chi, name = sharedLabelB)
 
         uTensor = Tensor(data = uS, legs = legA + [outLegForU], shape = shapeA + (chi, ), tensorLikeFlag = TLFlag)
-        # s1Tensor = DiagonalTensor(data = np.sqrt(s), legs = [inLegForU, internalLegForS1], shape = (chi, chi))
-        # s2Tensor = DiagonalTensor(data = np.sqrt(s), legs = [internalLegForS2, inLegForV], shape = (chi, chi))
+        # s1Tensor = DiagonalTensor(data = xplib.xp.sqrt(s), legs = [inLegForU, internalLegForS1], shape = (chi, chi))
+        # s2Tensor = DiagonalTensor(data = xplib.xp.sqrt(s), legs = [internalLegForS2, inLegForV], shape = (chi, chi))
         vTensor = Tensor(data = vS, legs = [outLegForV] + legB, shape = (chi, ) + shapeB, tensorLikeFlag = TLFlag)
 
         # legs should be automatically set by Tensor / DiagonalTensor, so no need for setTensor
@@ -164,7 +165,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
 
     return uTensor, sTensor, vTensor
 
-def matrixSchimdtDecomposition(a, dim, chi = None, xp = np):
+def matrixSchimdtDecomposition(a, dim, chi = None):
     '''
     Schimdt decomposition of matrix a
     a can be either 1D or 2D
@@ -185,7 +186,7 @@ def matrixSchimdtDecomposition(a, dim, chi = None, xp = np):
         l = shape[0]
         assert ((dim != 0) and (l % dim == 0)), funcs.errorMessage("matrix shape {} cannot be Schimdt decomposed with dimension {}.".format(shape, dim), location = funcName)
         a = a.reshape((dim, -1))
-        u, s, vh = xp.linalg.svd(a)
+        u, s, vh = xplib.xp.linalg.svd(a)
         if (chi is None):
             chi = min([u.shape[0], vh.shape[1], funcs.nonZeroElementN(s)])
         else:
@@ -201,7 +202,7 @@ def matrixSchimdtDecomposition(a, dim, chi = None, xp = np):
         s0, s1 = shape
         assert ((dim != 0) and (s1 % dim == 0)), funcs.errorMessage("matrix shape {} cannot be Schimdt decomposed with dimension {}.".format(shape, dim), location = funcName)
         a = a.reshape(s0 * dim, -1)
-        u, s, vh = xp.linalg.svd(a)
+        u, s, vh = xplib.xp.linalg.svd(a)
         if (chi is None):
             chi = min([u.shape[0], vh.shape[1], funcs.nonZeroElementN(s)])
         else:

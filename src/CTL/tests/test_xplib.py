@@ -1,13 +1,3 @@
-# a simple example about how to use the library
-
-import os, sys
-currentdir = os.path.dirname(os.path.realpath(__file__))
-parentdir = os.path.dirname(currentdir)
-sys.path.append(os.path.join(parentdir, 'src'))
-
-# import the functions and Classes we will use
-# the import now is a little troublesome to find where the function you want is
-# it is planned to be improved, maybe like numpy structure(so all functions can be used with CTL.xx?)
 from CTL.tensor.tensor import Tensor 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 from CTL.tensornetwork.tensordict import TensorDict
@@ -20,6 +10,9 @@ from CTL.examples.HOTRG import HOTRG
 
 import numpy as np  
 import CTL
+
+import CTL.funcs.funcs as funcs 
+from CTL.tests.packedTest import PackedTest
 
 def simplestExample():
     shapeA = (300, 4, 5)
@@ -57,30 +50,19 @@ def simplestExample():
 
     # for reusable inplace contraction(which is our goal), refer to the use of CTL.tensornetwork.tensornetwork.FiniteTensorNetwork
 
-def HOTRGImpurityExample(beta = 0.5):
-    print('test magnet for Ising model, beta = {}'.format(beta))
-    # beta = 0.6
+    return res
 
-    symmetryBroken = 1e-5
-    a = squareIsingTensor(beta = beta, symmetryBroken = symmetryBroken)
-    hotrg = HOTRG(a, chiH = 16)
-    for _ in range(20):
-        hotrg.iterate()
-    
-    mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
-    impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
-    impurityTN.setRG(hotrg) 
+class TestXPLib(PackedTest):
 
-    for _ in range(20):
-        impurityTN.iterate()
-    M = impurityTN.measureObservables()
-    M = [x[1] for x in M]
-    exactM = infiniteIsingExactM(1.0 / beta)
-    print('magnet = {}'.format(M[-1] * 0.5))
-    print('exact magnet = {}'.format(exactM))
-
-if __name__ == '__main__':
-    CTL.setXP(None)
-    CTL.setXP(np)
-    simplestExample()
-    HOTRGImpurityExample(beta = 0.6)
+    def test_xplib(self):
+        # pass
+        # self.assertEqual(funcs.tupleProduct((2, 3)), 6)
+        CTL.setXP(None)
+        with self.assertRaises(AttributeError) as context:
+            simplestExample()
+        CTL.setXP(np)
+        res = simplestExample()
+        print('res = {}'.format(res))
+        
+    def __init__(self, methodName = 'runTest'):
+        super().__init__(methodName = methodName, name = 'xplib')

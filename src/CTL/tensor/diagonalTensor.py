@@ -1,6 +1,7 @@
+import CTL.funcs.xplib as xplib
 from CTL.tensorbase.tensorbase import TensorBase 
 import CTL.funcs.funcs as funcs
-import numpy as np 
+# import numpy as np 
 from copy import deepcopy
 from CTL.tensor.leg import Leg
 from CTL.tensor.tensor import Tensor
@@ -29,7 +30,7 @@ class DiagonalTensor(Tensor):
         The labels to be put for each dimension, if None then automatically generated from lower case letters.
     data : None or ndarray or 1D-array of float, optional
         The data in the tensor. 
-        If None and the data is needed(not TensorLike), then generated as np.random.random_sample. 
+        If None and the data is needed(not TensorLike), then generated as xplib.xp.random.random_sample. 
         If shape is given, data does not need to have the same shape as "shape", but the number of elements should be the same.
         If 1D-array, then taken as the diagonal elements, can be used for diagonal tensors of any rank.
     degreeOfFreedom : None or int, optional
@@ -74,7 +75,7 @@ class DiagonalTensor(Tensor):
 
     For legs: priority is legs, default: auto-generated with labels and shape.
 
-    For data: priority is data.reshape(shape), default: np.random.random_sample(shape).
+    For data: priority is data.reshape(shape), default: xplib.xp.random.random_sample(shape).
 
     ("For property A, priority is B > C = D > E, default: F" means, A can be deduced from B, C, D, E, so we consider from high priority to low priority. If B exist, then we take the deduced value from B, and change C, D, E if they in some sense compatible with B. Otherwise consider C & D. For values of the same priority, if both of them are provided, then they should be the same. If none of B, C, D, E can deduce A, then generate A with F.)
 
@@ -227,15 +228,15 @@ class DiagonalTensor(Tensor):
             return None
         # print('generating data for data = {}'.format(data))
         if (data is None):
-            data = self.xp.ones(shape[0])
+            data = xplib.xp.ones(shape[0])
         # otherwise, data can be 1D-array, or ndarray
         elif (len(data.shape) == 1):
-            data = self.xp.copy(data)
+            data = xplib.xp.copy(data)
         else:
             l, dim = len(shape), shape[0]
             # print('dim = {}, l = {}'.format(dim, l))
-            # print(self.xp.diag_indices(dim, l))
-            data = self.xp.copy(data[self.xp.diag_indices(dim, l)])
+            # print(xplib.xp.diag_indices(dim, l))
+            data = xplib.xp.copy(data[xplib.xp.diag_indices(dim, l)])
         return data
 
     def deduction(self, legs, data, labels, shape, isTensorLike = False):
@@ -254,7 +255,7 @@ class DiagonalTensor(Tensor):
         # first, consider scalar case
         if (legs is None) and (labels is None) and (shape == () or ((data is not None) and (data.shape == ()))):
             if (data is None) and (not isTensorLike):
-                data = np.array(1.0)
+                data = xplib.xp.array(1.0)
             return [], data, [], () # scalar
             
 
@@ -369,11 +370,11 @@ class DiagonalTensor(Tensor):
         #     data = None
         # elif (data is None):
         #     # default is identity
-        #     data = self.xp.ones(l)
+        #     data = xplib.xp.ones(l)
         # elif (len(data.shape) == 1):
-        #     data = self.xp.copy(data)
+        #     data = xplib.xp.copy(data)
         # else:
-        #     data = self.xp.array([data[tuple([x] * dim)] for x in range(l)])
+        #     data = xplib.xp.array([data[tuple([x] * dim)] for x in range(l)])
 
         # must be a copy of original "data" if exist
 
@@ -394,8 +395,8 @@ class DiagonalTensor(Tensor):
         
             
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False, xp = np, dtype = np.float64):
-        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag, xp = xp, dtype = dtype)
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, tensorLikeFlag = False, dtype = xplib.xp.float64):
+        super().__init__(diagonalFlag = True, tensorLikeFlag = tensorLikeFlag, dtype = dtype)
 
         legs, data, labels, shape = self.deduction(legs = legs, data = data, labels = labels, shape = shape, isTensorLike = tensorLikeFlag)
 
@@ -475,7 +476,7 @@ class DiagonalTensor(Tensor):
 
     def moveLegsToFront(self, legs):
         """
-        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use self.xp.moveaxis to modify the data if this is not a TensorLike object.
+        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use xplib.xp.moveaxis to modify the data if this is not a TensorLike object.
 
         In fact make nothing difference for diagonal tensor: for Tensor this function will change the order of indices of data, but for diagonal tensor it is only a virtual change of legs.
 
@@ -504,7 +505,7 @@ class DiagonalTensor(Tensor):
         # print(labelList)
         # print(self.labels)
         self.legs = movedLegs + self.legs 
-        # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        # self.a = xplib.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
         """
@@ -524,7 +525,7 @@ class DiagonalTensor(Tensor):
         """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike cannot be transferred to vector since no data contained.', 'DiagonalTensor.toVector')
         funcs.deprecatedFuncWarning(funcName = "DiagonalTensor.toVector", deprecateMessage = "This will return a vector corresponding to the diagonal of tensor instead of the complete tensor.")
-        return self.xp.copy(self.xp.ravel(self.a))
+        return xplib.xp.copy(xplib.xp.ravel(self.a))
     
     def toMatrix(self, rows, cols):
         """
@@ -571,7 +572,7 @@ class DiagonalTensor(Tensor):
         rowTotalSize = funcs.tupleProduct(rowShape)
 
         data = funcs.diagonalNDTensor(self.a, self.dim)
-        data = self.xp.reshape(data, (rowTotalSize, colTotalSize))
+        data = xplib.xp.reshape(data, (rowTotalSize, colTotalSize))
         return data
 
     def copy(self):
@@ -631,7 +632,7 @@ class DiagonalTensor(Tensor):
         #     self.legs.remove(leg)
 
         # self.legs = movedLegs + self.legs 
-        # self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        # self.a = xplib.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def outProduct(self, labelList, newLabel):
         """
@@ -653,7 +654,7 @@ class DiagonalTensor(Tensor):
             The norm of data.
         """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have norm since no data contained.', 'DiagonalTensor.norm')
-        return self.xp.linalg.norm(self.a)
+        return xplib.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
         """
@@ -670,7 +671,7 @@ class DiagonalTensor(Tensor):
             The trace of the matrix generated by given cols and rows.
         """
         assert (not self.tensorLikeFlag), funcs.errorMessage('DiagonalTensorLike do not have trace since no data contained.', 'DiagonalTensor.trace')
-        return self.xp.sum(self.a)
+        return xplib.xp.sum(self.a)
 
     def single(self):
         """
@@ -727,11 +728,11 @@ class DiagonalTensor(Tensor):
             warnings.warn(funcs.warningMessage("leg {} to be summed out is connected to bond {}.".format(leg, leg.bond), location = 'Tensor.sumOutLeg'), RuntimeWarning)
         
         idx = self.legs.index(leg)
-        # self.a = self.xp.sum(self.a, axis = idx)
+        # self.a = xplib.xp.sum(self.a, axis = idx)
         self.legs = self.legs[:idx] + self.legs[(idx + 1):]
         if (len(self.legs) == 0):
             # not a diagonal tensor, since the last sum will give a single value
-            self.a = np.array(np.sum(self.a))
+            self.a = xplib.xp.array(xplib.xp.sum(self.a))
             self._length = 1
 
     def typeName(self):

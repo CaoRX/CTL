@@ -3,7 +3,8 @@ from CTL.funcs.decompose import SVDDecomposition
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.diagonalTensor import DiagonalTensor
 
-import numpy as np
+# import numpy as np
+import CTL.funcs.xplib as xplib
 import warnings
 
 def isIsometry(tensor, labels, eps = 1e-10, warningFlag = False):
@@ -33,11 +34,11 @@ def isIsometry(tensor, labels, eps = 1e-10, warningFlag = False):
             warnings.warn(funcs.warningMessage(warn = 'isIsometry cannot work on tensorLike object {}, return True by default.'.format(tensor), location = funcName))
         return True
     mat = tensor.toMatrix(cols = labels)
-    np = tensor.xp
-    iden = mat @ funcs.transposeConjugate(mat, np = np)
+    # np = tensor.xp
+    iden = mat @ funcs.transposeConjugate(mat)
     return funcs.checkIdentity(iden, eps = eps)
 
-def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, preserveLegs = False, chi = 16, errorOrder = 2, np = np):
+def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, preserveLegs = False, chi = 16, errorOrder = 2):
     """
     Decompose a tensor into two isometry tensors and one diagonal tensor, according to SVD decomposition. Namely, a = u @ s @ v.
 
@@ -56,8 +57,6 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
         Maximum bond dimension of inner legs.
     errorOrder : int, default 2
         The order of error in singular value decomposition. The error will be calculated as (s[chi:] ** errorOrder).sum() / (s ** errorOrder).sum().
-    np : object, default numpy
-		The numpy-like library for numeric functions.
 
     Returns
     -------
@@ -99,7 +98,7 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
         rowLabel = 'inner:' + rowName 
         colLabel = 'inner:' + colName
 
-    u, s, vh, error = SVDDecomposition(aMat, chi = chi, returnSV = True, errorOrder = errorOrder, np = np)
+    u, s, vh, error = SVDDecomposition(aMat, chi = chi, returnSV = True, errorOrder = errorOrder)
 
     if (preserveLegs):
         uTensor = Tensor(data = u, labels = [rowName, rowLabel], legs = [rowLeg, None])
@@ -108,7 +107,7 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
     else:
         uTensor = Tensor(data = u, labels = [rowName, rowLabel])
         sTensor = DiagonalTensor(data = s, labels = [rowName, colName])
-        # sTensor = Tensor(data = np.diag(s), labels = [rowName, colName])
+        # sTensor = Tensor(data = xplib.xp.diag(s), labels = [rowName, colName])
         vTensor = Tensor(data = vh, labels = [colLabel, colName])
 
     return {'u': uTensor, 's': sTensor, 'v': vTensor, 'error': error}

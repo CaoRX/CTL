@@ -3,7 +3,8 @@ from CTL.tensor.contract.contractExp import CTMRGHEdgeExtendFTN, CTMRGVEdgeExten
 from CTL.tensor.tensorFunc import tensorSVDDecomposition
 from CTL.tensor.contract.contract import contractTwoTensors, makeLink
 
-import numpy as np
+# import numpy as np
+import CTL.funcs.xplib as xplib
 import warnings
 class CTMRG:
     # initial tensor: corner, edge, center
@@ -65,7 +66,7 @@ class CTMRG:
 
         # print('reduceDimension(corner = {}, hEdge = {}, vEdge = {})'.format(corner, hEdge, vEdge))
 
-        decomp = tensorSVDDecomposition(corner, rows = ['u'], cols = ['r'], innerLabels = ('d', 'l'), chi = self.chi, errorOrder = 4, np = np)
+        decomp = tensorSVDDecomposition(corner, rows = ['u'], cols = ['r'], innerLabels = ('d', 'l'), chi = self.chi, errorOrder = 4)
 
         # print(decomp)
         error = decomp['error']
@@ -108,9 +109,9 @@ class CTMRG:
         newVEdge.a /= vEdgeNorm
 
         logScale = dict()
-        logScale['corner'] = np.log(cornerNorm) + self.logScale['corner'] + self.logScale['hEdge'] + self.logScale['vEdge']
-        logScale['vEdge'] = np.log(vEdgeNorm) + self.logScale['vEdge']
-        logScale['hEdge'] = np.log(hEdgeNorm) + self.logScale['hEdge']
+        logScale['corner'] = xplib.xp.log(cornerNorm) + self.logScale['corner'] + self.logScale['hEdge'] + self.logScale['vEdge']
+        logScale['vEdge'] = xplib.xp.log(vEdgeNorm) + self.logScale['vEdge']
+        logScale['hEdge'] = xplib.xp.log(hEdgeNorm) + self.logScale['hEdge']
 
         self.logScale = logScale
         self.tensors['corner'] = newCorner
@@ -136,7 +137,7 @@ class CTMRG:
     #     print('corner.data = {}'.format(corner.a))
     #     corner.sumOutLegByLabel(['u', 'r'])
     #     print(corner)
-    #     return corner.single() * np.exp(logZ)
+    #     return corner.single() * xplib.xp.exp(logZ)
 
     def getTensorAndScale(self, name, idx):
         # print(idx, len(self.records[name]))
@@ -179,10 +180,10 @@ class CTMRG:
         if (L % 2 == 0):
             res = self.evenZFTN.contract(tensors)
             # print(res)
-            return res.single() * np.exp(4 * cornerLogZ)
+            return res.single() * xplib.xp.exp(4 * cornerLogZ)
         else:
             res = self.oddZFTN.contract(tensors)
-            return res.single() * np.exp(4 * cornerLogZ + 2 * hEdgeLogZ + 2 * vEdgeLogZ)
+            return res.single() * xplib.xp.exp(4 * cornerLogZ + 2 * hEdgeLogZ + 2 * vEdgeLogZ)
     
 
         
