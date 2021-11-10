@@ -24,8 +24,8 @@ import CTL
 
 def example():
     shapeA = (300, 400, 50)
-    shapeB = (300, 60)
-    shapeC = (400, 60, 50)
+    shapeB = (300, 600)
+    shapeC = (400, 600, 50)
     a = Tensor(labels = ['a3', 'b4', 'c5'], data = cp.ones(shapeA))
     b = Tensor(labels = ['a3', 'd6'], data = cp.ones(shapeB))
     c = Tensor(labels = ['e4', 'd6', 'c5'], data = cp.ones(shapeC))
@@ -61,5 +61,5 @@ def example():
 
 if __name__ == '__main__':
     CTL.setXP(cp)
-    for _ in range(10):
+    for _ in range(5):
         example()
