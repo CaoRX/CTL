@@ -1,4 +1,5 @@
-import numpy as np 
+# import numpy as np 
+import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.diagonalTensor import DiagonalTensor
@@ -72,7 +73,7 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 
         # aMatrix = ta.toMatrix(rows = ta.legs, cols = [])
         # bMatrix = tb.toMatrix(rows = [], cols = tb.legs)
-        # data = np.matmul(aMatrix, bMatrix)
+        # data = xplib.xp.matmul(aMatrix, bMatrix)
 
         labels = ta.labels + tb.labels 
         shape = ta.shape + tb.shape
@@ -87,21 +88,21 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
             if (tensorLikeContract):
                 return Tensor(labels = labels, data = None, shape = shape, legs = legs, tensorLikeFlag = True)
             else:
-                data = np.zeros(shape, dtype = ta.a.dtype)
+                data = xplib.xp.zeros(shape, dtype = ta.a.dtype)
                 einsumStr = ('j' * ta.dim) + '...->j...'
-                outerData = np.multiply.outer(ta.a, tb.a)
-                np.einsum(einsumStr, data)[...] = outerData
+                outerData = xplib.xp.multiply.outer(ta.a, tb.a)
+                xplib.xp.einsum(einsumStr, data)[...] = outerData
             return Tensor(labels = labels, data = data, shape = shape, legs = legs)
         else:
             if (tensorLikeContract):
                 return Tensor(labels = labels, data = None, shape = shape, legs = legs, tensorLikeFlag = True)
             else:
-                return Tensor(labels = labels, data = np.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
+                return Tensor(labels = labels, data = xplib.xp.multiply.outer(ta.a, tb.a), shape = shape, legs = legs)
 
         # aVector = ta.toVector()
         # bVector = tb.toVector()
-        # data = np.outer(aVector, bVector)
-        # data = np.reshape(data, shape)
+        # data = xplib.xp.outer(aVector, bVector)
+        # data = xplib.xp.reshape(data, shape)
 
         # return Tensor(labels = labels, data = data, legs = legs)
 
@@ -120,14 +121,14 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
         if (len(newLegs) != 0):
             return DiagonalTensor(shape = newShape, data = ta.a * tb.a, legs = newLegs)
         else:
-            return DiagonalTensor(data = np.array(np.sum(ta.a * tb.a)))
+            return DiagonalTensor(data = xplib.xp.array(xplib.xp.sum(ta.a * tb.a)))
     
     if (ta.diagonalFlag):
         if (tensorLikeContract):
             return Tensor(shape = newShape, data = None, legs = newLegs, tensorLikeFlag = True)
         # then tb is not diagonal tensor
         # 1. calculate the core with broadcast
-        # 2. calculate the real tensor with np.outer
+        # 2. calculate the real tensor with xplib.xp.outer
         # how to broadcast?
 
         # we need to broadcast from the end(instead of the first dimension)
@@ -143,23 +144,23 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 
         einsumStr = '...' + ('j' * dim) + '->...j'
         # print('ta.a = {}, tb.a = {}'.format(ta.a, tb.a))
-        data = np.einsum(einsumStr, tb.a) * ta.a
+        data = xplib.xp.einsum(einsumStr, tb.a) * ta.a
         # print('einsum str = {}'.format(einsumStr))
-        # print('einsum b = {}'.format(np.einsum(einsumStr, tb.a)))
+        # print('einsum b = {}'.format(xplib.xp.einsum(einsumStr, tb.a)))
         # print('data = {}'.format(data))
 
         if (remADim == 0):
-            newData = np.sum(data, axis = -1)
+            newData = xplib.xp.sum(data, axis = -1)
         else:
             # print('remADim = {}, data.shape = {}'.format(remADim, data.shape))
-            newData = np.zeros(data.shape + (data.shape[-1],) * (remADim - 1), dtype = data.dtype)
+            newData = xplib.xp.zeros(data.shape + (data.shape[-1],) * (remADim - 1), dtype = data.dtype)
             # print('newData.shape = {}'.format(newData.shape))
             
             einsumDiagStr = '...' + ('j' * (remADim)) + '->...j'
-            np.einsum(einsumDiagStr, newData)[...] = data
-            # newData = np.einsum(eimsumDiagStr, data)
+            xplib.xp.einsum(einsumDiagStr, newData)[...] = data
+            # newData = xplib.xp.einsum(eimsumDiagStr, data)
             # print(funcs.ndEye(remADim - 1, l))
-            # newData = np.multiply.outer(data, funcs.ndEye(remADim - 1, l))
+            # newData = xplib.xp.multiply.outer(data, funcs.ndEye(remADim - 1, l))
             # print('newData = {}'.format(newData))
         # print('newData = {}'.format(newData))
         # print('shape = {}, data = {}, legs = {}'.format(newShape, newData, newLegs))
@@ -173,9 +174,9 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
 
     dataA = ta.toMatrix(rows = None, cols = contractALegs)
     dataB = tb.toMatrix(rows = contractBLegs, cols = None)
-    newData = np.matmul(dataA, dataB)
+    newData = xplib.xp.matmul(dataA, dataB)
 
-    newData = np.reshape(newData, newShape)
+    newData = xplib.xp.reshape(newData, newShape)
 
     return Tensor(shape = newShape, data = newData, legs = newLegs)
 
@@ -202,13 +203,13 @@ def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
     """
     funcName = "CTL.tensor.contract.contract.truncate"
 
-    assert (ta.xp == tb.xp), funcs.errorMessage("Truncation cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
+    # assert (ta.xp == tb.xp), funcs.errorMessage("Truncation cannot accept two tensors with different xp: {} and {} gotten.".format(ta.xp, tb.xp), location = funcName)
 
     assert (ta.tensorLikeFlag == tb.tensorLikeFlag), funcs.errorMessage('two tensors to be merged must be either Tensor or TensorLike simultaneously, {} and {} obtained.'.format(ta, tb), location = funcName)
 
     tensorLikeFlag = ta.tensorLikeFlag
 
-    xp = ta.xp
+    # xp = ta.xp
     ta, tb = mergeLink(ta, tb, bondName = bondName, renameWarning = renameWarning)
     if (chi is None):
         # no need for truncation
@@ -252,7 +253,7 @@ def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
 
         mat = matA @ matB 
 
-        u, s, vh = xp.linalg.svd(mat)
+        u, s, vh = xplib.xp.linalg.svd(mat)
 
         chi = min([chi, funcs.nonZeroElementN(s), matA.shape[0], matB.shape[1]])
         u = u[:, :chi]
@@ -263,7 +264,7 @@ def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
         vOutLeg = Leg(tensor = None, dim = chi, name = bondNameB)
         # print(legA, legB)
 
-        sqrtS = xp.sqrt(s)
+        sqrtS = xplib.xp.sqrt(s)
         uS = funcs.rightDiagonalProduct(u, sqrtS)
         vS = funcs.leftDiagonalProduct(vh, sqrtS)
 

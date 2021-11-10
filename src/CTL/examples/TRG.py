@@ -1,3 +1,4 @@
+import CTL.funcs.xplib as xplib
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.contract import contractTwoTensors
@@ -6,7 +7,7 @@ from CTL.tensor.contract.contractExp import triangleContractFTN, makeTriangleTen
 from CTL.tensor.contract.contractExp import squareContractOutFTN
 from CTL.funcs.decompose import SVDDecomposition
 from CTL.tensornetwork.tensordict import TensorDict
-import numpy as np
+# import numpy as np
 
 # Tensor Renormalization Group
 
@@ -22,7 +23,7 @@ class TriangleTRG:
         self.prepareInitialTensor()
     
     def prepareInitialTensor(self):
-        a = np.zeros((2, 2, 2), dtype = np.float64)
+        a = xplib.xp.zeros((2, 2, 2), dtype = xplib.xp.float64)
         a[(0, 0, 0)] = 1.0
         a[(0, 0, 1)] = a[(0, 1, 0)] = a[(1, 0, 0)] = self.alpha 
         self.a = makeTriangleTensor(a)
@@ -73,8 +74,8 @@ class TriangleTRG:
         # print(u.shape, v.shape)
         # print(iTensor.shape)
 
-        u = np.reshape(u, (a2Dim, b2Dim, u.shape[1]))
-        v = np.reshape(v, (a3Dim, b3Dim, v.shape[1]))
+        u = xplib.xp.reshape(u, (a2Dim, b2Dim, u.shape[1]))
+        v = xplib.xp.reshape(v, (a3Dim, b3Dim, v.shape[1]))
 
         uTensor = makeTriangleTensor(u, labels = ['2', '3', '1'])
         vTensor = makeTriangleTensor(v, labels = ['2', '3', '1'])
@@ -97,9 +98,9 @@ class TriangleTRG:
         # print(stepN, len(self.aNorms))
         for i in range(stepN):
             dof = self.aArchive[i].degreeOfFreedom * self.bArchive[i].degreeOfFreedom
-            accumulateLogZ += np.log(self.aNorms[i] * self.bNorms[i]) / dof
+            accumulateLogZ += xplib.xp.log(self.aNorms[i] * self.bNorms[i]) / dof
             TNTrace = triangleTensorTrace(self.aArchive[i], self.bArchive[i])
-            currLogZ = accumulateLogZ + np.log(TNTrace.single()) / dof
+            currLogZ = accumulateLogZ + xplib.xp.log(TNTrace.single()) / dof
             # contraction: 1A + 1B
             res.append(currLogZ)
 
@@ -193,16 +194,16 @@ class SquareTRG:
         # print(stepN, len(self.aNorms))
         for i in range(stepN):
             dof = self.aArchive[i].degreeOfFreedom
-            accumulateLogZ += np.log(self.aNorms[i]) / dof
+            accumulateLogZ += xplib.xp.log(self.aNorms[i]) / dof
             # TNTrace = triangleTensorTrace(self.aArchive[i], self.bArchive[i])
             TNTrace = self.aArchive[i].trace(rows = ['u', 'l'], cols = ['d', 'r'])
             # print(self.aNorms[i], TNTrace, dof)
-            currLogZ = accumulateLogZ + np.log(TNTrace) / dof
+            currLogZ = accumulateLogZ + xplib.xp.log(TNTrace) / dof
             # contraction: 1A + 1B
             res.append(currLogZ)
             # print(currLogZ)
 
-        return np.array(res)
+        return xplib.xp.array(res)
 
 
 

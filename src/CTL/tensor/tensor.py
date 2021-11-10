@@ -1,6 +1,7 @@
 from CTL.tensorbase.tensorbase import TensorBase 
 import CTL.funcs.funcs as funcs
-import numpy as np 
+# import numpy as np 
+import CTL.funcs.xplib as xplib
 from copy import deepcopy
 from CTL.tensor.leg import Leg
 import warnings
@@ -34,8 +35,6 @@ class Tensor(TensorBase):
         Whether this tensor is diagonal tensor or not. Diagonal tensors can behave better in efficiency for tensor contractions, so we deal with them with child class DiagonalTensor, check the details in CTL.tensor.diagonalTensor.
     tensorLikeFlag : bool, default False
         If True, then the tensor is a "TensorLike": will not contain any data, but behave just like a tensor.
-    xp : object, default numpy
-		The numpy-like library for numeric functions.
 
     Attributes
     ----------
@@ -86,7 +85,7 @@ class Tensor(TensorBase):
         bool
             Whether the dtype of the tensor is float(float16, float32, float64, ...) or not.
         """
-        return self.xp.issubdtype(self.dtype, self.xp.floating)
+        return xplib.xp.issubdtype(self.dtype, xplib.xp.floating)
     
     def deduceDataType(self, data, dtype):
         if data is None:
@@ -94,14 +93,13 @@ class Tensor(TensorBase):
         else:
             return data.dtype
 
-    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False, xp = np, dtype = np.float64):
+    def __init__(self, shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False, tensorLikeFlag = False, dtype = xplib.xp.float64):
         super().__init__(None)
 
         # only data needs a copy
         # labels and shape: they are virtual, will be saved in legs
         self.dtype = self.deduceDataType(data = data, dtype = dtype)
         self.tensorLikeFlag = tensorLikeFlag
-        self.xp = xp
         if (diagonalFlag):
             self.diagonalFlag = True 
             return 
@@ -275,13 +273,13 @@ class Tensor(TensorBase):
             return None
         if (data is None):
             if self.isFloatTensor():
-                data = self.xp.random.random_sample(shape)
+                data = xplib.xp.random.random_sample(shape)
             else:
-                data = self.xp.random.random_sample(shape) + self.xp.random.random_sample(shape) * 1.0j
+                data = xplib.xp.random.random_sample(shape) + xplib.xp.random.random_sample(shape) * 1.0j
         elif (data.shape != shape):
-            data = self.xp.copy(data.reshape(shape))
+            data = xplib.xp.copy(data.reshape(shape))
         else:
-            data = self.xp.copy(data)
+            data = xplib.xp.copy(data)
         return data
             
     def deduction(self, legs, shape, labels, data, isTensorLike = False):
@@ -547,7 +545,7 @@ class Tensor(TensorBase):
 
     def moveLegsToFront(self, legs):
         """
-        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use self.xp.moveaxis to modify the data if this is not a TensorLike object.
+        Change the orders of legs: move a given set of legs to the front while not modifying the relative order of other legs. Use xplib.xp.moveaxis to modify the data if this is not a TensorLike object.
 
         Parameters
         ----------
@@ -575,7 +573,7 @@ class Tensor(TensorBase):
         # print(self.labels)
         self.legs = movedLegs + self.legs 
         if (not self.tensorLikeFlag):
-            self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+            self.a = xplib.xp.moveaxis(self.a, moveFrom, moveTo)
 
     def toVector(self):
         """
@@ -589,7 +587,7 @@ class Tensor(TensorBase):
         """
 
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
-        return self.xp.copy(self.xp.ravel(self.a))
+        return xplib.xp.copy(xplib.xp.ravel(self.a))
     
     def toMatrix(self, rows = None, cols = None):
         """
@@ -633,8 +631,8 @@ class Tensor(TensorBase):
         moveFrom = rowIndices + colIndices
         moveTo = list(range(len(moveFrom)))
 
-        data = self.xp.moveaxis(self.xp.copy(self.a), moveFrom, moveTo)
-        data = self.xp.reshape(data, (rowTotalSize, colTotalSize))
+        data = xplib.xp.moveaxis(xplib.xp.copy(self.a), moveFrom, moveTo)
+        data = xplib.xp.reshape(data, (rowTotalSize, colTotalSize))
         return data
 
     def complementLegs(self, legs):
@@ -891,7 +889,7 @@ class Tensor(TensorBase):
         # # print(self.labels)
         # self.legs = movedLegs + self.legs 
         # if (not self.tensorLikeFlag):
-        #     self.a = self.xp.moveaxis(self.a, moveFrom, moveTo)
+        #     self.a = xplib.xp.moveaxis(self.a, moveFrom, moveTo)
 
     # def outProduct(self, labelList, newLabel):
     #     self.moveLabelsToFront(labelList)
@@ -903,7 +901,7 @@ class Tensor(TensorBase):
     #         for leg in self.legs[:n]:
     #             newDim *= leg.dim
     #     else:
-    #         self.a = self.xp.reshape(self.a, newShape)
+    #         self.a = xplib.xp.reshape(self.a, newShape)
     #         newDim = self.a.shape[0]
     #     self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
     #     # return the new leg, for usage of wider usage
@@ -941,7 +939,7 @@ class Tensor(TensorBase):
             for leg in self.legs[:n]:
                 newDim *= leg.dim
         else:
-            self.a = self.xp.reshape(self.a, newShape)
+            self.a = xplib.xp.reshape(self.a, newShape)
             newDim = self.a.shape[0]
         self.legs = [Leg(self, newDim, newLabel)] + self.legs[n:]
         # return the new leg, for usage of wider usage
@@ -969,7 +967,7 @@ class Tensor(TensorBase):
             The norm of data.
         """
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have norm since no data contained.', 'Tensor.norm')
-        return self.xp.linalg.norm(self.a)
+        return xplib.xp.linalg.norm(self.a)
 
     def trace(self, rows = None, cols = None):
         """
@@ -990,7 +988,7 @@ class Tensor(TensorBase):
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike do not have trace since no data contained.', 'Tensor.trace')
         mat = self.toMatrix(rows = rows, cols = cols)
         assert (mat.shape[0] == mat.shape[1]), "Error: Tensor.trace must have the same dimension for cols and rows, but shape {} gotten.".format(mat.shape)
-        return self.xp.trace(mat)
+        return xplib.xp.trace(mat)
 
     def single(self):
         """
@@ -1090,7 +1088,7 @@ class Tensor(TensorBase):
             warnings.warn(funcs.warningMessage("leg {} to be summed out is connected to bond {}.".format(leg, leg.bond), location = 'Tensor.sumOutLeg'), RuntimeWarning)
         
         idx = self.legs.index(leg)
-        self.a = self.xp.sum(self.a, axis = idx)
+        self.a = xplib.xp.sum(self.a, axis = idx)
         self.legs = self.legs[:idx] + self.legs[(idx + 1):]
     
     def sumOutLegByLabel(self, label, backward = False):

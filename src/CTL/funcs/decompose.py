@@ -1,7 +1,8 @@
-import numpy as np 
+# import numpy as np 
+import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
 
-def SVDDecomposition(a, chi, returnSV = False, errorOrder = 2, np = np):
+def SVDDecomposition(a, chi, returnSV = False, errorOrder = 2):
     """
     SVD decomposition of a given matrix, keep at most chi singular values. Singular values are divided into square roots and go to each side.
 
@@ -15,8 +16,6 @@ def SVDDecomposition(a, chi, returnSV = False, errorOrder = 2, np = np):
         If True, then return two isometries with singular values, otherwise(by default) return two matrices, product of which gives an approximation of original matrix.
     errorOrder : int, default 2
         The order of error in singular values. The error will be calculated as 1 - (s[:chi] ** errorOrder).sum() / (s ** errorOrder).sum().
-    np : object, default numpy
-		The numpy-like library for numeric functions.
 
     Returns
     uRes : 2-D ndarray of float
@@ -29,14 +28,14 @@ def SVDDecomposition(a, chi, returnSV = False, errorOrder = 2, np = np):
         The loss of truncating singular values: sum(square of truncated values) / sum(square of all values).
     """
 
-    u, s, vh = np.linalg.svd(a)
+    u, s, vh = xplib.xp.linalg.svd(a)
     
     sLen = len(s)
     if (chi >= sLen):
         error = 0.0
         chi = sLen
     else:
-        error = np.sum(s[chi:] ** errorOrder) / np.sum(s ** errorOrder)
+        error = xplib.xp.sum(s[chi:] ** errorOrder) / xplib.xp.sum(s ** errorOrder)
 
     # print('error = {}'.format(error))
 
@@ -47,7 +46,7 @@ def SVDDecomposition(a, chi, returnSV = False, errorOrder = 2, np = np):
     if (returnSV):
         return u, s, vh, error
 
-    sqrtSMat = np.diag(np.sqrt(s))
+    sqrtSMat = xplib.xp.diag(xplib.xp.sqrt(s))
 
     uRes = u @ sqrtSMat
     vRes = funcs.transposeConjugate(sqrtSMat @ vh)

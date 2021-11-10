@@ -1,6 +1,8 @@
+import CTL.funcs.xplib as xplib
 from CTL.funcs.graph import UndirectedGraph
 import CTL.funcs.funcs as funcs
-import numpy as np
+# import numpy as np
+
 import warnings
 
 class TensorGraph(UndirectedGraph):
@@ -161,7 +163,7 @@ class TensorGraph(UndirectedGraph):
             for l, s in zip(edgesA + edgesB, shapeA + shapeB):
                 if (l in clb):
                     if (not diagonal):
-                        res *= np.sqrt(s)
+                        res *= xplib.xp.sqrt(s)
                     # if single diagonal: then the cost should be output shape
                 else:
                     res *= s 

@@ -1,6 +1,7 @@
 # calculation of MPS
 # given a tensor, return the MPS by taking each bond as an MPS tensor
 
+import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors, merge
 from CTL.tensor.tensor import Tensor
@@ -426,7 +427,7 @@ def createMPSFromTensor(tensor, chi = 16):
     funcName = 'CTL.examples.MPS.createMPSFromTensor'
 
     legs = [leg for leg in tensor.legs]
-    xp = tensor.xp 
+    # xp = tensor.xp 
 
     n = len(legs)
     assert (n > 0), funcs.errorMessage("cannot create MPS from 0-D tensor {}.".format(tensor), location = funcName)
@@ -435,13 +436,13 @@ def createMPSFromTensor(tensor, chi = 16):
         warnings.warn(funcs.warningMessage("creating MPS for 1-D tensor {}.".format(tensor), location = funcName), RuntimeWarning)
         return FreeBoundaryMPS([tensor], chi = chi)
 
-    a = xp.ravel(tensor.toTensor(labels = None))
+    a = xplib.xp.ravel(tensor.toTensor(labels = None))
     
     lastDim = -1
     tensors = []
     lastRightLeg = None
     for i in range(n - 1):
-        u, v = matrixSchimdtDecomposition(a, dim = legs[i].dim, chi = chi, xp = xp)
+        u, v = matrixSchimdtDecomposition(a, dim = legs[i].dim, chi = chi)
         leg = legs[i]
         if (i == 0):
             dim1 = u.shape[1]

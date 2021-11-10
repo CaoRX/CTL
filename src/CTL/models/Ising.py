@@ -1,11 +1,12 @@
 # make tensors for Ising model
+import CTL.funcs.xplib as xplib
 
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.diagonalTensor import DiagonalTensor
 import CTL.funcs.funcs as funcs
 from CTL.funcs.graph import UndirectedGraph
 from CTL.tensor.contract.link import makeLink
-import numpy as np 
+# import numpy as np 
 
 def squareTensorMeasure(idx, obs = None):
     """
@@ -68,7 +69,7 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
     """
     # tensor for square Ising model
     # use the simplest way to build on plaquettes, and linked with domain wall
-    data = np.zeros((2, 2, 2, 2), dtype = np.float64)
+    data = xplib.xp.zeros((2, 2, 2, 2), dtype = xplib.xp.float64)
     for s in range(16):
         idx = funcs.intToBitTuple(s, 4)
         localE = 0.0
@@ -85,8 +86,8 @@ def squareIsingTensor(beta, obs = None, symmetryBroken = 0.0):
                 localE += 1.0
         
         # if (idxSum % 2 == 0):
-        data[idx] = squareTensorMeasure(idx, obs) * np.exp(-beta * localE)
-        data[idx] *= np.exp(symmetryBroken * squareTensorMeasure(idx, 'M'))
+        data[idx] = squareTensorMeasure(idx, obs) * xplib.xp.exp(-beta * localE)
+        data[idx] *= xplib.xp.exp(symmetryBroken * squareTensorMeasure(idx, 'M'))
         # else:
         #     data[idx] = 0.0
     # print(data)
@@ -117,7 +118,7 @@ def plaquetteIsingTensor(weight, diamondForm = False):
         assert len(weight) == 2, funcs.errorMessage('Only float or (float, float) is accepted by {}, {} obtained.'.format(funcName, weight), location = funcName)
         weight = list(weight)
 
-    data = np.zeros((2, 2, 2, 2), dtype = np.float64)
+    data = xplib.xp.zeros((2, 2, 2, 2), dtype = xplib.xp.float64)
     # ru, rd, ld, lu
     for s in range(16):
         idx = funcs.intToBitTuple(s, 4)
@@ -130,7 +131,7 @@ def plaquetteIsingTensor(weight, diamondForm = False):
             else:
                 localE += weight[i % 2]
         
-        data[idx] = np.exp(-localE)
+        data[idx] = xplib.xp.exp(-localE)
 
     labels = ['ru', 'rd', 'ld', 'lu']
     if diamondForm:
@@ -153,11 +154,11 @@ def infiniteIsingExactM(T, V = 1.0):
     float
         The exact M at temperature T, when interaction is V. For T higher than T_c, it will return 0, otherwise from the exact solution of square lattice Ising model.
     """
-    criticalT = 2.0 / np.log(1.0 + np.sqrt(2))
+    criticalT = 2.0 / xplib.xp.log(1.0 + xplib.xp.sqrt(2))
     if (T / V > criticalT):
         return 0.0
     else:
-        return (1.0 - np.sinh(2 * V / T) ** (-4)) ** (0.125)
+        return (1.0 - xplib.xp.sinh(2 * V / T) ** (-4)) ** (0.125)
 
 def IsingEdgeMatrix(betaJ):
     """
@@ -173,9 +174,9 @@ def IsingEdgeMatrix(betaJ):
     ndarray of (2, 2)
         The local edge tensor for one site (diagonal) tensor to absorb.
     """
-    diag = np.sqrt(np.cosh(betaJ) * 0.5) + np.sqrt(np.sinh(betaJ) * 0.5)
-    offDiag = np.sqrt(np.cosh(betaJ) * 0.5) - np.sqrt(np.sinh(betaJ) * 0.5)
-    return np.array([[diag, offDiag], [offDiag, diag]])
+    diag = xplib.xp.sqrt(xplib.xp.cosh(betaJ) * 0.5) + xplib.xp.sqrt(xplib.xp.sinh(betaJ) * 0.5)
+    offDiag = xplib.xp.sqrt(xplib.xp.cosh(betaJ) * 0.5) - xplib.xp.sqrt(xplib.xp.sinh(betaJ) * 0.5)
+    return xplib.xp.array([[diag, offDiag], [offDiag, diag]])
 
 def IsingSiteTensor(betaJ, dim = 4, labels = None):
     """
@@ -198,14 +199,14 @@ def IsingSiteTensor(betaJ, dim = 4, labels = None):
     assert (funcs.isRealNumber(betaJ) or (len(betaJ) == dim)), funcs.errorMessage("betaJ {} do not have required dim {}.".format(betaJ, dim))
     assert ((labels is None) or (len(labels) == dim)), funcs.errorMessage("labels {} do not have required dim {}.".format(labels, dim))
 
-    a = np.array([1.0, 1.0])
+    a = xplib.xp.array([1.0, 1.0])
     a = funcs.diagonalNDTensor(a, dim = dim)
     if (funcs.isRealNumber(betaJ)):
         betaJ = [betaJ] * dim
     # edgeMat = IsingEdgeMatrix(betaJ)
     for i in range(dim):
         edgeMat = IsingEdgeMatrix(betaJ[i])
-        a = np.tensordot(a, edgeMat, (0, 0))
+        a = xplib.xp.tensordot(a, edgeMat, (0, 0))
         # print(a)
     return Tensor(data = a, labels = labels)
 
@@ -278,7 +279,7 @@ def getIsingWeight(g, S):
             E -= edge.weight 
         else:
             E += edge.weight 
-    return np.exp(-E)
+    return xplib.xp.exp(-E)
 
 def exactZFromGraphIsing(g):
     """
@@ -304,6 +305,6 @@ def exactZFromGraphIsing(g):
     #     if (S % 10000 == 0):
     #         print('{}/{}'.format(S, 1 << n))
     #     res += getIsingWeight(g, S)
-    res = np.sum(np.array([getIsingWeight(g, S) for S in range(1 << n)]))
+    res = xplib.xp.sum(xplib.xp.array([getIsingWeight(g, S) for S in range(1 << n)]))
 
     return res
