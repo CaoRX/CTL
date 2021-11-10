@@ -1163,7 +1163,12 @@ def nonZeroElementN(s, eps = 1e-10):
     int
         The number of elements whose absolute value is over eps.
     """
-    return xplib.xp.count_nonzero(xplib.xp.abs(s) > eps)
+    res = xplib.xp.count_nonzero(xplib.xp.abs(s) > eps)
+
+    # polyfill for cupy, since cupy will consider this result as 0-d scalar
+    if (type(res) != int):
+        res = int(xplib.xp.asnumpy(res)[()])
+    return res
 
 def rightDiagonalProduct(a, diag):
     """
