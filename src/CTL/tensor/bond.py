@@ -27,7 +27,8 @@ class Bond:
     def __init__(self, leg1, leg2, name = None):
         assert (isinstance(leg1, Leg) and (isinstance(leg2, Leg))), errorMessage(err = "Bond must be initialized with 2 Leg elements.", location = 'Bond.__init__')
         assert (leg1.dim == leg2.dim), errorMessage(err = "{} and {} do not share the same dimension.".format(leg1, leg2), location = 'Bond.__init__')
-        self.name = getBondName(name)
+        # self.name = getBondName(name)
+        self.name = name
         self.legs = (leg1, leg2)
         leg1.bond = self 
         leg2.bond = self
