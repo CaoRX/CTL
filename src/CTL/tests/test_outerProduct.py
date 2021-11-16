@@ -3,8 +3,8 @@ from CTL.tests.packedTest import PackedTest
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractTensorList
-from CTL.tensor.contract.contract import contractTwoTensors
 from CTL.tensor.diagonalTensor import DiagonalTensor
+from CTL.tensor.contract.contract import contractTwoTensors
 import CTL.funcs.funcs as funcs
 
 import numpy as np 

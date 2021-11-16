@@ -6,7 +6,7 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor, makeSquareOutTensor
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import contractTwoTensors, merge, shareBonds
+from CTL.tensor.contract.contract import merge, shareBonds
 from CTL.tensor.contract.optimalContract import contractAndCostWithSequence, generateOptimalSequence, contractCost
 
 import numpy as np 
@@ -88,7 +88,7 @@ class TestContract(PackedTest):
         a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'], tensorLikeFlag = True)
         b = DiagonalTensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
-        res = contractTwoTensors(a, b)
+        res = a @ b
         self._testIsTensorLike(res)
         self.assertTupleEqual(res.shape, (2, 2, 2))
         self.assertEqual(res.dim, 3)
@@ -131,7 +131,7 @@ class TestContract(PackedTest):
         makeLink('a1', 'b1', a, b)
 
         def contractBetweenTensorAndTensorLike():
-            _ = contractTwoTensors(a, b)
+            _ = a @ b
         
         self.assertRaises(TypeError, contractBetweenTensorAndTensorLike)
     
@@ -144,14 +144,14 @@ class TestContract(PackedTest):
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
         self._testIsTensorLike(res1)
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = True)
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
         self._testIsTensorLike(res2)
 
         self.assertTrue(funcs.compareLists(list(res1.labels), ['a2']))
@@ -166,14 +166,14 @@ class TestContract(PackedTest):
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a2', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
         self._testIsTensorLike(res1)
 
         a = Tensor(shape = (2, 2), labels = ['a1', 'a2'], data = aTensorData, tensorLikeFlag = True)
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a2', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
         self._testIsTensorLike(res2)
 
         self.assertTrue(funcs.compareLists(res1.labels, []))
@@ -188,14 +188,14 @@ class TestContract(PackedTest):
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
         self._testIsTensorLike(res1)
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = True)
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
         self._testIsTensorLike(res2)
         
 
@@ -214,14 +214,14 @@ class TestContract(PackedTest):
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
         self._testIsTensorLike(res1)
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = True)
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
         self._testIsTensorLike(res2)
 
         # print('ndEye(2, 2) = {}'.format(funcs.ndEye(2, 2)))
@@ -243,14 +243,14 @@ class TestContract(PackedTest):
         b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
         self._testIsTensorLike(res1)
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = True)
         b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = True)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
         self._testIsTensorLike(res2)
 
         # print('ndEye(2, 2) = {}'.format(funcs.ndEye(2, 2)))

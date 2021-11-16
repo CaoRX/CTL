@@ -319,5 +319,5 @@ def selfTrace(tensor):
     for leg1, leg2 in zip(a.legs, b.legs):
         makeLink(leg1, leg2)
 
-    return contractTwoTensors(a, b)
+    return a @ b
     

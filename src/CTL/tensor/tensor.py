@@ -424,6 +424,9 @@ class Tensor(TensorBase):
             nameStr = ''
         return '{}({}shape = {}, labels = {}{})\n'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
+    def __matmul__(self, b):
+        return contractTwoTensors(ta = self, tb = b)
+
     def bondDimension(self):
         """
         Bond dimension of the tensor. Work for the case when all dimensions are the same, otherwise, generate a warning message and return the first dimension.
@@ -1119,3 +1122,4 @@ def TensorLike(shape = None, labels = None, data = None, degreeOfFreedom = None,
     
     return Tensor(shape = shape, labels = labels, data = data, degreeOfFreedom = degreeOfFreedom, name = name, legs = legs, diagonalFlag = diagonalFlag, tensorLikeFlag = True)
 
+from CTL.tensor.contract.contract import contractTwoTensors

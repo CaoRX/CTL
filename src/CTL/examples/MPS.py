@@ -113,13 +113,13 @@ class FreeBoundaryMPS:
     #     if (direct == 0):
     #         for i in range(self.n - 1):
     #             u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i + 1], self.chi)
-    #             sv = contractTwoTensors(s, v) 
+    #             sv = s @ v 
     #             self._tensors[i] = u
     #             self._tensors[i + 1] = sv
     #     else:
     #         for i in range(self.n - 1, 0, -1):
     #             u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i - 1], self.chi)
-    #             sv = contractTwoTensors(s, v) 
+    #             sv = s @ v 
     #             self._tensors[i] = u
     #             self._tensors[i - 1] = sv
 
@@ -141,7 +141,7 @@ class FreeBoundaryMPS:
             # print('canonicalizing {} to {}'.format(i, i - 1))
             u, s, v = SchimdtDecomposition(self._tensors[i], self._tensors[i - 1], self.chi)
             # print('isometry = {}'.format(isIsometry(u, ['o'])))
-            sv = contractTwoTensors(s, v) 
+            sv = contractTwoTensors(s, v)
             self._tensors[i] = u
             self._tensors[i - 1] = sv
 
