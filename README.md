@@ -22,6 +22,18 @@ Tensor(shape = (3, 3), labels = ['a', 'b'])
 # create a tensor with given labels
 >>> Tensor(data = np.zeros((3, 3)), labels = ['up', 'down'])
 Tensor(shape = (3, 3), labels = ['up', 'down'])
+
+# make a link between two tensors
+>>> from CTL.tensor.contract.link import makeLink
+>>> shapeA = (3, 4, 5)
+>>> shapeB = (5, 4)
+>>> a = Tensor(labels = ['a3', 'a4', 'a5'], data = np.ones(shapeA))
+>>> b = Tensor(labels = ['b5', 'b4'], data = np.ones(shapeB))
+>>> bond = makeLink('a4', 'b4', a, b)
+>>> c = a @ b
+>>> c
+Tensor(shape = (3, 5, 5), labels = ['a3', 'a5', 'b5'])
+
 ```
 
 ## GPU support
