@@ -3,7 +3,7 @@ from CTL.tests.packedTest import PackedTest
 from CTL.tensor.tensor import Tensor
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import contractTwoTensors, merge, shareBonds
+from CTL.tensor.contract.contract import  merge, shareBonds
 
 import numpy as np 
 # from ncon import ncon

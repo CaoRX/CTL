@@ -4,7 +4,6 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.contract.link import makeLink
 from CTL.tensor.contract.optimalContract import contractTensorList, generateOptimalSequence, contractCost
-from CTL.tensor.contract.contract import contractTwoTensors
 from CTL.tensor.contract.optimalContract import makeTensorGraph, contractAndCostWithSequence
 import CTL.funcs.funcs as funcs
 from CTL.tensor.leg import Leg
@@ -101,7 +100,7 @@ class TestDiagonalTensor(PackedTest):
         a = DiagonalTensor(shape = (2, 2), labels = ['a1', 'a2'])
         b = DiagonalTensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'])
         makeLink('a1', 'b1', a, b)
-        res = contractTwoTensors(a, b)
+        res = a @ b
         self.assertTupleEqual(res.shape, (2, 2, 2))
         self.assertEqual(res.dim, 3)
         self.assertTrue(res.diagonalFlag)
@@ -305,13 +304,13 @@ class TestDiagonalTensor(PackedTest):
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData)
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
 
         self.assertTrue(funcs.compareLists(list(res1.labels), ['a2']))
         self.assertTrue(funcs.compareLists(list(res2.labels), ['a2']))
@@ -325,13 +324,13 @@ class TestDiagonalTensor(PackedTest):
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a2', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
 
         a = Tensor(shape = (2, 2), labels = ['a1', 'a2'], data = aTensorData)
         b = Tensor(shape = (2, 2), labels = ['b1', 'b2'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a2', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
 
         self.assertTrue(funcs.compareLists(res1.labels, []))
         self.assertTrue(funcs.compareLists(res2.labels, []))
@@ -345,13 +344,13 @@ class TestDiagonalTensor(PackedTest):
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData)
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
 
         self.assertTrue(funcs.compareLists(list(res1.labels), ['a2', 'b3']))
         self.assertTrue(funcs.compareLists(list(res2.labels), ['a2', 'b3']))
@@ -368,13 +367,13 @@ class TestDiagonalTensor(PackedTest):
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData)
         b = Tensor(shape = (2, 2, 2), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
 
         # print('ndEye(2, 2) = {}'.format(funcs.ndEye(2, 2)))
         # print('ndEye(1, 2) = {}'.format(funcs.ndEye(1, 2)))
@@ -395,13 +394,13 @@ class TestDiagonalTensor(PackedTest):
         b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res1 = contractTwoTensors(a, b)
+        res1 = a @ b
 
         a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData)
         b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData)
         makeLink('a1', 'b1', a, b)
         # makeLink('a3', 'b2', a, b)
-        res2 = contractTwoTensors(b, a)
+        res2 = b @ a
 
         # print('ndEye(2, 2) = {}'.format(funcs.ndEye(2, 2)))
         # print('ndEye(1, 2) = {}'.format(funcs.ndEye(1, 2)))
