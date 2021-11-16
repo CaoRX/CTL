@@ -21,6 +21,18 @@ from CTL.examples.HOTRG import HOTRG
 import numpy as np  
 import CTL
 
+def twoTensorsContraction():
+    shapeA = (3, 4, 5)
+    shapeB = (5, 4)
+
+    a = Tensor(labels = ['a3', 'a4', 'a5'], data = np.ones(shapeA))
+    b = Tensor(labels = ['b5', 'b4'], data = np.ones(shapeB))
+
+    makeLink('a4', 'b4', a, b)
+    makeLink('a5', 'b5', a, b)
+    c = a @ b 
+    print(c)
+
 def simplestExample():
     shapeA = (300, 4, 5)
     shapeB = (300, 6)
@@ -84,3 +96,4 @@ if __name__ == '__main__':
     CTL.setXP(np)
     simplestExample()
     HOTRGImpurityExample(beta = 0.6)
+    twoTensorsContraction()
