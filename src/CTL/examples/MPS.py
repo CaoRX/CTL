@@ -252,6 +252,76 @@ class FreeBoundaryMPS:
     def toTensor(self):
         return contractWithSequence(self._tensors)
 
+    def copyOfTensors(self):
+        tensors = [self.getTensor(i).copy() for i in range(self.n)]
+        for i in range(self.n - 1):
+            makeLink('r', 'l', tensors[i], tensors[i + 1])
+        return tensors
+
+def makeRandomMPS(n, virtualDim, physicalDim, chi = -1):
+    '''
+    Create an MPS consisting of n tensors, each has one physical leg.
+
+    Parameters
+    ----------
+    n : int
+        Number of tensors(physical legs) in MPS.
+    virtualDim : int
+        Bond dimension of bonds between tensors.
+    physicalDim : int
+        Bond dimension for physical legs.
+    chi : int, optional
+        The chi for MPS. If -1, then decided according to virtualDim.
+
+    Returns
+    -------
+    mps : FreeBoundaryMPS
+        MPS of n tensors.
+    '''
+
+    location = 'CTL.examples.MPS.makeRandomMPS'
+    assert (n > 1), funcs.errorMessage(err = 'cannot make random MPS whose number of tensors is not greater than 1, got {}'.format(n), location = location)
+
+    tensors = []
+
+    if isinstance(virtualDim, int):
+        virtualDim = [virtualDim] * (n - 1)
+    else:
+        assert len(virtualDim) == n - 1, funcs.errorMessage(err = 'virtual dim must be int or length-(n - 1) list, {} found.'.format(virtualDim), location = location)
+
+    if isinstance(physicalDim, int):
+        physicalDim = [physicalDim] * n
+    else:
+        assert len(physicalDim) == n, funcs.errorMessage(err = 'physical dim must be int or length-n list, {} found.'.format(physicalDim), location = location)
+
+    if chi == -1:
+        chi = virtualDim[0]
+
+    # endsShape = (physicalDim, virtualDim)
+    endsLabels = ['p', 'v']
+    # middleShape = (physicalDim, virtualDim, virtualDim)
+    middleLabels = ['p', 'vl', 'vr']
+
+    leftEndShape = (physicalDim[0], virtualDim[0])
+    tensors.append(Tensor(shape = leftEndShape, labels = endsLabels))
+    for i in range(n - 2):
+        middleShape = (physicalDim[i + 1], virtualDim[i], virtualDim[i + 1])
+        tensors.append(Tensor(shape = middleShape, labels = middleLabels))
+
+    rightEndShape = (physicalDim[-1], virtualDim[-1])
+    tensors.append(Tensor(shape = rightEndShape, labels = endsLabels))
+    for tensor in tensors:
+        tensor.a /= tensor.norm()
+
+    if (n == 2):
+        makeLink('v', 'v', tensors[0], tensors[-1])
+    else:
+        makeLink('v', 'vl', tensors[0], tensors[1])
+        makeLink('v', 'vr', tensors[-1], tensors[-2])
+        for i in range(1, n - 2):
+            makeLink('vr', 'vl', tensors[i], tensors[i + 1])
+    return FreeBoundaryMPS(tensors, chi = chi, inplace = True)
+
 def commonLegs(mpsA, mpsB):
     indexA = []
     indexB = []

@@ -1074,7 +1074,7 @@ class Tensor(TensorBase):
 
         return True
 
-    def sumOutLeg(self, leg):
+    def sumOutLeg(self, leg, weights = None):
         """
         Sum out one leg to make a (D - 1)-dimensional tensor. Give a warning(and do nothing) if leg is not one of the current tensor, and give a warning if leg is connected to some bond(not free).
 
@@ -1082,6 +1082,8 @@ class Tensor(TensorBase):
         ----------
         leg : Leg
             The leg to be summed out.
+        weights : 1-d array, optional
+            If not None, then each index on given dimension will be weighted by weights[i].
 
         """
         if not (leg in self.legs):
@@ -1091,10 +1093,11 @@ class Tensor(TensorBase):
             warnings.warn(funcs.warningMessage("leg {} to be summed out is connected to bond {}.".format(leg, leg.bond), location = 'Tensor.sumOutLeg'), RuntimeWarning)
         
         idx = self.legs.index(leg)
-        self.a = xplib.xp.sum(self.a, axis = idx)
+        # self.a = xplib.xp.sum(self.a, axis = idx)
+        self.a = funcs.sumOnAxis(self.a, axis = idx, weights = weights)
         self.legs = self.legs[:idx] + self.legs[(idx + 1):]
     
-    def sumOutLegByLabel(self, label, backward = False):
+    def sumOutLegByLabel(self, label, backward = False, weights = None):
         """
         Sum out one leg to make a (D - 1)-dimensional tensor via the label of leg. Give a warning(and do nothing) if label is not one of the current tensor.
 
@@ -1104,6 +1107,8 @@ class Tensor(TensorBase):
             The label of the leg(s) to be summed out.
         backward : bool, default False
             Whether to search from backward of legs.
+        weights : 1-d array, optional
+            If not None, then each index on given dimension will be weighted by weights[i].
 
         """
         if isinstance(label, list):
@@ -1113,7 +1118,7 @@ class Tensor(TensorBase):
         leg = self.getLeg(label, backward = backward)
         if leg is None:
             warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(label, self), location = 'Tensor.sumOutLegByLabel'), RuntimeWarning)
-        self.sumOutLeg(leg)
+        self.sumOutLeg(leg, weights = weights)
     
 def TensorLike(shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
     """

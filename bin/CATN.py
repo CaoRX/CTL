@@ -23,7 +23,7 @@ from CTL.tensor.contract.optimalContract import contractAndCostWithSequence
 from CTL.examples.MPS import contractWithMPS
 
 from CTL.models.Ising import IsingSiteTensor, IsingEdgeMatrix, IsingTNFromUndirectedGraph, exactZFromGraphIsing
-from CTL.funcs.graphFuncs import squareLatticeFBC, squareLatticeFBC
+from CTL.funcs.graphFuncs import squareLatticeFBC, squareLatticePBC
 
 def contractHandmadeTN():
     print('contractHandmadeTN():')
@@ -54,7 +54,7 @@ def contractHandmadeTN():
     tensors = [a, b, d, c, g, f, e]
 
     res, _ = contractAndCostWithSequence(tensors)
-    print('res from direct contraction= {}'.format(res.single()))
+    print('res from direct contraction = {}'.format(res.single()))
 
     mpsRes = contractWithMPS(tensors, chi = 32)
     print('res from mps = {}'.format(mpsRes.single()))
