@@ -463,6 +463,9 @@ class DiagonalTensor(Tensor):
             nameStr = ''
         return '{}({}shape = {}, labels = {}{})'.format(objectStr, nameStr, self.shape, self.labels, dofStr)
 
+    def __matmul__(self, b):
+        return contractTwoTensors(ta = self, tb = b)
+
     def bondDimension(self):
         """
         The bond dimension of the current diagonal tensor: it is the same over all dimensions.
@@ -747,4 +750,5 @@ class DiagonalTensor(Tensor):
             return "DiagonalTensorLike"
         else:
             return "DiagonalTensor"
-        
+
+from CTL.tensor.contract.contract import contractTwoTensors

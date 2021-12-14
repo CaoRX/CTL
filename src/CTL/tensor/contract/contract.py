@@ -1,8 +1,6 @@
 # import numpy as np 
 import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
-from CTL.tensor.tensor import Tensor
-from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.leg import Leg 
 from CTL.tensor.contract.link import makeLink, mergeLink
 import warnings
@@ -396,3 +394,6 @@ def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
 # 	r = contractTwoTensors(aru, ard)
 # 	t = contractTwoTensors(l, r)
 # 	return t.a
+
+from CTL.tensor.tensor import Tensor
+from CTL.tensor.diagonalTensor import DiagonalTensor
