@@ -1343,3 +1343,37 @@ def generateIndices(elemList, elems):
     
     return res
 
+def sumOnAxis(a, axis, weights = None):
+    '''
+    Sum out an axis of tensor, with or without weights.
+
+    Parameters
+    ----------
+    a : n-d ndarray
+
+    axis : int
+        The axis to be sum out.
+    weights : 1-d array, optional
+        If not None, then the i-th slice on axis will be weighted by weights[i].
+
+    Returns
+    -------
+    (n - 1)-d ndarray
+        The array with the axis removed.
+    '''
+
+    if weights is None:
+        return xplib.xp.sum(a, axis = axis)
+    
+    location = 'CTL.funcs.funcs.sumOnAxis'
+    dim = len(a.shape)
+    assert (dim <= 25), errorMessage('letter labels are not enough for a tensor of shape {}: dimensions are higher than 25.'.format(a.shape), location = location)
+
+    indexList = list(range(dim))
+    indexList[axis] = 25
+    indexTuple = tuple(indexList)
+    remainIndexTuple = tuple([x for x in indexList if x != 25])
+
+    einsumStr = indexTupleToStr(indexTuple) + ',z->' + indexTupleToStr(remainIndexTuple)
+    return xplib.xp.einsum(einsumStr, a, weights)
+

@@ -711,7 +711,7 @@ class DiagonalTensor(Tensor):
             self.reArrange(labels)
         return funcs.diagonalNDTensor(self.a, self.dim)
 
-    def sumOutLeg(self, leg):
+    def sumOutLeg(self, leg, weights = None):
         """
         Sum out one leg to make a (D - 1)-dimensional tensor. Give a warning(and do nothing) if leg is not one of the current tensor, and give a warning if leg is connected to some bond(not free).
 
@@ -719,6 +719,8 @@ class DiagonalTensor(Tensor):
         ----------
         leg : Leg
             The leg to be summed out.
+        weights : 1-d array, optional
+            If not None, then each index on given dimension will be weighted by weights[i].
 
         """
         if not (leg in self.legs):
@@ -730,10 +732,17 @@ class DiagonalTensor(Tensor):
         idx = self.legs.index(leg)
         # self.a = xplib.xp.sum(self.a, axis = idx)
         self.legs = self.legs[:idx] + self.legs[(idx + 1):]
+        # if weights is None:
         if (len(self.legs) == 0):
             # not a diagonal tensor, since the last sum will give a single value
-            self.a = xplib.xp.array(xplib.xp.sum(self.a))
+            if weights is None:
+                self.a = xplib.xp.array(xplib.xp.sum(self.a))
+            else:
+                self.a = xplib.xp.array(xplib.xp.sum(self.a * weights))
             self._length = 1
+        else:
+            if (weights is not None):
+                self.a = self.a * weights
 
     def typeName(self):
         """
