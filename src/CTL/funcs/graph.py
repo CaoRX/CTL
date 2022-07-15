@@ -49,6 +49,9 @@ class GraphEdge:
         else:
             raise ValueError(funcs.errorMessage(err = 'Graph edge does not contain vertex {}.'.format(a), location = 'GraphEdge.anotherSide'))
 
+    def __repr__(self):
+        return 'Edge(({}, {}), weight = {})'.format(self.vertices[0], self.vertices[1], self.weight)
+
 class GraphVertex:
     """
     Vertex object of the graphs.
@@ -189,7 +192,7 @@ class UndirectedGraph(Graph):
     v : list of GraphVertex
         The vertices of this graph.
     n : int
-        The number of graphs in this graph.
+        The number of vertices in this graph.
     edges : list of GraphEdge
         A snapshot of the set of edges, namely E. Note that it is E only when updated is False.
     updated : bool
@@ -218,6 +221,7 @@ class UndirectedGraph(Graph):
         """
         self.assertIndex(idx1)
         self.assertIndex(idx2)
+        # print('add edge ({}, {})'.format(self.v[idx1], self.v[idx2]))
         newEdge = self.v[idx1].addEdge(self.v[idx2], weight = weight)
         self.v[idx2].edges.append(newEdge)
 

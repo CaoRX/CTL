@@ -1,6 +1,8 @@
 import CTL.funcs.xplib as xplib
 from CTL.funcs.graph import UndirectedGraph
 import CTL.funcs.funcs as funcs
+from CTL.tensor.tensor import TensorLike
+from CTL.tensor.contract.link import makeLink
 # import numpy as np
 
 import warnings
@@ -69,6 +71,30 @@ class TensorGraph(UndirectedGraph):
         for i in range(m):
             edges[i].index = i 
         self.indexed = True
+
+    def tensorNetworkGraph(self):
+        try:
+            import networkx as nx
+        except:
+            print(funcs.errorMessage(err = 'Optional dependency networkX has not been installed, skip plotting tensor network graph.', location = 'tensorGraph.tensorNetworkGraph'))
+        
+        G = nx.Graph()
+        edges = self.getEdges()
+        G.add_nodes_from([v.index for v in self.v])
+        for i in range(len(self.v)):
+            G.nodes[i]['name'] = self.v[i].name
+        for edge in edges:
+            # print(edge)
+            u, v = edge.vertices
+            if (u is not None) and (v is not None):
+                uIdx = u.index
+                vIdx = v.index
+                G.add_edge(uIdx, vIdx, weight = edge.weight)
+            else:
+                # deal with free bond
+                pass
+
+        return G
 
     def optimalCostResult(self):
         """
@@ -389,4 +415,104 @@ class TensorGraph(UndirectedGraph):
             return bruteForce()
         else:
             return capping()
-            
+
+def decodeSubText(t):
+    currName = None
+    currSize = None
+    nameWaitFlag = False
+    sizeWaitFlag = False
+
+    labels = []
+    shape = []
+
+    for i in range(len(t)):
+        if (t[i] == '{'):
+            if (currName is None):
+                nameWaitFlag = True
+            else:
+                sizeWaitFlag = True
+        elif (t[i] == '}'):
+            assert (nameWaitFlag or sizeWaitFlag), funcs.errorMessage(err = 'not maching parenthesis in text {}'.format(t), location = 'CTL.tensor.contract.tensorGraph.decodeSubText')
+            if nameWaitFlag:
+                nameWaitFlag = False
+            else:
+                sizeWaitFlag = False
+                print(currName, currSize)
+                labels.append(currName)
+                shape.append(currSize)
+
+                currName = None
+                currSize = None
+        
+        else:
+            if (currName is None) or (nameWaitFlag):
+                if (currName is None):
+                    currName = ''
+                currName += t[i]
+            elif (not t[i].isdigit()):
+                labels.append(currName)
+                shape.append(currSize)
+
+                currName = None
+                currSize = None
+
+                currName = t[i]
+                if (sizeWaitFlag):
+                    nameWaitFlag = True
+                    sizeWaitFlag = False
+            else:
+                # assert t[i].isdigit(), funcs.errorMessage('{} contains non-digit character for leg size'.format(t), location = 'CTL.tensor.contract.tensorGraph.decodeSubText')
+                if (currSize is None):
+                    currSize = 0
+                currSize = currSize * 10 + int(t[i])
+                if (not sizeWaitFlag):
+                    labels.append(currName)
+                    shape.append(currSize)
+
+                    currName = None
+                    currSize = None
+
+    if (currName is not None):
+        labels.append(currName)
+        shape.append(currSize)
+    print(t, labels, shape)
+    return labels, shape
+
+def createTensorFromText(t):
+    assert (len(t) > 0) and (t[0].isupper()) and (t[1:].islower()), funcs.errorMessage(err = '{} is not a valid string for single tensor'.format(t), location = 'CTL.tensor.tensorGraph.createTensorFromText')
+    name = t[0]
+    labels, shape = decodeSubText(t[1:])
+    # print(labels, shape)
+    tensor = TensorLike(labels = labels, name = name, shape = shape)
+    return tensor
+
+def createTensorListFromText(t):
+    l = len(t)
+    last = 0
+    links = dict()
+    tensors = []
+    for i in range(l + 1):
+        if (i == l) or ((i > 0) and t[i].isupper()):
+            tensor = createTensorFromText(t[last : i])
+            last = i
+            for leg in tensor.legs:
+                if (leg.name in links):
+                    links[leg.name].append(leg)
+                else:
+                    links[leg.name] = [leg]
+
+            tensors.append(tensor)
+
+    for name in links:
+        assert len(links[name]) <= 2, funcs.errorMessage(err = 'leg name {} appeared more than twice.'.format(name), location = 'CTL.tensor.tensorGraph.createTensorListFromText')
+        if len(links[name]) == 2:
+            leg0 = links[name][0]
+            leg1 = links[name][1]
+            if (leg0.dim is None):
+                leg0.dim = leg1.dim
+            elif (leg1.dim is None):
+                leg1.dim = leg0.dim
+            makeLink(leg0, leg1)
+            # print('make link between {} and {}'.format(links[name][0], links[name][1]))
+    
+    return tensors
