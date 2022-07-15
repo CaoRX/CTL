@@ -349,6 +349,8 @@ class Tensor(TensorBase):
             if (labels is None):
                 labels = self.generateLabels(len(shape))
 
+        elif (isTensorLike and (labels is not None)):
+            shape = tuple([None] * len(labels))
         else:
             raise ValueError(funcs.errorMessage("Tensor() cannot accept parameters where legs, shape and data being None simultaneously.", location = funcName))
 

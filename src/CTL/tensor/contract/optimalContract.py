@@ -1,7 +1,7 @@
 import CTL.funcs.funcs as funcs 
 from CTL.tensor.tensor import Tensor
 from CTL.tensor.contract.contract import shareBonds, contractTwoTensors
-from CTL.tensor.contract.tensorGraph import TensorGraph
+from CTL.tensor.contract.tensorGraph import TensorGraph, createTensorListFromText
 from CTL.tensor.contract.link import makeLink
 import numpy as np
 
@@ -111,6 +111,8 @@ def makeTensorGraph(tensorList):
     
     diagonalFlags = [tensor.diagonalFlag for tensor in tensorList]
     g = TensorGraph(n = n, diagonalFlags = diagonalFlags)
+    for i in range(n):
+        g.v[i].name = tensorList[i].name
     bondSet = set()
     idxDict = dict()
     for i in range(n):
@@ -128,6 +130,11 @@ def makeTensorGraph(tensorList):
     
     g.addEdgeIndex()
     return g
+
+def makeTensorGraphFromText(t):
+    tensorList = createTensorListFromText(t)
+    # print(tensorList)
+    return makeTensorGraph(tensorList)
 
 def generateOptimalSequence(tensorList, bf = False, typicalDim = 10):
     """
