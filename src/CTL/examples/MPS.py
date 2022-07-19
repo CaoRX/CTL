@@ -21,10 +21,15 @@ class FreeBoundaryMPS:
     Support tensor swap?
     '''
 
-    def checkMPSProperty(self, tensorList):
+    def checkMPSProperty(self, tensorList = None):
         # MPS property: first and last tensor has one bond out, and another linked to the next
         # others: one to left, one to right, one out
 
+        if tensorList is None:
+            # check the MPS itself
+            if self._tensors is None:
+                warnings.warn(funcs.warningMessage("checking property of MPS {} that has not been built yet.".format(self), location = 'FreeBoundaryMPS.checkMPSProperty'))
+            tensorList = self._tensors
         n = len(tensorList)
 
         if (n == 0):
@@ -50,7 +55,10 @@ class FreeBoundaryMPS:
         bondChi = -1
         for i in range(self.n - 1):
             bond = shareBonds(self._tensors[i], self._tensors[i + 1])[0]
-            bondChi = min(bondChi, bond.legs[0].dim) 
+            if bondChi == -1:
+                bondChi = bond.legs[0].dim
+            else:
+                bondChi = max(bondChi, bond.legs[0].dim) 
         
         if (chi is None):
             return bondChi 
@@ -124,6 +132,8 @@ class FreeBoundaryMPS:
     #             self._tensors[i - 1] = sv
 
     def canonicalize(self, idx):
+        if self.activeIdx == idx:
+            return
         '''
         canonicalize the MPS, and the only non-isometry will be put at 0 <= idx < n
         after this, activeIdx will be set to idx
@@ -147,7 +157,43 @@ class FreeBoundaryMPS:
 
         self.activeIdx = idx
 
+    def norm(self, idx = 0):
+        location = 'FreeBoundaryMPS.norm'
+
+        self.canonicalize(idx = idx)
+        t1, t2 = self._tensors[idx].copyN(2)
+        t2.toConjugate()
+        if t1.labelInTensor('l'):
+            makeLink('l', 'l', t1, t2)
+        if t1.labelInTensor('r'):
+            makeLink('r', 'r', t1, t2)
+        makeLink('o', 'o', t1, t2)
+        res = contractTwoTensors(t1, t2)
+        
+        if not res.isScalar():
+            raise ValueError(funcs.errorMessage("Tensor {} after contraction of two MPSes is not a scalar".format(res), location = location))
+        
+        norm2 = res.a[()]
+        if xplib.xp.iscomplex(norm2):
+            im = xplib.xp.imag(norm2)
+            if xplib.xp.abs(im) > 1e-8:
+                raise ValueError(funcs.errorMessage("imaginary part of current tensor norm square is not 0: norm^2 = {}".format(norm2), location = location))
+            norm2 = xplib.xp.real(norm2)
+        if norm2 < 0:
+            raise ValueError(funcs.errorMessage("Current tensor norm square is not negative: norm^2 = {}".format(norm2), location = location))
+        return xplib.xp.sqrt(norm2)
+        # return xplib.xp.sqrt(res.a[()])
+
+    def normalize(self, idx = 0, eps = 1e-12):
+        norm = self.norm(idx = idx)
+        if norm < eps:
+            warnings.warn(funcs.warningMessage('MPS norm {} is too small, the MPS may be representing a zero tensor'.format(norm), location = 'FreeBoundaryMPS.normalize'))
+        self._tensors[idx].a /= norm
+
     def setTensor(self, idx, tensor):
+        '''
+        TODO: check the tensor shape before insertion
+        '''
         assert (idx >= 0 and idx < self.n), funcs.errorMessage("index must be in [0, n) but {} obtained.".format(idx), location = "FreeBoundaryMPS.setTensor")
         self._tensors[idx] = tensor 
         self.activeIdx = None
@@ -242,6 +288,7 @@ class FreeBoundaryMPS:
         funcName = 'FreeBoundaryMPS.mergeTensor'
         assert (self.isIndex(idx) and self.isIndex(idx + 1)), funcs.errorMessage("{} or {} is invalid index.".format(idx, idx + 1), location = funcName)
         self._tensors = self._tensors[:idx] + [newTensor] + self._tensors[(idx + 2):]
+        self.activeIdx = None
 
     def hasTensor(self, tensor):
         return tensor in self._tensors
@@ -578,3 +625,50 @@ def contractWithMPS(tensorList, chi = 16, seq = None, greedyFlag = True):
         return mpses[0].toTensor()
     else:
         return mpses[0]
+
+def createApproxMPS(tensorList, chi = None, inplace = True):
+    if chi is None:
+        return FreeBoundaryMPS(tensorList = tensorList, chi = chi, inplace = inplace)
+
+    mps = FreeBoundaryMPS(tensorList = tensorList, chi = None, inplace = inplace)
+    if mps.chi <= chi:
+        return mps
+    
+    # otherwise, we need to reduce the bond dimension to <= chi
+    n = mps.n
+    for i in range(n - 1):
+        if shareBonds(ta = mps._tensors[i], tb = mps._tensors[i + 1])[0].dim <= chi:
+            continue
+        mps._tensors[i], _, mps._tensors[i + 1] = SchimdtDecomposition(ta = mps._tensors[i], tb = mps._tensors[i + 1], chi = chi, squareRootSeparation = True)
+
+    return FreeBoundaryMPS(tensorList = mps._tensors, chi = chi, inplace = True)
+
+def createRandomMPS(n, dim, chi):
+    # 0 / n - 1: (2, chi)
+    # others: (2, chi, chi)
+    tensors = []
+
+    location = 'CTL.examples.MPS.createRandomMPS'
+    if (n < 2):
+        raise ValueError(funcs.errorMessage("Random MPS must have length > 1, got {}".format(n), location = location))
+    if not (isinstance(chi, int) and chi > 1):
+        raise ValueError(funcs.errorMessage("chi must be integer > 1, {} gotten.".format(chi), location = location))
+    for i in range(n):
+        if (i == 0):
+            data = xplib.xp.random.random_sample((dim, chi))
+            tensor = Tensor(data = data, labels = ['o', 'r'], shape = (dim, chi))
+        elif (i == n - 1):
+            data = xplib.xp.random.random_sample((dim, chi))
+            tensor = Tensor(data = data, labels = ['o', 'l'], shape = (dim, chi))
+        else:
+            data = xplib.xp.random.random_sample((dim, chi, chi))
+            tensor = Tensor(data = data, labels = ['o', 'l', 'r'], shape = (dim, chi, chi))
+        tensors.append(tensor)
+
+    for i in range(n - 1):
+        makeLink('r', 'l', tensors[i], tensors[i + 1])
+    
+    resMPS = FreeBoundaryMPS(tensorList = tensors, chi = chi)
+    resMPS.normalize(idx = 0)
+    return resMPS
+    

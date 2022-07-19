@@ -32,7 +32,7 @@ class TestTensorGraph(PackedTest):
         # and this is not true if we consider the real bond dimension 300
 
         seq = tensorGraph.optimalContractSequence(typicalDim = None)
-        self.assertListEqual(seq, [(0, 1), (2, 0)])
+        self.assertListEqual(seq, [(0, 1), (0, 2)])
         self.assertEqual(tensorGraph.optimalCostResult(), 36120)
 
         seq = tensorGraph.optimalContractSequence(typicalDim = None, bf = True)
@@ -41,7 +41,7 @@ class TestTensorGraph(PackedTest):
         # res1 = contractWithSequence(tensorList, seq = seq)
 
         seq = tensorGraph.optimalContractSequence(typicalDim = 10)
-        self.assertListEqual(seq, [(0, 2), (1, 0)])
+        self.assertListEqual(seq, [(0, 2), (0, 1)])
         self.assertEqual(tensorGraph.optimalCostResult(), 10100)
 
         seq = tensorGraph.optimalContractSequence(typicalDim = 10, bf = True)

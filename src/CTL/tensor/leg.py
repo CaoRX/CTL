@@ -30,6 +30,13 @@ class Leg:
         self.dim = dim
         self.bond = None
         # legs can have the same name: nothing will be affected
+
+    def copy(self):
+        '''
+        make a copy of current leg, with the same shape and label
+        but not contain tensor / bond information
+        '''
+        return Leg(tensor = None, dim = self.dim, name = self.name)
     
     def anotherSide(self):
         """
@@ -56,6 +63,9 @@ class Leg:
         """
         self.tensor = tensor
 
+    def isFree(self):
+        return (self.bond is None)
+
     def __repr__(self):
         # if (self.tensor.name is not None):
         parentStr = ', parent = {}'.format(self.tensor.__repr__())
@@ -73,3 +83,6 @@ class Leg:
             bondStr = ''
         
         return 'leg(dim = {}{}{}){}'.format(self.dim, nameStr, parentStr, bondStr)
+
+def copyLegs(legs):
+    return [leg.copy() for leg in legs]

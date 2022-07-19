@@ -20,6 +20,7 @@ class FiniteTensorNetwork:
         self.changeNameBefore = []
         self.changeNameAfter = []
         self.outProductAfter = []
+        self.conjugateBefore = []
 
         # if real cost, then we will always calculate the optimal sequence with real bond dims
         # then for each time the bond dimension changes, we need to recalculate the sequence
@@ -58,6 +59,9 @@ class FiniteTensorNetwork:
     def addPreNameChange(self, name, legName, newName):
         self.checkLock('add pre name change for tensor {}: from {} to {}'.format(name, legName, newName))
         self.changeNameBefore.append((name, legName, newName))
+    def addPreConjugate(self, name):
+        self.checkLock('add conjugate for tensor {}'.format(name))
+        self.conjugateBefore.append(name)
     def addPostNameChange(self, name, legName, newName):
         self.checkLock('add post name change for tensor {}: from {} to {}'.format(name, legName, newName))
         self.changeNameAfter.append((name, legName, newName))
@@ -100,6 +104,8 @@ class FiniteTensorNetwork:
         localTensors = dict()
         for name in tensorDict.tensors:
             localTensors[name] = tensorDict.tensors[name].copy()
+        for name in self.conjugateBefore:
+            localTensors[name].toConjugate()
 
         for tensor, legName, newName in self.changeNameBefore:
             localTensors[tensor].renameLabel(legName, newName)

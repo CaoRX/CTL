@@ -1377,3 +1377,14 @@ def sumOnAxis(a, axis, weights = None):
     einsumStr = indexTupleToStr(indexTuple) + ',z->' + indexTupleToStr(remainIndexTuple)
     return xplib.xp.einsum(einsumStr, a, weights)
 
+def debugMessage(msg):
+    debugMode = True
+    if debugMode:
+        print(msg)
+
+def sortTuple(tp):
+    a, b = tp
+    if a > b:
+        return (b, a)
+    else:
+        return (a, b)

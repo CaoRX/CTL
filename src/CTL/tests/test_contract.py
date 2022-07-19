@@ -6,7 +6,7 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 from CTL.tensor.tensorFactory import makeSquareTensor, makeTriangleTensor, makeSquareOutTensor
 import CTL.funcs.funcs as funcs
 from CTL.tensor.contract.link import makeLink
-from CTL.tensor.contract.contract import merge, shareBonds
+from CTL.tensor.contract.contract import merge, shareBonds, contractTwoTensorsNotInPlace, contractTwoTensors
 from CTL.tensor.contract.optimalContract import contractAndCostWithSequence, generateOptimalSequence, contractCost
 
 import numpy as np 
@@ -36,7 +36,7 @@ class TestContract(PackedTest):
         # prod = contractTensorList([a, b, c], outProductWarning = False)
         self._testIsTensorLike(prod)
         self.assertTrue(funcs.compareLists(prod.labels, []))
-        self.assertListEqual(seq, [(0, 2), (1, 0)])
+        self.assertListEqual(seq, [(0, 2), (0, 1)])
         self.assertEqual(cost, 4.0)
 
         # if we use Tensor instead of DiagonalTensor for a
@@ -263,6 +263,48 @@ class TestContract(PackedTest):
         res2.reArrange(res1.labels)
         # print('res1 = {}, res2 = {}'.format(res1.a, res2.a))
         # self.assertTrue(funcs.floatArrayEqual(res1.a, res2.a))
+
+    def test_contractTwoTensorsNotInPlace(self):
+        """
+        TODO: check the deprecated flag for diag-nondiag tensor contraction
+        """
+
+        aData = np.random.random_sample(2)
+        aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
+        bData = np.random.random_sample((2, 4, 7))
+        cData = np.random.random_sample((4, 10))
+        a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = False)
+        b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = False)
+        c = Tensor(shape = (4, 10), labels = ['c1', 'c2'], data = cData, tensorLikeFlag = False)
+        makeLink('a1', 'b1', a, b)
+        makeLink('b2', 'c1', b, c)
+
+        res1 = contractTwoTensors(a, b)
+        # print(a, b, c, res1)
+        self.assertEqual(len(shareBonds(c, res1)), 1)
+        self.assertEqual(len(shareBonds(c, b)), 1)
+        self.assertTrue(a.isDeprecated)
+        self.assertTrue(b.isDeprecated)
+
+        aData = np.random.random_sample(2)
+        aTensorData = np.array([[[aData[0], 0], [0, 0]], [[0, 0], [0, aData[1]]]])
+        bData = np.random.random_sample((2, 4, 7))
+        cData = np.random.random_sample((4, 10))
+        a = Tensor(shape = (2, 2, 2), labels = ['a1', 'a2', 'a3'], data = aTensorData, tensorLikeFlag = False)
+        b = Tensor(shape = (2, 4, 7), labels = ['b1', 'b2', 'b3'], data = bData, tensorLikeFlag = False)
+        c = Tensor(shape = (4, 10), labels = ['c1', 'c2'], data = cData, tensorLikeFlag = False)
+        makeLink('a1', 'b1', a, b)
+        makeLink('b2', 'c1', b, c)
+
+        res2 = contractTwoTensorsNotInPlace(a, b)
+        # print(a, b, c, res2)
+        
+        self.assertEqual(len(shareBonds(c, res2)), 0)
+        self.assertEqual(len(shareBonds(c, b)), 1)
+        self.assertFalse(a.isDeprecated)
+        self.assertFalse(b.isDeprecated)
+
+
 
 
         

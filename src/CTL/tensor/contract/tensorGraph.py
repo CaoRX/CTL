@@ -320,6 +320,12 @@ class TensorGraph(UndirectedGraph):
             return self.greedySeq
 
         def capping():
+            # TODO: fix the dead loop for n == 2
+            if n <= 1:
+                return []
+            if n == 2:
+                return [(0, 1)]
+            
             obj_n = (1 << n)
             new_flag = [True] * obj_n 
             if (typicalDim is None):
@@ -410,11 +416,14 @@ class TensorGraph(UndirectedGraph):
             # print('optimal cost = {}'.format(self.optimalCost[full_s]))
             return self.optimalSeq[full_s]
         if (greedy):
-            return greedySearch()
-        elif (bf):
-            return bruteForce()
+            res = greedySearch()
+        elif (bf or n <= 5):
+            res = bruteForce()
         else:
-            return capping()
+            res = capping()
+
+        res = [funcs.sortTuple(x) for x in res]
+        return res
 
 def decodeSubText(t):
     currName = None

@@ -289,6 +289,103 @@ def HOTRGVerticalContractFTN():
 def squareTrace(a):
     return a.trace(rows = ['u', 'l'], cols = ['d', 'r'])
 
+def MPOInnerProductFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'mpo'])
+    FTN.addLink('u', 'o', 'mpo', 'u')
+    FTN.addLink('d', 'o', 'mpo', 'd')
+    FTN.addPostNameChange('u', 'l', 'ul')
+    FTN.addPostNameChange('d', 'l', 'dl')
+    FTN.addPostNameChange('u', 'r', 'ur')
+    FTN.addPostNameChange('d', 'r', 'dr')
+
+    FTN.addPreConjugate('d')
+
+    return FTN
+
+def MPOInnerProductLeftSideFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'mpo'])
+    FTN.addLink('u', 'o', 'mpo', 'u')
+    FTN.addLink('d', 'o', 'mpo', 'd')
+    FTN.addPostNameChange('u', 'r', 'ur')
+    FTN.addPostNameChange('d', 'r', 'dr')
+    FTN.addPreConjugate('d')
+
+    return FTN
+
+def MPOInnerProductRightSideFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'mpo'])
+    FTN.addLink('u', 'o', 'mpo', 'u')
+    FTN.addLink('d', 'o', 'mpo', 'd')
+    FTN.addPostNameChange('u', 'l', 'ul')
+    FTN.addPostNameChange('d', 'l', 'dl')
+    FTN.addPreConjugate('d')
+
+    return FTN
+
+def MPOInnerProductOnly1FTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['u', 'd', 'mpo'])
+    FTN.addLink('u', 'o', 'mpo', 'u')
+    FTN.addLink('d', 'o', 'mpo', 'd')
+    FTN.addPreConjugate('d')
+    return FTN
+
+def MPOHorizontalFTN():
+    FTN = FiniteTensorNetwork(tensorNames = ['l', 'r'])
+    FTN.addLink('l', 'ur', 'r', 'ul')
+    FTN.addLink('l', 'dr', 'r', 'dl')
+    FTN.addLink('l', 'r', 'r', 'l')
+    return FTN
+
+def MPOApplyFTN(direction = 'u'):
+    oppo = None
+    if direction == 'u':
+        oppo = 'd'
+    elif direction == 'd':
+        oppo = 'u'
+    else:
+        raise ValueError(funcs.errorMessage(err = 'direction can only be "u" or "d"', location = 'CTL.tensor.contract.contractExp.MPOApplyFTN'))
+    
+    FTN = FiniteTensorNetwork(tensorNames = ['mpo', 'mps'])
+    FTN.addLink('mpo', direction, 'mps', 'o')
+
+    FTN.addPostNameChange('mpo', oppo, 'o')
+    FTN.addPostOutProduct(['mpo-l', 'mps-l'], 'l')
+    FTN.addPostOutProduct(['mpo-r', 'mps-r'], 'r')
+    return FTN
+
+def MPOApplyLeftFTN(direction = 'u'):
+    oppo = None
+    if direction == 'u':
+        oppo = 'd'
+    elif direction == 'd':
+        oppo = 'u'
+    else:
+        raise ValueError(funcs.errorMessage(err = 'direction can only be "u" or "d"', location = 'CTL.tensor.contract.contractExp.MPOApplyLeftFTN'))
+    
+    FTN = FiniteTensorNetwork(tensorNames = ['mpo', 'mps'])
+    FTN.addLink('mpo', direction, 'mps', 'o')
+
+    FTN.addPostNameChange('mpo', oppo, 'o')
+    FTN.addPostOutProduct(['mpo-r', 'mps-r'], 'r')
+    return FTN
+
+def MPOApplyRightFTN(direction = 'u'):
+    oppo = None
+    if direction == 'u':
+        oppo = 'd'
+    elif direction == 'd':
+        oppo = 'u'
+    else:
+        raise ValueError(funcs.errorMessage(err = 'direction can only be "u" or "d"', location = 'CTL.tensor.contract.contractExp.MPOApplyRightFTN'))
+    
+    FTN = FiniteTensorNetwork(tensorNames = ['mpo', 'mps'])
+    FTN.addLink('mpo', direction, 'mps', 'o')
+
+    FTN.addPostNameChange('mpo', oppo, 'o')
+    FTN.addPostOutProduct(['mpo-l', 'mps-l'], 'l')
+    return FTN
+
+
 def EvenblyTNRQEnvFTN():
     FTN = FiniteTensorNetwork(tensorNames = ['uul', 'uur', 'udl', 'udr', 'dul', 'dur', 'ddl', 'ddr'])
 

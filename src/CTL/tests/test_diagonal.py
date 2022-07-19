@@ -53,7 +53,7 @@ class TestDiagonalTensor(PackedTest):
         # print('cost = {}'.format(cost))
         # prod = contractTensorList([a, b, c], outProductWarning = False)
         self.assertTrue(funcs.compareLists(prod.labels, []))
-        self.assertListEqual(seq, [(0, 2), (1, 0)])
+        self.assertListEqual(seq, [(0, 2), (0, 1)])
         self.assertEqual(cost, 4.0)
 
         # if we use Tensor instead of DiagonalTensor for a

@@ -34,11 +34,11 @@ class TestFTN(PackedTest):
 
         result = FTN.contract(tensorDict)
         self.assertEqual(int(result.a), 36000)
-        self.assertListEqual(FTN.optimalSeq, [(0, 1), (2, 0)])
+        self.assertListEqual(FTN.optimalSeq, [(0, 1), (0, 2)])
 
         result2 = FTN.contract(tensorDict)
         self.assertEqual(int(result2.a), 36000)
-        self.assertListEqual(FTN.optimalSeq, [(0, 1), (2, 0)])
+        self.assertListEqual(FTN.optimalSeq, [(0, 1), (0, 2)])
 
         newShapeA = (3, 4, 5)
         newShapeB = (3, 6)
@@ -51,7 +51,7 @@ class TestFTN(PackedTest):
 
         result3 = FTN.contract(tensorDict) 
         self.assertEqual(int(result3.a), 360)
-        self.assertListEqual(FTN.optimalSeq, [(0, 2), (1, 0)])
+        self.assertListEqual(FTN.optimalSeq, [(0, 2), (0, 1)])
         self.assertEqual(FTN.bondDims['a-a300'], 3)
         self.assertEqual(FTN.tensorCount, 3)
 
@@ -104,3 +104,7 @@ class TestFTN(PackedTest):
 
         self.assertListEqual(result.labels, ['out'])
         self.assertEqual(result.shape[0], 16)
+
+    def test_FTNPreConjugate(self):
+        # TODO: add tests for preConjugate
+        pass

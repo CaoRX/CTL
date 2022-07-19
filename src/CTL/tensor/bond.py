@@ -33,6 +33,17 @@ class Bond:
         leg1.bond = self 
         leg2.bond = self
 
+    @property
+    def dim(self):
+        return self.legs[0].dim
+    
+    def clear(self):
+        # clear the current bond
+        # two sides will become free legs
+        for leg in self.legs:
+            assert leg.bond == self, errorMessage(err = "leg {} is no longer belongs to current bond {}".format(leg, self), location = "Bond.clear")
+            leg.bond = None
+
     def __repr__(self):
         return "Bond(name = {}, leg1 = {}, leg2 = {})".format(self.name, self.legs[0], self.legs[1])
 

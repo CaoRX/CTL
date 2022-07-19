@@ -1,4 +1,5 @@
-import unittest 
+import unittest
+from CTL.tensor.contract.contract import contractTwoTensors 
 from CTL.tensor.tensor import Tensor
 import numpy as np
 from CTL.tests.packedTest import PackedTest
@@ -210,6 +211,35 @@ class TestTensor(PackedTest):
         self.assertEqual(b.a[(0, 0, 0)], 1.0)
         self.assertEqual(a.a[(0, 0, 0)], 0.0)
 
+    def test_TensorConjugate(self):
+        aData = np.random.random_sample(12) + np.random.random_sample(12) * 1j
+        a = Tensor(shape = (2, 2, 3), labels = ['a', 'b', 'c'], data = aData)
+        a.toConjugate()
+        conjAData = a.toTensor(labels = ['a', 'b', 'c'])
+        self.assertIsNone(np.testing.assert_array_almost_equal(np.conj(aData).reshape((2, 2, 3)), conjAData))
+
+    def test_TensorIsScalar(self):
+        a = Tensor(shape = (), labels = [], data = np.random.random_sample(1))
+        # print(a)
+        # print(a.isScalar())
+        self.assertTrue(a.isScalar())
+
+        aData = np.random.random_sample(12) + np.random.random_sample(12) * 1j
+        a = Tensor(shape = (2, 2, 3), labels = ['a1', 'a2', 'a3'], data = aData)
+        bData = np.random.random_sample(12)
+        b = Tensor(shape = (2, 2, 3), labels = ['b1', 'b2', 'b3'], data = bData)
+        makeLink(['a1', 'a2', 'a3'], ['b2', 'b1', 'b3'], a, b)
+
+        self.assertFalse(a.isScalar())
+        self.assertFalse(b.isScalar())
+
+        c = contractTwoTensors(a, b)
+        self.assertTrue(c.isScalar())
+        # print(c.a[()])
+        # print(np.iscomplex(c.a[()]))
+
+
+
     def __init__(self, methodName = 'runTest'):
         super().__init__(methodName = methodName, name = 'Tensor')
 
@@ -366,3 +396,10 @@ class TestTensorLike(PackedTest):
         self.assertTrue(aLike.tensorLikeFlag)
         self.assertListEqual(aLike.labels, ['c', 'b', 'a'])
         self.assertTupleEqual(aLike.shape, (5, 3, 4))
+
+    def test_TensorLikeConj(self):
+        a = Tensor(shape = (5, 3, 4), labels = ['c', 'b', 'a'], tensorLikeFlag = True)
+        with self.assertWarns(UserWarning) as cm:
+            a.toConjugate()
+        message = cm.warning.__str__()
+        self.assertIn('cannot be transferred', message)

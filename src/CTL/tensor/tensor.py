@@ -852,6 +852,11 @@ class Tensor(TensorBase):
             # assert (divLoc != -1), "Error: leg name {} does not contain a tensor tag.".format(leg.name)
             if (divLoc != -1):
                 leg.name = leg.name[(divLoc + 1):]    
+
+    def getFreeLegs(self):
+        return [leg for leg in self.legs if leg.isFree()]
+    def getFreeLabels(self):
+        return [leg.name for leg in self.legs if leg.isFree()]
     
     def getLegsByLabel(self, labelList):
         indices = funcs.generateIndices(self.labels, labelList)
@@ -1121,6 +1126,32 @@ class Tensor(TensorBase):
         if leg is None:
             warnings.warn(funcs.warningMessage("leg {} is not in tensor {}, do nothing.".format(label, self), location = 'Tensor.sumOutLegByLabel'), RuntimeWarning)
         self.sumOutLeg(leg, weights = weights)
+
+    def toConjugate(self):
+        if self.a is None:
+            warnings.warn(funcs.warningMessage("Tensor {} without data cannot be transferred to conjugate.".format(self), location = 'Tensor.toConjugate'))
+        if self.a is not None:
+            self.a = xplib.xp.conj(self.a)
+    def isScalar(self):
+        return len(self.shape) == 0
+
+    @property
+    def isDeprecated(self):
+        """
+        Check if the current tensor is deprecated: if so, some of the legs will not point to the current tensor.
+        If you do not know whether the tensor is deprecated(e.g., the tensor is from some other libraries), please check this before using the tensor.
+
+        Returns
+        -------
+        bool
+            True if the tensor is deprecated, otherwise False.
+        """
+        for leg in self.legs:
+            if leg.tensor != self:
+                return True
+        
+        return False
+
     
 def TensorLike(shape = None, labels = None, data = None, degreeOfFreedom = None, name = None, legs = None, diagonalFlag = False):
     """

@@ -1,7 +1,7 @@
 # import numpy as np 
 import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
-from CTL.tensor.leg import Leg 
+from CTL.tensor.leg import Leg, copyLegs
 from CTL.tensor.contract.link import makeLink, mergeLink
 import warnings
 
@@ -177,6 +177,151 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
     newData = xplib.xp.reshape(newData, newShape)
 
     return Tensor(shape = newShape, data = newData, legs = newLegs)
+
+def contractTwoTensorsNotInPlace(ta, tb, bonds = None, outProductWarning = True):
+    """
+    Calculate the result of contraction of two tensors, but not in-place, so the legs will be newly created.
+
+    Parameters
+    ----------
+    ta, tb : Tensor
+
+    bonds : list of Bond, optional
+        If given, then contract only over the given bonds but not all bonds shared.
+    outProductWarning : bool, default True
+        Whether to make a warning message of outer product, used for debug.
+
+    Returns
+    -------
+    Tensor
+        The contraction result of ta and tb, with brand new legs.
+    """
+    # contract between bonds(if not, then find the shared legs)
+    # this requires that: tensor contraction happens in-place
+    # after we prepare some tensor, we must create tensors to make links
+
+    if (not ta.diagonalFlag) and (tb.diagonalFlag):
+        return contractTwoTensorsNotInPlace(tb, ta, bonds = bonds, outProductWarning = outProductWarning)
+    if (bonds is None):
+        bonds = shareBonds(ta, tb)
+
+    if (ta.tensorLikeFlag != tb.tensorLikeFlag):
+        raise TypeError(funcs.errorMessage("ta and tb must be the same type(tensor/tensorlike): {} and {} gotten.".format(ta.typeName, tb.typeName), location = 'CTL.tensor.contract.contractTwoTensorsNotInPlace'))
+
+    tensorLikeContract = ta.tensorLikeFlag
+    
+    if (len(bonds) == 0):
+        if (outProductWarning):
+            warnings.warn('{} and {} do not share same label, do out product'.format(ta, tb), RuntimeWarning)
+
+        # aMatrix = ta.toMatrix(rows = ta.legs, cols = [])
+        # bMatrix = tb.toMatrix(rows = [], cols = tb.legs)
+        # data = xplib.xp.matmul(aMatrix, bMatrix)
+
+        labels = ta.labels + tb.labels 
+        shape = ta.shape + tb.shape
+        legs = ta.legs + tb.legs
+
+        if (ta.diagonalFlag and tb.diagonalFlag):
+            if (tensorLikeContract):
+                return DiagonalTensor(labels = labels, data = None, shape = shape, legs = copyLegs(legs), tensorLikeFlag = True)
+            else:
+                return DiagonalTensor(labels = labels, data = ta.a * tb.a, shape = shape, legs = copyLegs(legs))
+        elif (ta.diagonalFlag):
+            if (tensorLikeContract):
+                return Tensor(labels = labels, data = None, shape = shape, legs = copyLegs(legs), tensorLikeFlag = True)
+            else:
+                data = xplib.xp.zeros(shape, dtype = ta.a.dtype)
+                einsumStr = ('j' * ta.dim) + '...->j...'
+                outerData = xplib.xp.multiply.outer(ta.a, tb.a)
+                xplib.xp.einsum(einsumStr, data)[...] = outerData
+            return Tensor(labels = labels, data = data, shape = shape, legs = copyLegs(legs))
+        else:
+            if (tensorLikeContract):
+                return Tensor(labels = labels, data = None, shape = shape, legs = copyLegs(legs), tensorLikeFlag = True)
+            else:
+                return Tensor(labels = labels, data = xplib.xp.multiply.outer(ta.a, tb.a), shape = shape, legs = copyLegs(legs))
+
+        # aVector = ta.toVector()
+        # bVector = tb.toVector()
+        # data = xplib.xp.outer(aVector, bVector)
+        # data = xplib.xp.reshape(data, shape)
+
+        # return Tensor(labels = labels, data = data, legs = legs)
+
+    contractALegs = [bond.legs[0] for bond in bonds]
+    contractBLegs = [bond.legs[1] for bond in bonds]
+
+    taRemainLegs = ta.complementLegs(contractALegs)
+    tbRemainLegs = tb.complementLegs(contractBLegs)
+    newLegs = taRemainLegs + tbRemainLegs 
+    newShape = tuple([leg.dim for leg in newLegs])
+
+    if (ta.diagonalFlag) and (tb.diagonalFlag):
+        # return a diagonal tensor
+        if (tensorLikeContract):
+            return DiagonalTensor(shape = newShape, data = None, legs = copyLegs(newLegs), tensorLikeFlag = True)
+        if (len(newLegs) != 0):
+            return DiagonalTensor(shape = newShape, data = ta.a * tb.a, legs = copyLegs(newLegs))
+        else:
+            return DiagonalTensor(data = xplib.xp.array(xplib.xp.sum(ta.a * tb.a)))
+    
+    if (ta.diagonalFlag):
+        if (tensorLikeContract):
+            return Tensor(shape = newShape, data = None, legs = copyLegs(newLegs), tensorLikeFlag = True)
+        # then tb is not diagonal tensor
+        # 1. calculate the core with broadcast
+        # 2. calculate the real tensor with xplib.xp.outer
+        # how to broadcast?
+
+        # we need to broadcast from the end(instead of the first dimension)
+        # so we need to make the contract legs to the end
+        # then we need to take diagonal from these dimensions
+
+        tb.moveLegsToFront(tbRemainLegs)
+        dim = len(contractBLegs)
+        l = contractBLegs[0].dim
+        # print('contract A legs: {}'.format(len(contractALegs)))
+        # print('contract B legs: {}'.format(len(contractBLegs)))
+        remADim = len(taRemainLegs)
+
+        einsumStr = '...' + ('j' * dim) + '->...j'
+        # print('ta.a = {}, tb.a = {}'.format(ta.a, tb.a))
+        data = xplib.xp.einsum(einsumStr, tb.a) * ta.a
+        # print('einsum str = {}'.format(einsumStr))
+        # print('einsum b = {}'.format(xplib.xp.einsum(einsumStr, tb.a)))
+        # print('data = {}'.format(data))
+
+        if (remADim == 0):
+            newData = xplib.xp.sum(data, axis = -1)
+        else:
+            # print('remADim = {}, data.shape = {}'.format(remADim, data.shape))
+            newData = xplib.xp.zeros(data.shape + (data.shape[-1],) * (remADim - 1), dtype = data.dtype)
+            # print('newData.shape = {}'.format(newData.shape))
+            
+            einsumDiagStr = '...' + ('j' * (remADim)) + '->...j'
+            xplib.xp.einsum(einsumDiagStr, newData)[...] = data
+            # newData = xplib.xp.einsum(eimsumDiagStr, data)
+            # print(funcs.ndEye(remADim - 1, l))
+            # newData = xplib.xp.multiply.outer(data, funcs.ndEye(remADim - 1, l))
+            # print('newData = {}'.format(newData))
+        # print('newData = {}'.format(newData))
+        # print('shape = {}, data = {}, legs = {}'.format(newShape, newData, newLegs))
+
+        newLegs = tbRemainLegs + taRemainLegs 
+        newShape = tuple([leg.dim for leg in newLegs])
+        return Tensor(shape = newShape, data = newData, legs = copyLegs(newLegs))
+
+    if (tensorLikeContract):
+        return Tensor(shape = newShape, data = None, legs = copyLegs(newLegs), tensorLikeFlag = True)
+
+    dataA = ta.toMatrix(rows = None, cols = contractALegs)
+    dataB = tb.toMatrix(rows = contractBLegs, cols = None)
+    newData = xplib.xp.matmul(dataA, dataB)
+
+    newData = xplib.xp.reshape(newData, newShape)
+
+    return Tensor(shape = newShape, data = newData, legs = copyLegs(newLegs))
 
 def merge(ta, tb, chi = None, bondName = None, renameWarning = True):
     """
