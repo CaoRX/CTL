@@ -1,4 +1,5 @@
 import CTL.funcs.xplib as xplib
+import CTL.funcs.globalFlag as globalFlag
 
 def setXP(newXP):
     '''
@@ -8,3 +9,9 @@ def setXP(newXP):
         The numpy-like library for numeric functions.
     '''
     xplib.xp = newXP
+
+def turnOnOutProductWarning():
+    globalFlag.outProductWarning = True
+
+def turnOffOutProductWarning():
+    globalFlag.outProductWarning = False

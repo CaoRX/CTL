@@ -321,10 +321,10 @@ class TensorGraph(UndirectedGraph):
 
         def capping():
             # TODO: fix the dead loop for n == 2
-            if n <= 1:
-                return []
-            if n == 2:
-                return [(0, 1)]
+            # if n <= 1:
+            #     return []
+            # if n == 2:
+            #     return [(0, 1)]
             
             obj_n = (1 << n)
             new_flag = [True] * obj_n 
@@ -332,6 +332,9 @@ class TensorGraph(UndirectedGraph):
                 chi_min = min([min(x) for x in shapes])
             else:
                 chi_min = typicalDim
+
+            if chi_min <= 1:
+                chi_min = 2
             # mu_cap = 1
             mu_old = 0
             mu_new = 1
@@ -417,7 +420,8 @@ class TensorGraph(UndirectedGraph):
             return self.optimalSeq[full_s]
         if (greedy):
             res = greedySearch()
-        elif (bf or n <= 5):
+        # elif (bf or n <= 5):
+        elif bf:
             res = bruteForce()
         else:
             res = capping()

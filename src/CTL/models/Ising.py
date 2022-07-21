@@ -6,6 +6,9 @@ from CTL.tensor.diagonalTensor import DiagonalTensor
 import CTL.funcs.funcs as funcs
 from CTL.funcs.graph import UndirectedGraph
 from CTL.tensor.contract.link import makeLink
+
+import CTL.funcs.pauli as pauli
+from CTL.examples.MPO import FreeBoundaryMPO
 # import numpy as np 
 
 def squareTensorMeasure(idx, obs = None):
@@ -308,3 +311,42 @@ def exactZFromGraphIsing(g):
     res = xplib.xp.sum(xplib.xp.array([getIsingWeight(g, S) for S in range(1 << n)]))
 
     return res
+
+def IsingMPO(n, J = 1.0, constant = 0):
+    # H = -JS_zS_z
+    # return an MPO
+    location = 'CTL.bin.HeisenbergMPO.IsingMPO'
+    if n < 2:
+        raise ValueError(funcs.errorMessage("n in Ising model cannot be lower than 2, got {}".format(n), location = location))
+    
+    leftTensorData = xplib.xp.zeros((3, 2, 2), dtype = xplib.xp.complex128)
+    rightTensorData = xplib.xp.zeros((3, 2, 2), dtype = xplib.xp.complex128)
+
+    leftTensorData[0] = constant * pauli.identity()
+    leftTensorData[1] = pauli.identity()
+    leftTensorData[2] = pauli.sigmaZ()
+
+    rightTensorData[0] = pauli.identity()
+    rightTensorData[2] = -J * pauli.sigmaZ()
+
+    leftTensor = Tensor(shape = (3, 2, 2), labels = ['r', 'u', 'd'], data = leftTensorData)
+    rightTensor = Tensor(shape = (3, 2, 2), labels = ['l', 'u', 'd'], data = rightTensorData)
+
+    tensors = [leftTensor]
+    if n > 2:
+        centerTensorData = xplib.xp.zeros((3, 3, 2, 2), dtype = xplib.xp.complex128)
+
+        centerTensorData[0, 0] = pauli.identity()
+        centerTensorData[1, 1] = pauli.identity()
+        centerTensorData[1, 2] = pauli.sigmaZ()
+
+        centerTensorData[2, 0] = -J * pauli.sigmaZ()
+
+        centerTensor = Tensor(shape = (3, 3, 2, 2), labels = ['l', 'r', 'u', 'd'], data = centerTensorData)
+        for i in range(n - 2):
+            tensors.append(centerTensor)
+
+    tensors.append(rightTensor)
+    for i in range(n - 1):
+        makeLink('r', 'l', tensors[i], tensors[i + 1])
+    return FreeBoundaryMPO(tensorList = tensors, chi = 3)

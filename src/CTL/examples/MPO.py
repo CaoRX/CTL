@@ -190,7 +190,7 @@ class FreeBoundaryMPO:
         else:
             raise ValueError(funcs.errorMessage('MPO can only flip directions between "d" and "u", {} obtained'.format(d), location = 'FreeBoundaryMPO.oppositeDirection'))
 
-    def applyToMPS(self, mps, direction = 'u', newChi = None):
+    def applyToMPS(self, mps, direction = 'u', newChi = None, normalize = False):
         # print('apply {} to {}'.format(self, mps))
         if not self.checkMPSCompatible(mps, direction = direction):
             raise ValueError(funcs.errorMessage("Input MPS {} and MPO {} is not compatible, None returned".format(mps, self), location = 'FreeBoundaryMPO.applyToMPS'))
@@ -223,7 +223,10 @@ class FreeBoundaryMPO:
         if newChi is None:
             newChi = self.chi * mps.chi
 
-        return createApproxMPS(tensorList = resTensorList, chi = newChi, inplace = True)
+        res = createApproxMPS(tensorList = resTensorList, chi = newChi, inplace = True)
+        if normalize:
+            res.normalize(idx = 0)
+        return res
         # return FreeBoundaryMPS(tensorList = resTensorList, chi = newChi, inplace = True)
 
     def innerProduct(self, mpsU, mpsD, remainIndex = None):
@@ -283,8 +286,8 @@ class FreeBoundaryMPO:
 
         # TODO: add tests for MPO!
                 
-def identityMPO(n, dim = 2):
-    location = 'CTL.bin.HeisenbergMPO.identityMPO'
+def identityMPO(n, dim = 2, factor = 1.0):
+    location = 'CTL.examples.MPO.identityMPO'
     if (n < 2):
         raise ValueError(funcs.errorMessage("identity MPO must have length > 1, got {}".format(n), location = location))
     
@@ -308,6 +311,8 @@ def identityMPO(n, dim = 2):
 
     for i in range(n - 1):
         makeLink('r', 'l', tensors[i], tensors[i + 1])
+    
+    tensors[0].a *= factor 
     
     return FreeBoundaryMPO(tensorList = tensors)
         

@@ -3,6 +3,7 @@ import CTL.funcs.xplib as xplib
 import CTL.funcs.funcs as funcs
 from CTL.tensor.leg import Leg, copyLegs
 from CTL.tensor.contract.link import makeLink, mergeLink
+import CTL.funcs.globalFlag as globalFlag
 import warnings
 
 def shareBonds(ta, tb):
@@ -45,6 +46,7 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
         If given, then contract only over the given bonds but not all bonds shared.
     outProductWarning : bool, default True
         Whether to make a warning message of outer product, used for debug.
+        If turnOnOutProductWarning / turnOffOutProductWarning is used, then take the globalFlag value.
 
     Returns
     -------
@@ -55,6 +57,8 @@ def contractTwoTensors(ta, tb, bonds = None, outProductWarning = True):
     # this requires that: tensor contraction happens in-place
     # after we prepare some tensor, we must create tensors to make links
 
+    if not (globalFlag.outProductWarning is None):
+        outProductWarning = globalFlag.outProductWarning
     if (not ta.diagonalFlag) and (tb.diagonalFlag):
         return contractTwoTensors(tb, ta, bonds = bonds, outProductWarning = outProductWarning)
     if (bonds is None):

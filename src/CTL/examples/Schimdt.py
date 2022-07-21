@@ -152,6 +152,7 @@ def SchimdtDecomposition(ta, tb, chi, squareRootSeparation = False, swapLabels =
     # inLegForV.setTensor(sTensor)
 
     # remove a- and b-
+
     for leg in legA:
         if (leg.name.startswith('a-')):
             leg.name = leg.name[2:]
