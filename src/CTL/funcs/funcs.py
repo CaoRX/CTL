@@ -1378,11 +1378,34 @@ def sumOnAxis(a, axis, weights = None):
     return xplib.xp.einsum(einsumStr, a, weights)
 
 def debugMessage(msg):
+    '''
+    Output message for debugging. If in debug mode, the message will be outputted, otherwise ignored.
+    This function is only for development of CTL, and should not be used in users' codes.
+
+    Parameters
+    ----------
+    msg : str
+        The message will be outputted.
+
+    '''
     debugMode = True
     if debugMode:
         print(msg)
 
 def sortTuple(tp):
+    '''
+    Sort a given tuple.
+
+    Parameters
+    ----------
+    tp : 2-element tuple of any
+        (a, b)
+
+    Returns
+    -------
+    2-element tuple of any
+        (a, b) if a <= b, otherwise (b, a)
+    '''
     a, b = tp
     if a > b:
         return (b, a)

@@ -14,9 +14,8 @@ from CTL.tensor.contract.link import makeLink
 from CTL.tensor.tensor import Tensor
 import CTL.funcs.pauli as pauli
 import CTL.funcs.xplib as xplib
-from CTL.models.Heisenberg1D import HeisenbergMPO
+from CTL.models.spinMPO import HeisenbergMPO, IsingMPO, nearestNeighborInteractionMPO, termTranslation, interactionTranslation
 from CTL.models.spinMPS import createAntiFerroMPS, createFerroMPS
-from CTL.models.Ising import IsingMPO
 
 if __name__ == '__main__':
     # initialMPS = HeisenbergRandomInitialMPS(n = 5, chi = 10)
@@ -83,3 +82,11 @@ if __name__ == '__main__':
 
     Ising = IsingMPO(n = 5, J = 1.0)
     print('<psi_init | H_Ising | psi_init> = {}'.format(Ising.innerProduct(mpsU = initialMPS, mpsD = initialMPS).a))
+    print('<psi_new | H_Ising | psi_new> = {}'.format(Ising.innerProduct(mpsU = currMPS, mpsD = currMPS).a))
+
+    print(termTranslation('1.0 * SzSz'))
+    print(termTranslation('(-1 + 2j) * SzSx'))
+    print(termTranslation('(-1 + 2j) S z', sign = '-'))
+
+    HStr = '-SxSx + 2SxSy + SzSz + (1 - 2j)Sx + 3'
+    print('{} = {}'.format(HStr, interactionTranslation(HStr)))
