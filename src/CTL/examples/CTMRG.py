@@ -145,8 +145,6 @@ class CTMRG:
         return resTensor.copy(), resScale
 
     def getZ(self, L):
-        funcName = 'CTMRG.getZ'
-
         if (L == 1):
             a = self.a.copy()
             a.sumOutLegByLabel(['l', 'r', 'u', 'd'])

@@ -28,3 +28,21 @@ def solveEnv(aMat, chi, threshold = 1e-10):
     # else:
     return xplib.xp.flip(eigenVectorsEnv[:, -chi:], axis = 1), error
     # return eigenVectorsEnv[:, -chi:]
+
+def randomUnitaryMatrix(n):
+    r = xplib.xp.random.randn(n, n)
+    r = r + r * 1j
+
+    Q, R = xplib.xp.linalg.qr(r)
+    RDiag = xplib.xp.diag(R)
+    RDiagNormalized = RDiag / xplib.xp.abs(RDiag)
+    return Q * RDiagNormalized
+
+def randomMPSTensor(dim, chi):
+    # dim: physics dimension
+    # chi: virtual dimension
+    
+    # return: (chi, dim, chi)
+    mat = randomUnitaryMatrix(dim * chi)
+    res = mat.reshape((dim, chi, dim, chi))[0]
+    return res

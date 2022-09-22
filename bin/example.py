@@ -8,7 +8,7 @@ sys.path.append(os.path.join(parentdir, 'src'))
 # import the functions and Classes we will use
 # the import now is a little troublesome to find where the function you want is
 # it is planned to be improved, maybe like numpy structure(so all functions can be used with CTL.xx?)
-from CTL.tensor.tensor import Tensor 
+# from CTL.tensor.tensor import Tensor 
 from CTL.tensornetwork.tensornetwork import FiniteTensorNetwork
 from CTL.tensornetwork.tensordict import TensorDict
 from CTL.tensor.contract.link import makeLink
@@ -25,8 +25,8 @@ def twoTensorsContraction():
     shapeA = (3, 4, 5)
     shapeB = (5, 4)
 
-    a = Tensor(labels = ['a3', 'a4', 'a5'], data = np.ones(shapeA))
-    b = Tensor(labels = ['b5', 'b4'], data = np.ones(shapeB))
+    a = CTL.Tensor(labels = ['a3', 'a4', 'a5'], data = np.ones(shapeA))
+    b = CTL.Tensor(labels = ['b5', 'b4'], data = np.ones(shapeB))
 
     makeLink('a4', 'b4', a, b)
     makeLink('a5', 'b5', a, b)
@@ -37,9 +37,9 @@ def simplestExample():
     shapeA = (300, 4, 5)
     shapeB = (300, 6)
     shapeC = (4, 6, 5)
-    a = Tensor(labels = ['a300', 'b4', 'c5'], data = np.ones(shapeA))
-    b = Tensor(labels = ['a300', 'd6'], data = np.ones(shapeB))
-    c = Tensor(labels = ['e4', 'd6', 'c5'], data = np.ones(shapeC))
+    a = CTL.Tensor(labels = ['a300', 'b4', 'c5'], data = np.ones(shapeA))
+    b = CTL.Tensor(labels = ['a300', 'd6'], data = np.ones(shapeB))
+    c = CTL.Tensor(labels = ['e4', 'd6', 'c5'], data = np.ones(shapeC))
 
     # create tensors with labels
 
@@ -95,5 +95,5 @@ if __name__ == '__main__':
     CTL.setXP(None)
     CTL.setXP(np)
     simplestExample()
-    HOTRGImpurityExample(beta = 0.6)
+    HOTRGImpurityExample(beta = 0.45)
     twoTensorsContraction()

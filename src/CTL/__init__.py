@@ -15,3 +15,5 @@ def turnOnOutProductWarning():
 
 def turnOffOutProductWarning():
     globalFlag.outProductWarning = False
+
+from CTL.tensor.tensor import Tensor

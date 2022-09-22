@@ -11,6 +11,7 @@ from CTL.examples.Schimdt import SchimdtDecomposition, matrixSchimdtDecompositio
 from CTL.tensor.tensorFunc import isIsometry
 import warnings
 from CTL.tensor.contract.link import makeLink
+import CTL.funcs.linalg as linalg
 
 class FreeBoundaryMPS:
 
@@ -665,8 +666,10 @@ def createRandomMPS(n, dim, chi):
             data = xplib.xp.random.randn(dim, chi)
             tensor = Tensor(data = data, labels = ['o', 'l'], shape = (dim, chi))
         else:
-            data = xplib.xp.random.randn(dim, chi, chi)
-            tensor = Tensor(data = data, labels = ['o', 'l', 'r'], shape = (dim, chi, chi))
+            # data = xplib.xp.random.randn(dim, chi, chi)
+            data = linalg.randomMPSTensor(dim, chi)
+            # tensor = Tensor(data = data, labels = ['o', 'l', 'r'], shape = (dim, chi, chi))
+            tensor = Tensor(data = data, labels = ['l', 'o', 'r'], shape = (chi, dim, chi))
         tensors.append(tensor)
 
     for i in range(n - 1):

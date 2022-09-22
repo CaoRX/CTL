@@ -385,6 +385,38 @@ def MPOApplyRightFTN(direction = 'u'):
     FTN.addPostOutProduct(['mpo-l', 'mps-l'], 'l')
     return FTN
 
+def MPOApplyLeftPartialFTN(direction = 'u'):
+    oppo = None
+    if direction == 'u':
+        oppo = 'd'
+    elif direction == 'd':
+        oppo = 'u'
+    else:
+        raise ValueError(funcs.errorMessage(err = 'direction can only be "u" or "d"', location = 'CTL.tensor.contract.contractExp.MPOApplyLeftPartialFTN'))
+    
+    FTN = FiniteTensorNetwork(tensorNames = ['mpo', 'mps'])
+    FTN.addLink('mpo', direction, 'mps', 'o')
+
+    FTN.addPostNameChange('mpo', oppo, 'o')
+    FTN.addPostOutProduct(['mpo-r', 'mps-r'], 'r')
+    return FTN
+
+def MPOApplyRightPartialFTN(direction = 'u'):
+    oppo = None
+    if direction == 'u':
+        oppo = 'd'
+    elif direction == 'd':
+        oppo = 'u'
+    else:
+        raise ValueError(funcs.errorMessage(err = 'direction can only be "u" or "d"', location = 'CTL.tensor.contract.contractExp.MPOApplyRightPartialFTN'))
+    
+    FTN = FiniteTensorNetwork(tensorNames = ['mpo', 'mps'])
+    FTN.addLink('mpo', direction, 'mps', 'o')
+
+    FTN.addPostNameChange('mpo', oppo, 'o')
+    FTN.addPostOutProduct(['mpo-l', 'mps-l'], 'l')
+    return FTN
+
 
 def EvenblyTNRQEnvFTN():
     FTN = FiniteTensorNetwork(tensorNames = ['uul', 'uur', 'udl', 'udr', 'dul', 'dur', 'ddl', 'ddr'])

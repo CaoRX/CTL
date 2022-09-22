@@ -277,6 +277,7 @@ def termTranslation(term, sign = '+'):
     return (spin1, spin2, sign * J)
 
 def interactionTranslation(intStr = '-1.0SzSz'):
+    intStr = intStr.replace('i', 'j')
     location = 'CTL.models.spinMPO.interactionTranslation'
     currentSign = None
     currentLeftPar = 0

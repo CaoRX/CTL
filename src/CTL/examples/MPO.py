@@ -14,7 +14,7 @@ from CTL.tensor.tensorFunc import isIsometry
 import warnings
 from CTL.tensor.contract.link import makeLink
 from CTL.examples.MPS import FreeBoundaryMPS, createApproxMPS
-from CTL.tensor.contract.contractExp import MPOApplyFTN, MPOApplyLeftFTN, MPOApplyRightFTN, MPOInnerProductFTN, MPOInnerProductLeftSideFTN, MPOInnerProductRightSideFTN, MPOInnerProductOnly1FTN, MPOHorizontalFTN
+from CTL.tensor.contract.contractExp import MPOApplyFTN, MPOApplyLeftFTN, MPOApplyRightFTN, MPOInnerProductFTN, MPOInnerProductLeftSideFTN, MPOInnerProductRightSideFTN, MPOInnerProductOnly1FTN, MPOHorizontalFTN, MPOApplyLeftPartialFTN, MPOApplyRightPartialFTN
 
 class FreeBoundaryMPO:
 
@@ -129,6 +129,16 @@ class FreeBoundaryMPO:
             'd': MPOApplyRightFTN('d')
         }
 
+        self.applyLeftPartialFTN = {
+            'u': MPOApplyLeftPartialFTN('u'), 
+            'd': MPOApplyLeftPartialFTN('d'),
+        }
+
+        self.applyRightPartialFTN = {
+            'u': MPOApplyRightPartialFTN('u'), 
+            'd': MPOApplyRightPartialFTN('d'),
+        }
+
     
     @property 
     def n(self):
@@ -160,7 +170,7 @@ class FreeBoundaryMPO:
             makeLink('r', 'l', tensors[i], tensors[i + 1])
         return tensors
 
-    def checkMPSCompatible(self, mps, direction = 'u'):
+    def checkMPSCompatible(self, mps, l = None, r = None, direction = 'u'):
         '''
         check whether the input mps has a compatible shape with current MPO
         '''
@@ -172,11 +182,15 @@ class FreeBoundaryMPO:
                 'MPO can only be applied to MPS in direction either "u" or "d", but {} obtained'.format(direction),
                 location = location
             ))
-        
-        if mps.n != self.n:
+
+        if l is None:
+            l = 0
+        if r is None:
+            r = mps.n
+        if r - l != self.n:
             return False
 
-        for mpsTensor, mpoTensor in zip(mps._tensors, self._tensors):
+        for mpsTensor, mpoTensor in zip(mps._tensors[l : r], self._tensors):
             if mpsTensor.shapeOfLabel('o') != mpoTensor.shapeOfLabel(direction):
                 return False
 
@@ -229,6 +243,61 @@ class FreeBoundaryMPO:
         return res
         # return FreeBoundaryMPS(tensorList = resTensorList, chi = newChi, inplace = True)
 
+    def applyToPartialMPS(self, mps, l = None, r = None, direction = 'u', newChi = None, normalize = False):
+        # print('apply {} to {}'.format(self, mps))
+        if l is None:
+            l = 0
+        if r is None:
+            r = mps.n
+        if (l == 0 and r == mps.n):
+            return self.applyToMPS(mps, direction = direction, newChi = newChi, normalize = normalize)
+
+        if not self.checkMPSCompatible(mps, direction = direction, l = l, r = r):
+            raise ValueError(funcs.errorMessage("Input MPS {} and MPO {} is not compatible, None returned".format(mps, self), location = 'FreeBoundaryMPO.applyToPartialMPS'))
+
+        resTensorList = []
+        for i in range(l):
+            resTensorList.append(mps._tensors[i])
+
+        for i, mpsTensor, mpoTensor in zip(range(l, r), mps._tensors[l : r], self._tensors):
+            # bonds = makeLink('o', direction, mpsTensor, mpoTensor)
+            # resTensor = contractTwoTensorsNotInPlace(mpsTensor, mpoTensor)
+            # resTensor.renameLabel(self.oppositeDirection(direction), 'o')
+            if i == l:
+                if l == 0:
+                    ftn = self.applyLeftFTN[direction]
+                else:
+                    ftn = self.applyLeftPartialFTN[direction]
+            elif i == r - 1:
+                if r == mps.n:
+                    ftn = self.applyRightFTN[direction]
+                else:
+                    ftn = self.applyRightPartialFTN[direction]
+            else:
+                ftn = self.applyFTN[direction]
+            resTensor = ftn.contract({
+                'mpo': mpoTensor, 
+                'mps': mpsTensor
+            })
+            resTensorList.append(resTensor)
+            # for bond in bonds:
+            #     bond.clear()
+        for i in range(r, mps.n):
+            resTensorList.append(mps._tensors[i])
+
+        resN = len(resTensorList)
+        for i in range(resN - 1):
+            makeLink('r', 'l', resTensorList[i], resTensorList[i + 1])
+        
+        if newChi is None:
+            newChi = self.chi * mps.chi
+
+        res = createApproxMPS(tensorList = resTensorList, chi = newChi, inplace = True)
+        if normalize:
+            res.normalize(idx = 0)
+        return res
+        # return FreeBoundaryMPS(tensorList = resTensorList, chi = newChi, inplace = True)
+
     def innerProduct(self, mpsU, mpsD, remainIndex = None):
         # contract with two MPSes
         # if remainIndex is None: return a single tensor(scalar)
@@ -238,9 +307,9 @@ class FreeBoundaryMPO:
         # but here we only consider full contraction
 
         location = 'FreeBoundaryMPO.innerProduct'
-        if not self.checkMPSCompatible(mpsU, 'u'):
+        if not self.checkMPSCompatible(mpsU, direction = 'u'):
             raise ValueError(funcs.errorMessage("upper MPS {} is not compatible with current MPO {}.".format(mpsU, self), location = location))
-        if not self.checkMPSCompatible(mpsD, 'd'):
+        if not self.checkMPSCompatible(mpsD, direction = 'd'):
             raise ValueError(funcs.errorMessage("lower MPS {} is not compatible with current MPO {}.".format(mpsD, self), location = location))
 
         if remainIndex is None:
