@@ -70,6 +70,6 @@ class Leg:
         if (self.bond is not None):
             bondStr = ', bonded by Bond({})'.format(self.bond.name)
         else:
-            bondStr = ''
+            bondStr = '[free]'
         
         return 'leg(dim = {}{}{}){}'.format(self.dim, nameStr, parentStr, bondStr)

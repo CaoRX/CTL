@@ -523,7 +523,7 @@ class Tensor(TensorBase):
 
         Parameters
         ----------
-        lab : str
+        label : str
             The label of which the index is asked.
         backward : bool, default False
             Whether to search from backward when two or more same labels exist. Used when self inner product is wanted, and obtain the two indices by indexOfLabel(lab) and indexOfLabel(backward = True).
@@ -592,6 +592,35 @@ class Tensor(TensorBase):
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to vector since no data contained.', 'Tensor.toVector')
         return xplib.xp.copy(xplib.xp.ravel(self.a))
     
+    def deductRowColumn(self, rows = None, cols = None):
+        """
+        Deduct rows and columns from given(maybe not full) rows and columns. Subtask of toMatrix.
+
+        Parameters
+        ----------
+        rows : None or list of str or list of Leg
+            The legs for the rows of the matrix. If None, deducted from cols.
+        cols : None or list of str or list of Leg
+            The legs for the cols of the matrix. If None, deducted from rows.
+
+        Returns
+        -------
+        rows, cols: list of Leg
+            The deducted legs from given information. The union of them should contain all legs in the current Tensor.
+        
+        """
+        assert not ((rows is None) and (cols is None)), "Error in Tensor.deductRowColumn: toMatrix must have at least row or col exist."
+        if (rows is not None) and (isinstance(rows[0], str)):
+            rows = [self.getLeg(label) for label in rows]
+        if (cols is not None) and (isinstance(cols[0], str)):
+            cols = [self.getLeg(label) for label in cols]
+        if (cols is None):
+            cols = funcs.listDifference(self.legs, rows)
+        if (rows is None):
+            rows = funcs.listDifference(self.legs, cols)
+        assert (funcs.compareLists(rows + cols, self.legs)), "Error Tensor.deductRowColumn: rows + cols must contain(and only contain) all legs of tensor."
+        return rows, cols
+
     def toMatrix(self, rows = None, cols = None):
         """
         Make a matrix of the data of this tensor, given the labels or legs of rows and cols.
@@ -612,16 +641,18 @@ class Tensor(TensorBase):
         # print(self.labels)
         # input two set of legs
         assert (not self.tensorLikeFlag), funcs.errorMessage('TensorLike cannot be transferred to matrix since no data contained.', 'Tensor.toMatrix')
-        assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
-        if (rows is not None) and (isinstance(rows[0], str)):
-            rows = [self.getLeg(label) for label in rows]
-        if (cols is not None) and (isinstance(cols[0], str)):
-            cols = [self.getLeg(label) for label in cols]
-        if (cols is None):
-            cols = funcs.listDifference(self.legs, rows)
-        if (rows is None):
-            rows = funcs.listDifference(self.legs, cols)
-        assert (funcs.compareLists(rows + cols, self.legs)), "Error Tensor.toMatrix: rows + cols must contain(and only contain) all legs of tensor."
+
+        rows, cols = self.deductRowColumn(rows = rows, cols = cols)
+        # assert not ((rows is None) and (cols is None)), "Error in Tensor.toMatrix: toMatrix must have at least row or col exist."
+        # if (rows is not None) and (isinstance(rows[0], str)):
+        #     rows = [self.getLeg(label) for label in rows]
+        # if (cols is not None) and (isinstance(cols[0], str)):
+        #     cols = [self.getLeg(label) for label in cols]
+        # if (cols is None):
+        #     cols = funcs.listDifference(self.legs, rows)
+        # if (rows is None):
+        #     rows = funcs.listDifference(self.legs, cols)
+        # assert (funcs.compareLists(rows + cols, self.legs)), "Error Tensor.toMatrix: rows + cols must contain(and only contain) all legs of tensor."
 
         colIndices = self.getLegIndices(cols)
         rowIndices = self.getLegIndices(rows)

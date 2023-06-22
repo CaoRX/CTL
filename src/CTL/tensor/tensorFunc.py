@@ -2,6 +2,8 @@ import CTL.funcs.funcs as funcs
 from CTL.funcs.decompose import SVDDecomposition
 from CTL.tensor.tensor import Tensor 
 from CTL.tensor.diagonalTensor import DiagonalTensor
+from CTL.tensor.leg import Leg
+from CTL.tensor.contract.link import makeLink
 
 # import numpy as np
 import CTL.funcs.xplib as xplib
@@ -38,7 +40,7 @@ def isIsometry(tensor, labels, eps = 1e-10, warningFlag = False):
     iden = mat @ funcs.transposeConjugate(mat)
     return funcs.checkIdentity(iden, eps = eps)
 
-def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, preserveLegs = False, chi = 16, errorOrder = 2):
+def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, preserveLegs = False, chi = 16, errorOrder = 2, keepdim = False, keepLink = False):
     """
     Decompose a tensor into two isometry tensors and one diagonal tensor, according to SVD decomposition. Namely, a = u @ s @ v.
 
@@ -57,11 +59,15 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
         Maximum bond dimension of inner legs.
     errorOrder : int, default 2
         The order of error in singular value decomposition. The error will be calculated as (s[chi:] ** errorOrder).sum() / (s ** errorOrder).sum().
+    keepdim: bool, default False
+        Whether to keep the outer legs of a in original shape(may contain several legs). If True, then the legs will have the same name / shape as the original tensor, and if preserveLegs is also True, then the leg objects will be just used in new tensor.
+    keepLink: bool, default False
+        Whether to connect the output tensors, i.e. u, s, vh. If True, then they will be connected, and the tensor contraction will give just the original tensor(with approximation).
 
     Returns
     -------
     d : dict of keys {"u", "s", "v", "error"}
-        d["u"], d["v"] : rank-2 Tensor
+        d["u"], d["v"] : rank-2 Tensor(keepdim = False), or rank-(N + 1) and rank-(M + 1) tensor
         
         d["s"] : rank-2 DiagonalTensor
             a ~= d["u"] @ d["s"] @ d["v"]
@@ -69,27 +75,41 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
             The error from SVD process.
     """
 
-    preserveLegs = False
+    if not keepdim:
+        preserveLegs = False
 
     funcName = "CTL.tensor.tensorFuncs.tensorSVDDecomposition"
+
     aMat = a.toMatrix(rows = rows, cols = cols)
     # print('aMat = {}'.format(aMat))
     rowName = '|'.join(rows)
     colName = '|'.join(cols)
-
-    rowLeg = None
-    colLeg = None
-    if preserveLegs:
-        if len(rows) == 1:
-            rowLeg = a.getLeg(rows[0])
+    if keepdim:
+        rowLegs, colLegs = a.deductRowColumn(rows = rows, cols = cols)
+        rowLabels = tuple([leg.name for leg in rowLegs])
+        colLabels = tuple([leg.name for leg in colLegs])
+        rowShape = tuple([leg.dim for leg in rowLegs])
+        colShape = tuple([leg.dim for leg in colLegs])
+        if not preserveLegs:
+            newRowLegs = [Leg(tensor = None, dim = dim, name = name) for dim, name in zip(rowShape, rowLabels)]
+            newColLegs = [Leg(tensor = None, dim = dim, name = name) for dim, name in zip(colShape, colLabels)]
         else:
-            warnings.warn(funcs.warningMessage('cannot preserve leg object when rows is more than one legs {}'.format(rows), location = funcName), RuntimeWarning)
+            newRowLegs = rowLegs
+            newColLegs = colLegs
 
-        if len(cols) == 1:
-            colLeg = a.getLeg(cols[0])
-        else:
-            warnings.warn(funcs.warningMessage('cannot preserve leg object when columns is more than one legs {}'.format(cols), location = funcName), RuntimeWarning)
-        # take the leg of row for new tensor
+    # rowLeg = None
+    # colLeg = None
+    # if preserveLegs:
+    #     if len(rows) == 1:
+    #         rowLeg = a.getLeg(rows[0])
+    #     else:
+    #         warnings.warn(funcs.warningMessage('cannot preserve leg object when rows is more than one legs {}'.format(rows), location = funcName), RuntimeWarning)
+
+    #     if len(cols) == 1:
+    #         colLeg = a.getLeg(cols[0])
+    #     else:
+    #         warnings.warn(funcs.warningMessage('cannot preserve leg object when columns is more than one legs {}'.format(cols), location = funcName), RuntimeWarning)
+    #     # take the leg of row for new tensor
 
     if (innerLabels is not None):
         assert (isinstance(innerLabels, tuple) and len(innerLabels) == 2), funcs.errorMessage("inner labels can either be None or length-2 tuple, {} obtained.".format(innerLabels), location = funcName)
@@ -100,15 +120,29 @@ def tensorSVDDecomposition(a, rows = None, cols = None, innerLabels = None, pres
 
     u, s, vh, error = SVDDecomposition(aMat, chi = chi, returnSV = True, errorOrder = errorOrder)
 
-    if (preserveLegs):
-        uTensor = Tensor(data = u, labels = [rowName, rowLabel], legs = [rowLeg, None])
+    uInnerDim = u.shape[1]
+    vInnerDim = vh.shape[0]
+
+    uInnerLeg = Leg(tensor = None, dim = uInnerDim, name = rowLabel)
+    vInnerLeg = Leg(tensor = None, dim = vInnerDim, name = colLabel)
+
+    if keepdim:
+        uTensor = Tensor(data = u, legs = newRowLegs + [uInnerLeg])
         sTensor = DiagonalTensor(data = s, labels = [rowName, colName])
-        vTensor = Tensor(data = vh, labels = [colLabel, colName], legs = [None, colLeg])
+        vTensor = Tensor(data = vh, legs = [vInnerLeg] + newColLegs)
+
+        if (keepLink):
+            makeLink(legA = uInnerLeg, legB = sTensor.getLeg(rowName))
+            makeLink(legA = vInnerLeg, legB = sTensor.getLeg(colName))
+            
     else:
         uTensor = Tensor(data = u, labels = [rowName, rowLabel])
         sTensor = DiagonalTensor(data = s, labels = [rowName, colName])
         # sTensor = Tensor(data = xplib.xp.diag(s), labels = [rowName, colName])
         vTensor = Tensor(data = vh, labels = [colLabel, colName])
+        if (keepLink):
+            makeLink(rowLabel, rowName, uTensor, sTensor)
+            makeLink(colLabel, colName, vTensor, sTensor)
 
     return {'u': uTensor, 's': sTensor, 'v': vTensor, 'error': error}
 
