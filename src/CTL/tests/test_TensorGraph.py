@@ -94,7 +94,7 @@ class TestTensorGraph(PackedTest):
         pos = nx.spring_layout(G)
         nx.draw(G, pos, with_labels = True, font_weight = 'bold', labels = labelDict)
         nx.draw_networkx_edge_labels(G, pos, edge_labels = edgeLabels, font_color = 'red', font_size = 10)
-        plt.show()
+        # plt.show()
 
     def test_TensorNetworkGraphFromText(self):
         try:
@@ -123,7 +123,7 @@ class TestTensorGraph(PackedTest):
         pos = nx.spring_layout(G)
         nx.draw(G, pos, with_labels = True, font_weight = 'bold', labels = labelDict)
         nx.draw_networkx_edge_labels(G, pos, edge_labels = edgeLabels, font_color = 'red', font_size = 10)
-        plt.show()
+        # plt.show()
 
         tensorGraph = makeTensorGraphFromText("Aij{45}l{4}Bi{3}{mn}{12}Cj{45}kDk{2}l{mn}")
         # tensorGraph = makeTensorGraph(tensorList)
@@ -145,7 +145,7 @@ class TestTensorGraph(PackedTest):
         pos = nx.spring_layout(G)
         nx.draw(G, pos, with_labels = True, font_weight = 'bold', labels = labelDict)
         nx.draw_networkx_edge_labels(G, pos, edge_labels = edgeLabels, font_color = 'red', font_size = 10)
-        plt.show()
+        # plt.show()
 
 
 
