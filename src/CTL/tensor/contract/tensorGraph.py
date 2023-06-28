@@ -327,6 +327,8 @@ class TensorGraph(UndirectedGraph):
             else:
                 chi_min = typicalDim
             # mu_cap = 1
+
+            chi_min = max(chi_min, 2)
             mu_old = 0
             mu_new = 1
 
