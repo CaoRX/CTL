@@ -81,6 +81,27 @@ class TestImpurity(PackedTest):
             hotrg.iterate()
         
         mTensor = squareIsingTensor(beta = beta, obs = "M", symmetryBroken = symmetryBroken)
+        a0 = a.copy()
+        impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
+        impurityTN.setRG(hotrg) 
+
+        for _ in range(20):
+            impurityTN.iterate()
+        M = impurityTN.measureObservables()
+        M = [x[1] for x in M]
+        exactM = infiniteIsingExactM(1.0 / beta)
+        print('magnet = {}'.format(M[-1] * 0.5))
+        print('exact magnet = {}'.format(exactM))
+        self.assertTrue(np.abs(M[-1]) < 1e-2)
+
+        a1 = a.copy()
+
+        a0Tensor = a0.toTensor(['u', 'd', 'l', 'r'])
+        a1Tensor = a1.toTensor(['u', 'd', 'l', 'r'])
+        self.assertTrue(np.sum(np.abs(a0Tensor - a1Tensor)) < 1e-10)
+
+        print(a0, a1)
+
         impurityTN = ImpurityTensorNetwork([a, mTensor], 2)
         impurityTN.setRG(hotrg) 
 

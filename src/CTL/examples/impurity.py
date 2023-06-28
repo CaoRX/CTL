@@ -8,7 +8,7 @@ from CTL.tensor.tensor import Tensor
 class ImpurityTensorNetwork:
 
     def __init__(self, impurities, highestOrder = None):
-        self.impurities = impurities
+        self.impurities = [tensor.copy() for tensor in impurities]
         if (highestOrder is None):
             highestOrder = len(impurities)
         self.highestOrder = highestOrder # 0 .. order - 1
